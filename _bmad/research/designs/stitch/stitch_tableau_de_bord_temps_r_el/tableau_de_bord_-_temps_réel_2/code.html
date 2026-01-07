@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+
+<html class="" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tableau de bord - Temps réel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#39E079", "background-light": "#f6f8f7", "background-dark": "#122017"}, fontFamily: {display: "Inter", mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"]}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+<style>::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111722;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #324467;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b628b;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased overflow-hidden">
+<div class="relative flex h-screen w-full bg-[#111722] overflow-hidden">
+<div class="hidden md:flex w-72 flex-col border-r border-[#232f48] bg-[#111722] shrink-0 h-full overflow-y-auto">
+<div class="flex flex-col gap-6 p-4 min-h-full">
+<div class="flex items-center gap-3 px-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-xl size-10 shadow-lg shadow-blue-900/20" data-alt="Abstract blue energy wave logo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAA076MuYl9VJFAv3OIzC9s3ki4IJmq56Ah8JDqwZLJOAsrA2DvLpM9_3c4UEdD1ma6XVDXff6PDftOpM79WYGD6zQuZjK50ITtdX7m-ZdRlE3JmD2lvqaMNdVLQbFvIhUJ1KdYWi0RGR8GZujgL_JWTacWb9y8dbZANLMluntZksK7OGJm0sltwTAWliDAgJe8tYUgT0yfGNSXbHK5vwtjHv1SL7PaKEqWemLgFU7ztCfVwXo38QOQuVXHPj_1pSaYoKBAyzhTvuSL");'></div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-bold leading-tight tracking-tight">Energy Monitor</h1>
+<p class="text-[#92a4c9] text-xs font-normal">v2.4.0 Live</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1 flex-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">language</span>
+<span class="text-sm font-medium">Vue Globale</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-sm font-medium">Tableau de bord</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-blue-900/20" href="#">
+<span class="material-symbols-outlined text-2xl fill-1">bolt</span>
+<span class="text-sm font-bold">Temps réel</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">schedule</span>
+<span class="text-sm font-medium">Historique</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">compare_arrows</span>
+<span class="text-sm font-medium">Comparaison</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">trending_down</span>
+<span class="text-sm font-medium">Talon de consommation</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">memory</span>
+<span class="text-sm font-medium">Analyse modèle</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">receipt_long</span>
+<span class="text-sm font-medium">Facturation</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">description</span>
+<span class="text-sm font-medium">Rapports</span>
+</a>
+<a class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">notifications</span>
+<span class="text-sm font-medium">Alertes</span>
+</div>
+<span class="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm shadow-red-900/50">3</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">tune</span>
+<span class="text-sm font-medium">Contrôle</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">bar_chart</span>
+<span class="text-sm font-medium">KPIs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">inventory_2</span>
+<span class="text-sm font-medium">Inventaire</span>
+</a>
+<div class="my-2 border-t border-[#232f48]"></div>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">settings</span>
+<span class="text-sm font-medium">Paramètres</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1a2333] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-primary transition-colors">security</span>
+<span class="text-sm font-medium">Sécurité</span>
+</a>
+</nav>
+<div class="mt-auto pt-4">
+<button class="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-[#1a2333] border border-[#232f48] text-white text-sm font-medium hover:bg-[#232f48] transition-colors">
+<span class="material-symbols-outlined text-lg">logout</span>
+<span class="truncate">Déconnexion</span>
+</button>
+</div>
+</div>
+</div>
+<main class="flex-1 flex flex-col h-full overflow-y-auto bg-background-dark scroll-smooth">
+<div class="flex-1 w-full max-w-[1440px] mx-auto p-4 md:p-8 flex flex-col gap-6">
+<div class="flex flex-col gap-6">
+<nav class="flex items-center text-sm font-medium text-[#92a4c9]">
+<a class="hover:text-white transition-colors" href="#">Accueil</a>
+<span class="mx-2 text-[#324467]">/</span>
+<a class="hover:text-white transition-colors" href="#">Tableau de bord</a>
+<span class="mx-2 text-[#324467]">/</span>
+<span class="text-primary">Temps réel</span>
+</nav>
+<div class="flex flex-wrap justify-between items-end gap-4 border-b border-[#232f48] pb-6">
+<div class="flex flex-col gap-2">
+<h1 class="text-white text-3xl font-bold tracking-tight">Surveillance en temps réel</h1>
+<div class="flex items-center gap-3">
+<span class="flex h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+<p class="text-[#92a4c9] text-sm font-mono">Dernière mise à jour: 14 Oct 2023, 14:32:05</p>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex h-9 items-center gap-2 rounded-lg border border-[#324467] bg-[#1a2333] px-4 text-sm font-medium text-white hover:bg-[#232f48] transition-colors">
+<span class="material-symbols-outlined text-lg">print</span>
+                                Imprimer
+                            </button>
+<button class="flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-white shadow-lg shadow-blue-900/40 hover:bg-blue-600 transition-colors">
+<span class="material-symbols-outlined text-lg">download</span>
+                                Exporter les données
+                            </button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<div class="flex flex-col gap-1 rounded-xl bg-[#1c2534] p-5 border border-[#2a3649] shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
+<div class="flex items-center justify-between z-10">
+<p class="text-[#92a4c9] text-sm font-medium">Puissance Actuelle</p>
+<span class="material-symbols-outlined text-[#92a4c9]">bolt</span>
+</div>
+<div class="flex items-end gap-3 mt-2 z-10">
+<p class="text-white text-3xl font-bold font-mono tracking-tight">450 kW</p>
+<div class="flex items-center gap-1 mb-1 rounded-full bg-green-500/10 px-2 py-0.5">
+<span class="material-symbols-outlined text-sm text-green-500">trending_up</span>
+<p class="text-green-500 text-xs font-bold">+2.1%</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 rounded-xl bg-[#1c2534] p-5 border border-[#2a3649] shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
+<div class="flex items-center justify-between z-10">
+<p class="text-[#92a4c9] text-sm font-medium">Tension Moyenne</p>
+<span class="material-symbols-outlined text-[#92a4c9]">electric_meter</span>
+</div>
+<div class="flex items-end gap-3 mt-2 z-10">
+<p class="text-white text-3xl font-bold font-mono tracking-tight">230 V</p>
+<div class="flex items-center gap-1 mb-1 rounded-full bg-green-500/10 px-2 py-0.5">
+<span class="material-symbols-outlined text-sm text-green-500">trending_up</span>
+<p class="text-green-500 text-xs font-bold">+0.1%</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 rounded-xl bg-[#1c2534] p-5 border border-[#2a3649] shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
+<div class="flex items-center justify-between z-10">
+<p class="text-[#92a4c9] text-sm font-medium">Facteur de Puissance</p>
+<span class="material-symbols-outlined text-[#92a4c9]">pie_chart</span>
+</div>
+<div class="flex items-end gap-3 mt-2 z-10">
+<p class="text-white text-3xl font-bold font-mono tracking-tight">0.98</p>
+<div class="flex items-center gap-1 mb-1 rounded-full bg-slate-700/30 px-2 py-0.5">
+<span class="material-symbols-outlined text-sm text-[#92a4c9]">remove</span>
+<p class="text-[#92a4c9] text-xs font-bold">0.0%</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 rounded-xl bg-[#1c2534] p-5 border border-[#2a3649] shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-primary/5 group-hover:bg-primary/10 transition-colors"></div>
+<div class="flex items-center justify-between z-10">
+<p class="text-[#92a4c9] text-sm font-medium">Fréquence</p>
+<span class="material-symbols-outlined text-[#92a4c9]">waves</span>
+</div>
+<div class="flex items-end gap-3 mt-2 z-10">
+<p class="text-white text-3xl font-bold font-mono tracking-tight">50.00 Hz</p>
+<div class="flex items-center gap-1 mb-1 rounded-full bg-red-500/10 px-2 py-0.5">
+<span class="material-symbols-outlined text-sm text-red-500">trending_down</span>
+<p class="text-red-500 text-xs font-bold">-0.01%</p>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<div class="xl:col-span-2 flex flex-col rounded-xl bg-[#1c2534] border border-[#2a3649]">
+<div class="flex flex-wrap items-center justify-between gap-4 p-6 border-b border-[#2a3649]">
+<div class="flex flex-col gap-1">
+<h2 class="text-white text-lg font-bold">Consommation en Direct</h2>
+<p class="text-[#92a4c9] text-sm">Visualisation sur la dernière heure (60 mins)</p>
+</div>
+<div class="flex bg-[#111722] rounded-lg p-1 border border-[#2a3649]">
+<button class="px-3 py-1 rounded text-xs font-medium text-[#92a4c9] hover:text-white hover:bg-[#232f48]">15m</button>
+<button class="px-3 py-1 rounded text-xs font-bold bg-[#232f48] text-white shadow-sm">1h</button>
+<button class="px-3 py-1 rounded text-xs font-medium text-[#92a4c9] hover:text-white hover:bg-[#232f48]">24h</button>
+<button class="px-3 py-1 rounded text-xs font-medium text-[#92a4c9] hover:text-white hover:bg-[#232f48]">7j</button>
+</div>
+</div>
+<div class="p-6 flex flex-col gap-6">
+<div class="flex items-baseline gap-4">
+<p class="text-white text-4xl font-bold font-mono tracking-tight">450.5 kW</p>
+<span class="text-green-500 text-sm font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">arrow_upward</span>
+                                    Pic atteint à 14:15
+                                </span>
+</div>
+<div class="relative w-full h-64">
+<svg class="w-full h-full overflow-visible" preserveaspectratio="none" viewbox="0 0 1000 200">
+<defs>
+<lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#135bec" stop-opacity="0.4"></stop>
+<stop offset="100%" stop-color="#135bec" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<line stroke="#2a3649" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="1000" y1="0" y2="0"></line>
+<line stroke="#2a3649" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="1000" y1="50" y2="50"></line>
+<line stroke="#2a3649" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="1000" y1="100" y2="100"></line>
+<line stroke="#2a3649" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="1000" y1="150" y2="150"></line>
+<line stroke="#2a3649" stroke-width="1" x1="0" x2="1000" y1="200" y2="200"></line>
+<path d="M0,150 C50,150 100,100 150,110 C200,120 250,160 300,140 C350,120 400,60 450,50 C500,40 550,70 600,90 C650,110 700,130 750,100 C800,70 850,20 900,30 C950,40 1000,80 1000,80 V200 H0 Z" fill="url(#chartGradient)"></path>
+<path d="M0,150 C50,150 100,100 150,110 C200,120 250,160 300,140 C350,120 400,60 450,50 C500,40 550,70 600,90 C650,110 700,130 750,100 C800,70 850,20 900,30 C950,40 1000,80 1000,80" fill="none" stroke="#135bec" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+<circle class="animate-pulse" cx="1000" cy="80" fill="#135bec" r="5" stroke="white" stroke-width="2"></circle>
+</svg>
+</div>
+<div class="flex justify-between text-xs font-mono text-[#92a4c9] mt-2">
+<span>13:30</span>
+<span>13:40</span>
+<span>13:50</span>
+<span>14:00</span>
+<span>14:10</span>
+<span>14:20</span>
+<span>14:30</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-6">
+<div class="flex flex-col rounded-xl bg-[#1c2534] border border-[#2a3649] p-6 gap-4">
+<div class="flex items-center justify-between">
+<h3 class="text-white text-base font-bold">Équilibrage des phases</h3>
+<span class="material-symbols-outlined text-[#92a4c9]">equalizer</span>
+</div>
+<div class="flex flex-col gap-4 mt-2">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-sm">
+<span class="text-[#92a4c9]">Phase L1</span>
+<span class="text-white font-mono">230.1 V</span>
+</div>
+<div class="h-2 w-full rounded-full bg-[#111722]">
+<div class="h-full rounded-full bg-blue-500 w-[75%]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-sm">
+<span class="text-[#92a4c9]">Phase L2</span>
+<span class="text-white font-mono">229.8 V</span>
+</div>
+<div class="h-2 w-full rounded-full bg-[#111722]">
+<div class="h-full rounded-full bg-cyan-500 w-[72%]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between text-sm">
+<span class="text-[#92a4c9]">Phase L3</span>
+<span class="text-white font-mono">230.4 V</span>
+</div>
+<div class="h-2 w-full rounded-full bg-[#111722]">
+<div class="h-full rounded-full bg-indigo-500 w-[78%]"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col rounded-xl bg-[#1c2534] border border-[#2a3649] overflow-hidden flex-1">
+<div class="flex items-center justify-between p-4 border-b border-[#2a3649]">
+<h3 class="text-white text-base font-bold">Derniers Événements</h3>
+<button class="text-primary text-xs font-bold uppercase tracking-wider hover:text-blue-400">Voir tout</button>
+</div>
+<div class="flex flex-col overflow-y-auto max-h-[300px]">
+<div class="flex gap-3 p-4 border-b border-[#2a3649] hover:bg-[#232f48] transition-colors cursor-pointer">
+<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+<span class="material-symbols-outlined text-lg">warning</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<p class="text-white text-sm font-medium">Surtension critique - Zone B</p>
+<p class="text-[#92a4c9] text-xs">Il y a 2 min • Serveur Rack 4</p>
+</div>
+</div>
+<div class="flex gap-3 p-4 border-b border-[#2a3649] hover:bg-[#232f48] transition-colors cursor-pointer">
+<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500/10 text-orange-500">
+<span class="material-symbols-outlined text-lg">info</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<p class="text-white text-sm font-medium">Facteur de puissance bas</p>
+<p class="text-[#92a4c9] text-xs">Il y a 15 min • Unité HVAC 2</p>
+</div>
+</div>
+<div class="flex gap-3 p-4 hover:bg-[#232f48] transition-colors cursor-pointer">
+<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/10 text-green-500">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<p class="text-white text-sm font-medium">Système de secours actif</p>
+<p class="text-[#92a4c9] text-xs">Il y a 1h • Générateur Aux</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col rounded-xl bg-[#1c2534] border border-[#2a3649] overflow-hidden">
+<div class="flex items-center justify-between p-6 border-b border-[#2a3649]">
+<h3 class="text-white text-lg font-bold">État des Équipements Critiques</h3>
+<div class="flex gap-2">
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#92a4c9] text-lg">search</span>
+<input class="h-9 w-64 rounded-lg border border-[#324467] bg-[#111722] pl-10 pr-4 text-sm text-white placeholder-[#92a4c9] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Rechercher..." type="text"/>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-[#1a2333] text-xs uppercase text-[#92a4c9]">
+<tr>
+<th class="px-6 py-4 font-medium">Nom de l'équipement</th>
+<th class="px-6 py-4 font-medium">Statut</th>
+<th class="px-6 py-4 font-medium">Consommation</th>
+<th class="px-6 py-4 font-medium">Charge %</th>
+<th class="px-6 py-4 font-medium">Dernier event</th>
+<th class="px-6 py-4 font-medium text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#2a3649] text-sm text-white">
+<tr class="hover:bg-[#232f48] transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded bg-blue-500/20 text-blue-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">ac_unit</span>
+</div>
+<span class="font-medium">Unité HVAC Centrale</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-500">
+                                            En ligne
+                                        </span>
+</td>
+<td class="px-6 py-4 font-mono">125.4 kW</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-8 text-right font-mono text-xs">85%</span>
+<div class="h-1.5 w-24 rounded-full bg-[#111722]">
+<div class="h-full rounded-full bg-yellow-500 w-[85%]"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-[#92a4c9]">Aucun</td>
+<td class="px-6 py-4 text-right">
+<button class="text-[#92a4c9] hover:text-white">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-[#232f48] transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded bg-purple-500/20 text-purple-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">dns</span>
+</div>
+<span class="font-medium">Serveur Rack Principal</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-500">
+                                            En ligne
+                                        </span>
+</td>
+<td class="px-6 py-4 font-mono">42.1 kW</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-8 text-right font-mono text-xs">45%</span>
+<div class="h-1.5 w-24 rounded-full bg-[#111722]">
+<div class="h-full rounded-full bg-green-500 w-[45%]"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-[#92a4c9]">Redémarrage planifié</td>
+<td class="px-6 py-4 text-right">
+<button class="text-[#92a4c9] hover:text-white">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-[#232f48] transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded bg-orange-500/20 text-orange-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">precision_manufacturing</span>
+</div>
+<span class="font-medium">Ligne de Production A</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-medium text-red-500">
+                                            Arrêt
+                                        </span>
+</td>
+<td class="px-6 py-4 font-mono">0.5 kW</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="w-8 text-right font-mono text-xs">1%</span>
+<div class="h-1.5 w-24 rounded-full bg-[#111722]">
+<div class="h-full rounded-full bg-gray-500 w-[1%]"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-[#92a4c9]">Maintenance requise</td>
+<td class="px-6 py-4 text-right">
+<button class="text-[#92a4c9] hover:text-white">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-[#2a3649] bg-[#1a2333]">
+<div class="flex items-center justify-between text-xs text-[#92a4c9]">
+<p>Affichage de 3 sur 12 équipements</p>
+<div class="flex gap-2">
+<button class="px-2 py-1 hover:text-white">Précédent</button>
+<button class="px-2 py-1 text-white font-bold">1</button>
+<button class="px-2 py-1 hover:text-white">2</button>
+<button class="px-2 py-1 hover:text-white">3</button>
+<button class="px-2 py-1 hover:text-white">Suivant</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
