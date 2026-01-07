@@ -1,103 +1,102 @@
 <template>
   <AdminLayout>
     <div class="w-full flex flex-col gap-6">
+      <!-- Compteur Selector Modal -->
+      <CompteurSelector
+        :is-open="showCompteurSelector"
+        :all-compteurs="allCompteurs"
+        :selected-ids="selectedCompteurIds"
+        @apply="handleCompteurSelection"
+        @close="showCompteurSelector = false"
+      />
+
       <!-- Breadcrumbs & Header -->
       <div class="flex flex-col gap-6">
-        <nav class="flex items-center text-sm font-medium text-text-muted">
-          <a class="hover:text-white transition-colors" href="#">Accueil</a>
-          <span class="mx-2 text-[#324467]">/</span>
-          <a class="hover:text-white transition-colors" href="#">Tableau de bord</a>
-          <span class="mx-2 text-[#324467]">/</span>
-          <span class="text-primary">Temps réel</span>
+        <nav class="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400">
+          <a class="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Accueil</a>
+          <span class="mx-2 text-slate-400 dark:text-slate-600">/</span>
+          <a class="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Tableau de bord</a>
+          <span class="mx-2 text-slate-400 dark:text-slate-600">/</span>
+          <span class="text-blue-600 dark:text-blue-400">Temps réel</span>
         </nav>
 
         <!-- Page title with status -->
-        <div class="flex flex-wrap justify-between items-end gap-4 border-b border-border-dark pb-6">
+        <div class="flex flex-wrap justify-between items-end gap-4 border-b border-slate-200 dark:border-border-dark pb-6">
           <div class="flex flex-col gap-2">
-            <h1 class="text-white text-3xl font-bold tracking-tight">Surveillance en temps réel</h1>
+            <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">Surveillance en temps réel</h1>
             <div class="flex items-center gap-3">
               <span :class="[
                 'flex h-2.5 w-2.5 rounded-full animate-pulse',
                 isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
               ]"></span>
-              <p class="text-text-muted text-sm font-mono">
+              <p class="text-slate-600 dark:text-slate-400 text-sm font-mono">
                 {{ isConnected ? 'Connecté - ' : 'Déconnecté - ' }}Dernière mise à jour: {{ lastUpdateTime }}
               </p>
             </div>
           </div>
-
-          <!-- Actions -->
-          <div class="flex gap-3">
-            <button class="flex h-9 items-center gap-2 rounded-lg border border-[#324467] bg-[#1c2534] px-4 text-sm font-medium text-white hover:bg-[#2a3649] transition-colors">
-              <span class="material-symbols-outlined text-lg">print</span>
-              Imprimer
-            </button>
-            <button @click="handleExport" :disabled="isExporting" class="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-bold text-white shadow-lg hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-              <span class="material-symbols-outlined text-lg">download</span>
-              <span v-if="!isExporting">Exporter les données</span>
-              <span v-else>Export en cours…</span>
-            </button>
-          </div>
         </div>
       </div>
 
-      <!-- Stats Grid (4 columns) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard
-          label="Puissance Actuelle"
-          :value="currentPower"
-          unit="kW"
-          icon="bolt"
-          :trend="2.1"
-        />
-        <StatCard
-          label="Tension Moyenne"
-          :value="dashboardStore.averageVoltage"
-          unit="V"
-          icon="electric_meter"
-          :trend="0.1"
-        />
-        <StatCard
-          label="Facteur de Puissance"
-          :value="metrics?.averagePowerFactor || 0.98"
-          unit=""
-          icon="pie_chart"
-          :trend="0"
-          :show-trend="false"
-        />
-        <StatCard
-          label="Fréquence"
-          :value="dashboardStore.averageFrequency"
-          unit="Hz"
-          icon="waves"
-          :trend="-0.01"
+      <!-- Compteur Selector Control -->
+      <div class="flex justify-end">
+        <button
+          @click="showCompteurSelector = true"
+          class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
+        >
+          <span class="material-symbols-outlined text-base">tune</span>
+          Gérer les compteurs
+        </button>
+      </div>
+
+      <!-- Compteur Widgets Grid (Dynamic, responsive) -->
+      <div :class="[
+        'grid gap-6',
+        gridLayoutClass
+      ]">
+        <div v-if="selectedCompteurs.length === 0" class="col-span-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#0f1419] p-12 text-center">
+          <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-5xl mb-4">
+            dashboard
+          </span>
+          <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">Aucun compteur sélectionné</p>
+          <p class="text-gray-600 dark:text-text-muted text-sm mb-6">Sélectionnez des compteurs pour afficher les données de consommation</p>
+          <button
+            @click="showCompteurSelector = true"
+            class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors shadow-lg"
+          >
+            <span class="material-symbols-outlined text-lg">add</span>
+            Ajouter des compteurs
+          </button>
+        </div>
+
+        <CompteurWidget
+          v-for="compteur in selectedCompteurs"
+          :key="compteur.id"
+          :compteur="compteur"
+          :current-mode="widgetModes[compteur.id]"
+          @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
         />
       </div>
 
-      <!-- Main Chart & Side Widgets -->
+      <!-- Unified Chart with Side Widgets -->
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <!-- Main Chart (2/3 width) -->
+        <!-- Unified Chart (Energy & Temperature) - Takes 2 columns on XL -->
         <div class="xl:col-span-2">
-          <ConsumptionChart
-            title="Consommation en Direct"
-            subtitle="Visualisation sur la dernière heure (60 mins)"
-            :current-value="`${currentPower.toFixed(1)} kW`"
-            peak-value="14:15"
-            :data="chartData"
-            :labels="chartLabels"
+          <UnifiedChart
+            :mode="chartMode"
+            :period="chartPeriod"
+            :subtitle="unifiedChartSubtitle"
+            :selected-compteurs="selectedCompteurs"
+            @update:mode="chartMode = $event"
+            @update:period="chartPeriod = $event"
           />
         </div>
 
-        <!-- Side Panel (1/3 width) -->
+        <!-- Side Widgets -->
         <div class="flex flex-col gap-6">
           <!-- Phase Balance Widget -->
           <PhaseBalance
             title="Équilibrage des phases"
-            :phases="[
-              { label: 'Phase L1', value: 230.1, unit: 'V', percentage: 75, color: 'bg-blue-500' },
-              { label: 'Phase L2', value: 229.8, unit: 'V', percentage: 72, color: 'bg-cyan-500' },
-              { label: 'Phase L3', value: 230.4, unit: 'V', percentage: 78, color: 'bg-indigo-500' }
-            ]"
+            :phases="phaseBalanceData"
           />
 
           <!-- Events Widget -->
@@ -109,11 +108,65 @@
         </div>
       </div>
 
-      <!-- Equipment Table -->
-      <EquipmentTable
-        title="État des Équipements Critiques"
-        :column-labels="['Nom de l\'équipement', 'Statut', 'Consommation', 'Charge %', 'Dernier event', 'Actions']"
-        :items="equipmentItems"
+      <!-- Equipment Status Table -->
+      <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">État des Équipements – Compteurs Sélectionnés</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+              <tr>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Compteur</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Type</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">État</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Valeur Actuelle</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Unité</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Dernière Mise à Jour</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+              <!-- Energy Compteurs -->
+              <tr v-for="compteur in selectedCompteurs" :key="compteur.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ compteur.name }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">Énergie</td>
+                <td class="px-6 py-3">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-200">
+                    En service
+                  </span>
+                </td>
+                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ compteur.instantaneous.toFixed(1) }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">kW</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">Just now</td>
+              </tr>
+              <!-- Temperature Zones -->
+              <tr v-for="zone in temperatureZones" :key="zone.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ zone.name }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">Température</td>
+                <td class="px-6 py-3">
+                  <span :class="[
+                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                    zone.status === 'Normal'
+                      ? 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-200'
+                      : 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200'
+                  ]">
+                    {{ zone.status }}
+                  </span>
+                </td>
+                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ zone.value.toFixed(1) }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">°C</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ zone.lastUpdate }}</td>
+              </tr>
+              <!-- Empty state -->
+              <tr v-if="selectedCompteurs.length === 0 && temperatureZones.length === 0">
+                <td colspan="6" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
+                  Sélectionnez des compteurs pour afficher les données
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       />
     </div>
   </AdminLayout>
@@ -122,17 +175,43 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import StatCard from '@/components/dashboard/StatCard.vue'
-import ConsumptionChart from '@/components/dashboard/ConsumptionChart.vue'
+import UnifiedChart from '@/components/dashboard/UnifiedChart.vue'
 import PhaseBalance from '@/components/dashboard/PhaseBalance.vue'
 import EventsWidget from '@/components/dashboard/EventsWidget.vue'
-import EquipmentTable from '@/components/dashboard/EquipmentTable.vue'
+import CompteurWidget from '@/components/dashboard/CompteurWidget.vue'
+import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { useRealtimeData } from '@/composables/useRealtimeData'
-import { historicalAPI } from '@/services/api'
+import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
+
+// ============================================================================
+// COMPOSABLES
+// ============================================================================
 
 const currentTime = ref(new Date())
+const chartMode = ref<'energy' | 'temperature'>('energy')
+const chartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('today')
+
 const { dashboardStore, equipmentStore, alertsStore, initializeRealtimeData, stopRealtimeData } =
   useRealtimeData()
+
+const {
+  selectedCompteurIds,
+  widgetModes,
+  showCompteurSelector,
+  selectedCompteurs,
+  availableCompteurs: allCompteurs,
+  aggregatedInstantaneous,
+  filteredEquipment,
+  selectionStatusText: compteurSelectionStatus,
+  setCompteurMode,
+  addCompteur,
+  removeCompteur,
+  initialize: initializeCompteurSelection,
+} = useCompteurSelection()
+
+// ============================================================================
+// COMPUTED PROPERTIES
+// ============================================================================
 
 const lastUpdateTime = computed(() => {
   const hours = currentTime.value.getHours().toString().padStart(2, '0')
@@ -144,28 +223,28 @@ const lastUpdateTime = computed(() => {
 
 const metrics = computed(() => dashboardStore.metrics)
 const isConnected = computed(() => dashboardStore.isConnected)
-const currentPower = computed(() => dashboardStore.currentPower)
 
-// Chart data generation
-const chartData = computed(() => {
-  const readings = dashboardStore.recentReadings
-  return readings.length > 0 ? readings.map((r) => r.power || 0).reverse() : [150, 145, 160, 140, 135, 150, 160]
+/**
+ * Energy chart data based on selected period
+ */
+/**
+ * Unified chart subtitle
+ */
+const unifiedChartSubtitle = computed(() => {
+  return `${selectedCompteurs.value.length} compteur(s) sélectionné(s)`
 })
 
-const chartLabels = computed(() => {
-  const readings = dashboardStore.recentReadings
-  if (readings.length > 0) {
-    return readings
-      .map((r) => {
-        const date = new Date(r.timestamp)
-        return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`
-      })
-      .reverse()
-  }
-  return ['13:30', '13:40', '13:50', '14:00', '14:10', '14:20', '14:30']
+/**
+ * Temperature zones data for equipment table
+ */
+const temperatureZones = computed(() => {
+  return [
+    { id: 'zone-6', name: 'Zone 6 (ZAP2 SLS)', value: 48.6, status: 'Normal', lastUpdate: 'Just now' },
+    { id: 'zone-4', name: 'Zone 4 (ZAP2 EM)', value: -17.2, status: 'Alerte', lastUpdate: '1 min ago' },
+    { id: 'zone-1', name: 'Zone 1 (ZAP 1&3)', value: 56.3, status: 'Normal', lastUpdate: 'Just now' }
+  ]
 })
 
-// Recent events from alerts - with proper type handling
 const recentEvents = computed(() => {
   return alertsStore.alerts.slice(0, 3).map((alert) => {
     const severityMap: Record<string, 'critical' | 'warning' | 'info' | 'success'> = {
@@ -194,7 +273,6 @@ const recentEvents = computed(() => {
   })
 })
 
-// Equipment items from store - with proper type handling
 interface EquipmentTableItem {
   name: string
   icon: string
@@ -205,7 +283,8 @@ interface EquipmentTableItem {
 }
 
 const equipmentItems = computed<EquipmentTableItem[]>(() => {
-  return equipmentStore.equipment.slice(0, 3).map((eq) => {
+  // Filter to show only equipment linked to selected compteurs
+  return filteredEquipment.value.map((eq) => {
     const statusMap: Record<string, 'En ligne' | 'Arrêt' | 'Maintenance'> = {
       Online: 'En ligne',
       Offline: 'Arrêt',
@@ -223,10 +302,66 @@ const equipmentItems = computed<EquipmentTableItem[]>(() => {
   })
 })
 
-// Update time every second
+/**
+ * Phase balance data based on selected compteurs aggregate
+ */
+const phaseBalanceData = computed(() => {
+  const total = aggregatedInstantaneous.value
+  // Simulate realistic phase distribution (33% each with slight variations)
+  const l1 = total * 0.35
+  const l2 = total * 0.32
+  const l3 = total * 0.33
+  const maxPhase = Math.max(l1, l2, l3)
+
+  return [
+    {
+      label: 'Phase L1',
+      value: 230.1,
+      unit: 'V',
+      percentage: Math.round((l1 / maxPhase) * 100),
+      color: 'bg-blue-500'
+    },
+    {
+      label: 'Phase L2',
+      value: 229.8,
+      unit: 'V',
+      percentage: Math.round((l2 / maxPhase) * 100),
+      color: 'bg-cyan-500'
+    },
+    {
+      label: 'Phase L3',
+      value: 230.4,
+      unit: 'V',
+      percentage: Math.round((l3 / maxPhase) * 100),
+      color: 'bg-indigo-500'
+    }
+  ]
+})
+
+/**
+ * Responsive grid layout based on selected compteur count
+ */
+const gridLayoutClass = computed(() => {
+  const count = selectedCompteurs.value.length
+
+  if (count === 0) return 'grid-cols-1'
+  if (count === 1) return 'grid-cols-1 md:grid-cols-1'
+  if (count === 2) return 'grid-cols-1 md:grid-cols-2'
+  if (count === 3) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+  // 4 or more: full responsive layout
+  return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+})
+
+// ============================================================================
+// LIFECYCLE HOOKS
+// ============================================================================
+
 let timeInterval: number | null = null
 
 onMounted(async () => {
+  // Initialize compteur selection
+  initializeCompteurSelection()
+
   // Start real-time data updates
   try {
     await initializeRealtimeData()
@@ -250,31 +385,35 @@ onUnmounted(() => {
   }
 })
 
-// Exporter les données
-const isExporting = ref(false)
-async function handleExport() {
-  if (isExporting.value) return
-  isExporting.value = true
-  try {
-    const to = new Date()
-    const from = new Date(to.getTime() - 24 * 60 * 60 * 1000) // last 24h
-    const blob = await historicalAPI.exportData({
-      from: from.toISOString(),
-      to: to.toISOString(),
-      format: 'csv',
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'export-donnees.csv'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  } catch (e) {
-    console.error('Export failed:', e)
-  } finally {
-    isExporting.value = false
-  }
+// ============================================================================
+// EVENT HANDLERS
+// ============================================================================
+
+/**
+ * Handle compteur selection from modal
+ */
+function handleCompteurSelection(selectedIds: string[]) {
+  // Clear existing selections
+  selectedCompteurIds.value.forEach((id) => {
+    if (!selectedIds.includes(id)) {
+      removeCompteur(id)
+    }
+  })
+
+  // Add new selections
+  selectedIds.forEach((id) => {
+    if (!selectedCompteurIds.value.includes(id)) {
+      addCompteur(id)
+    }
+  })
+
+  showCompteurSelector.value = false
+}
+
+/**
+ * Set widget mode for a specific compteur
+ */
+function setWidgetMode(compteurId: string, mode: CompteurMode) {
+  setCompteurMode(compteurId, mode)
 }
 </script>

@@ -3,6 +3,88 @@ import { ref, computed } from 'vue'
 import type { DashboardMetrics, EnergyReading } from '../types'
 import { realtimeAPI } from '../services/api'
 
+// Mock compteur data (to be replaced with API)
+interface Compteur {
+  id: string
+  name: string
+  category: 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'
+  subtitle: string
+  color: 'red' | 'green' | 'blue' | 'yellow'
+  instantaneous: number // kW
+  today: number // kWh
+  yesterday: number // kWh
+  linkedEquipment: string[]
+}
+
+const mockCompteurs: Compteur[] = [
+  {
+    id: 'compteur-1',
+    name: 'TGBT',
+    category: 'TGBT',
+    subtitle: 'PM2200-TGBT-Indusmind',
+    color: 'red',
+    instantaneous: 6479.5,
+    today: 6366,
+    yesterday: 0,
+    linkedEquipment: ['eq-1', 'eq-2', 'eq-3']
+  },
+  {
+    id: 'compteur-2',
+    name: 'Compresseurs',
+    category: 'Compresseurs',
+    subtitle: 'Compresseurs industriels',
+    color: 'green',
+    instantaneous: 4605,
+    today: 4085.2,
+    yesterday: 0,
+    linkedEquipment: ['eq-4', 'eq-5']
+  },
+  {
+    id: 'compteur-3',
+    name: 'Clim',
+    category: 'Clim',
+    subtitle: 'Climatisation générale',
+    color: 'blue',
+    instantaneous: 3785.5,
+    today: 2134.5,
+    yesterday: 0,
+    linkedEquipment: ['eq-6', 'eq-7']
+  },
+  {
+    id: 'compteur-4',
+    name: 'Éclairage',
+    category: 'Éclairage',
+    subtitle: 'Éclairage général',
+    color: 'yellow',
+    instantaneous: 3387.8,
+    today: 3039.6,
+    yesterday: 0,
+    linkedEquipment: ['eq-8']
+  },
+  {
+    id: 'compteur-5',
+    name: 'Compresseur Zone 2',
+    category: 'Compresseurs',
+    subtitle: 'Compresseur secondaire',
+    color: 'green',
+    instantaneous: 2156.3,
+    today: 1876.4,
+    yesterday: 0,
+    linkedEquipment: ['eq-9']
+  },
+  {
+    id: 'compteur-6',
+    name: 'Clim Bureau',
+    category: 'Clim',
+    subtitle: 'Climatisation bureaux',
+    color: 'blue',
+    instantaneous: 1245.7,
+    today: 987.3,
+    yesterday: 0,
+    linkedEquipment: ['eq-10', 'eq-11']
+  },
+]
+
 export const useDashboardStore = defineStore('dashboard', () => {
   // State
   const metrics = ref<DashboardMetrics | null>(null)
@@ -12,6 +94,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const autoRefreshInterval = ref<number | null>(null)
+  const compteurs = ref<Compteur[]>(mockCompteurs)
   let unsubscribeRealtimeUpdates: (() => void) | null = null
 
   // Computed
@@ -200,6 +283,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     lastUpdate,
     loading,
     error,
+    compteurs,
     // Computed
     isHealthy,
     hasAlerts,

@@ -89,134 +89,293 @@ Each view follows the **A-E structure**:
 **Layout:** AdminLayout (sidebar + topbar)
 
 **Sections:**
+
 1. **Breadcrumb Navigation**
-   - Accueil / Tableau de bord / Temps réel
+   - Accueil / Tableau de bord
    - French localization applied
 
-2. **Page Header**
-   - Title: "Surveillance en temps réel"
-   - Live connection status indicator (green pulse = connected, red = disconnected)
-   - Last update timestamp (real-time, format: `dd/mm/yyyy, HH:MM:SS`)
-   - Action buttons:
-     - Print (secondary)
-     - Export (primary, blue)
+2. **Page Header with Compteur Selection**
+   - **Title:** "Surveillance en temps réel"
+   - **Live Connection Indicator:** Pulsing green (connected) / red (disconnected)
+   - **Last Update Timestamp:** Real-time format `dd/mm/yyyy, HH:MM:SS`
+   - **Compteur Selection UI:** *(MODIFIED - This is the key change)*
+     - Default display: 4 active compteur widgets (user-configurable)
+     - CTA: "+ Sélectionner des compteurs" (Select Compteurs) button to add/remove compteurs
+     - Selected compteur count display (e.g., "4 of 12 compteurs sélectionnés")
+   - **Action Buttons:**
+     - Imprimer (Print, secondary)
+     - Exporter les données (Export, primary blue)
 
-3. **Stats Grid** (4 columns, responsive)
-   - StatCard × 4:
-     - Puissance Actuelle (kW) with trend (+2.1%)
-     - Tension Moyenne (V) with trend (+0.1%)
-     - Facteur de Puissance (no trend)
-     - Fréquence (Hz) with trend (-0.01%)
+3. **Compteur Widgets Grid** *(MODIFIED - This is the core change)*
+   - **Widget Model:** Per-widget, independent configuration
+   - **Layout:** 1-4 columns responsive (mobile: 1 col, tablet: 2 cols, desktop: 4 cols)
+   - **Widget Count:** Configurable (default 4), no fixed limit
+   - **Each Widget Structure:**
+     ```
+     ┌─────────────────────────────┐
+     │ [Compteur Name] Sélecteur ▼ │ (choose different compteur)
+     ├─────────────────────────────┤
+     │ [Mode Tabs (Per Widget)]     │ (Independent for each widget)
+     │ Instantanée | Jour | Hier   │
+     ├─────────────────────────────┤
+     │ [Current Value + Metric]     │
+     │ e.g., "12.5 kW"              │
+     │ (Real-time updated)          │
+     └─────────────────────────────┘
+     ```
+   - **Widget Modes (Per Widget, Independent):**
+     - **Instantanée:** Current instantaneous consumption (real-time, 5s refresh)
+     - **Jour:** Today's cumulative consumption (updates every 5 mins)
+     - **Hier:** Yesterday's total consumption (static, non-updating)
+   - **Widget Data:**
+     - Compteur name (e.g., "Compteur Principal", "Compteur Bureaux")
+     - Current value in selected mode (kWh or kW)
+     - Unit label (kW for instantaneous, kWh for daily)
+     - Optional: Small sparkline showing trend (last 10 readings, optional visualization)
 
-4. **Main Content Grid** (2/3 + 1/3 split on XL)
-   - **Left Panel (2/3):**
-     - ConsumptionChart:
-       - Title: "Consommation en Direct"
-       - Subtitle: "Visualisation sur la dernière heure (60 mins)"
-       - Current value display
-       - Peak time indicator
-       - Time range tabs (15m, 1h, 24h, 7j)
-   - **Right Panel (1/3):**
-     - PhaseBalance widget:
-       - 3 phases (L1, L2, L3)
-       - Voltage readings with percentage bars
-       - Color-coded (blue, cyan, indigo)
-     - EventsWidget:
-       - Last 3 events
-       - Severity indicators
-       - "Voir tout" link
+4. **Main Aggregated View**
+   - **Title:** "Vue Agrégée - Compteurs Sélectionnés"
+   - **Aggregation Logic:** Sums all selected compteurs' current values
+   - **Display:**
+     ```
+     ┌──────────────────────────────────────┐
+     │ Consommation Totale (Agrégée)        │
+     │ [Sum of all selected widget values]   │
+     │ e.g., "52.3 kW"                      │
+     │ (Real-time updated)                  │
+     └──────────────────────────────────────┘
+     ```
 
-5. **Equipment Table**
-   - Title: "État des Équipements Critiques"
-   - Columns: Nom, Statut, Consommation, Charge %, Dernier event, Actions
-   - Searchable, paginated
-   - Status badges (online/offline)
+5. **Charts & Aggregated Visualizations** *(MODIFIED - Now reflects selected compteurs)*
+   - **ConsumptionChart (Left Panel, 2/3 width):**
+     - Title: "Consommation Agrégée en Direct"
+     - Subtitle: "Sommation de tous les compteurs sélectionnés"
+     - Current aggregated value display
+     - Time range tabs: (1h / 24h / 7d / 30d)
+       - ⚠️ **NOTE:** Only 1h is currently functional; others deferred to Phase 2
+     - Chart shows sum of selected compteurs' power readings over time
+     - Real-time line chart (updates every 5 seconds)
+
+   - **PhaseBalance Widget (Right Panel, 1/3 width):**
+     - **Title:** "Équilibrage des Phases"
+     - **Phases Displayed:** L1, L2, L3 (voltage readings, aggregated from all selected equipment)
+     - **Per Phase:**
+       - Voltage value (V, e.g., "230.1")
+       - Percentage bar showing load balance (0-100%)
+       - Color coding: Blue (L1), Cyan (L2), Indigo (L3)
+       - ⚠️ **NOTE:** Phase balance represents equipment distribution, not compteur-level phase data
+     - **Display Format:**
+       ```
+       Phase L1: 230.1 V ▓▓▓▓▓▓▓▓░ 75%
+       Phase L2: 229.8 V ▓▓▓▓▓▓░░░ 72%
+       Phase L3: 230.4 V ▓▓▓▓▓▓▓░░ 78%
+       ```
+
+   - **EventsWidget (Right Panel, 1/3 width):**
+     - **Title:** "Derniers Événements"
+     - **Content:** Last 3 alerts/events (system-wide, not filtered by selected compteurs)
+     - **Per Event Display:**
+       - Message (alert description)
+       - Severity indicator (color + icon: Critical/High/Medium/Low/Informational)
+       - Time since event (e.g., "il y a 5 min")
+       - Associated compteur/equipment reference
+     - **CTA:** "Voir tout" link → navigates to `/alerts`
+
+6. **Equipment State Table** *(MODIFIED - Now reflects selected compteurs)*
+   - **Title:** "État des Équipements - Compteurs Sélectionnés"
+   - **Table Visibility:** Only show equipment linked to selected compteurs
+   - **Columns:**
+     - Nom de l'équipement (equipment name)
+     - Statut (On/Off/Fault) - color-coded badge
+     - Consommation Actuelle (kW, real-time)
+     - Charge % (load percentage, 0-100%)
+     - Dernier Événement (last alert/event timestamp or "Aucun")
+     - Actions (dropdown menu or "Navigate to Detail" CTA)
+   - **Behavior:**
+     - Clicking a row → navigates to Equipment Detail view for that equipment
+     - Real-time updates (5s refresh for consumption/load %)
+   - **Empty State:** If no equipment linked to selected compteurs: "Aucun équipement pour les compteurs sélectionnés"
 
 ### C. Functional Intent
 
-**Primary Purpose:** Real-time situational awareness for energy operators
+**Primary Purpose:** Real-time aggregated energy monitoring across multiple compteurs with user-configurable widget selection
 
 **User Workflows:**
-1. **Monitor Current State**
-   - Glance at 4 key metrics (power, voltage, PF, frequency)
-   - Check connection status (live indicator)
-   - Review consumption trend (chart)
 
-2. **Identify Anomalies**
-   - Phase imbalance detection (voltage bars)
-   - Recent events/alerts widget
-   - Equipment status table
+**Workflow 1: Initialize Dashboard**
+- User lands on `/dashboard`
+- System loads: Last saved compteur selection (or default: first 4 available compteurs)
+- Dashboard displays 4 widgets + aggregated chart + equipment table
+- All real-time data streams initialize (WebSocket connection)
 
-3. **Export Data**
-   - Click "Exporter les données" button
-   - Downloads CSV with timestamp
-   - Includes all current metrics + historical data (24h)
-   - Loading state: "Export en cours…"
+**Workflow 2: Customize Widget Selection**
+- User clicks "+ Sélectionner des compteurs" button
+- Modal/Panel opens showing:
+  - List of all available compteurs (checkboxes, currently selected marked)
+  - Applied filter (e.g., "12 compteurs available")
+- User selects/deselects compteurs
+- Saves selection → localStorage (persistence)
+- Dashboard re-renders with new widget set + updated aggregations
 
-4. **Print Report**
-   - Click "Imprimer" for browser print dialog
-   - Formatted for A4 landscape
+**Workflow 3: Monitor Real-Time Data**
+- User glances at 4 widget cards, each showing current value in selected mode
+- Each widget can independently switch mode (Instantanée/Jour/Hier)
+- Example: Widget 1 in "Instantanée" (12.5 kW), Widget 2 in "Jour" (145 kWh), Widget 3 in "Hier" (142 kWh)
+- Aggregated view sums instantanée values only (mode-aware aggregation)
+- Equipment table updates in real-time with current load %
+
+**Workflow 4: Analyze Consumption Trends**
+- User clicks time range tab on aggregated chart (1h / 24h / 7d / 30d)
+- Chart updates to show selected time window
+- Combines consumption history from all selected compteurs
+- ⚠️ **Note:** Only 1h tab functional; others deferred to Phase 2
+
+**Workflow 5: Identify Equipment Issues**
+- User scans equipment table for "Fault" status
+- Clicks row → navigates to Equipment Detail view
+- Or clicks "Derniers Événements" → "Voir tout" → navigates to `/alerts`
+
+**Workflow 6: Export Data**
+- User clicks "Exporter les données" button
+- CSV export includes:
+  - Timestamp of export
+  - All selected compteur names + current values (instantanée mode)
+  - Aggregated sum
+  - Equipment table snapshot
+  - Last 24h of consumption data (if available)
+- Browser downloads `export-donnees-[timestamp].csv`
+- State: "Export en cours…" (loading state during download)
+
+**Workflow 7: Print Dashboard**
+- User clicks "Imprimer" button
+- Browser print dialog opens (default behavior)
+- Prints: Widgets + chart + equipment table in A4 landscape orientation
+- *(Future: Custom PDF template in Phase 2)*
 
 **Actions Available:**
-- Export data (CSV download via Blob API)
+- Select/deselect compteurs (persistence via localStorage)
+- Switch widget mode (independent per widget)
+- Click time range tabs on aggregated chart
+- Export to CSV (current state + 24h history)
 - Print dashboard snapshot
-- Navigate to equipment details (table rows clickable - planned)
-- View all alerts (EventsWidget link)
+- Click equipment row → navigate to Equipment Detail
+- Click "Voir tout" on events → navigate to `/alerts`
 
 ### D. Data & Logic Assumptions
 
+**Data Model: Compteurs**
+- Compteur = meter/counter (energy measurement device)
+- Each compteur has:
+  - `id`: unique identifier
+  - `name`: display name (e.g., "Compteur Principal")
+  - `currentInstantaneous`: kW (real-time, updated every 5s)
+  - `consumptionToday`: kWh (today's cumulative)
+  - `consumptionYesterday`: kWh (yesterday's total)
+  - `linkedEquipment[]`: array of equipment IDs associated with this compteur
+- **Assumption:** Each compteur can have multiple equipment items linked to it
+
 **Stores Used:**
-- `useDashboardStore`: Real-time metrics, connection status, chart data
-- `useEquipmentStore`: Equipment list, status, readings
-- `useAlertsStore`: Recent events
+- `useDashboardStore`: 
+  - `selectedCompteurs`: Array of selected compteur IDs (from localStorage)
+  - `compteurs`: Array of all available compteur objects
+  - `aggregatedPower`: Sum of selected compteurs' instantaneous values
+  - `recentReadings`: Time-series data for chart
+  - `isConnected`: WebSocket connection state
+- `useEquipmentStore`: Equipment list, filtered by selected compteurs
+- `useAlertsStore`: Recent events (system-wide, not filtered)
 
 **Composables:**
-- `useRealtimeData()`: Orchestrates real-time updates, manages WebSocket lifecycle
+- `useRealtimeData()`: Orchestrates WebSocket subscriptions and real-time updates
+- `useCompteurSelection()`: *(NEW)* Manages compteur selection, persistence, aggregation logic
 
 **API Calls:**
-- `realtimeAPI.getCurrentMetrics()` - Every 15s
-- `historicalAPI.getConsumption()` - On export
-- WebSocket subscription: `dashboard:site_a` channel
+- `realtimeAPI.getCompteurs()` - On mount (list all available compteurs)
+- `realtimeAPI.getCompteurValues()` - Every 5s per selected compteur (instantaneous + daily)
+- `historicalAPI.getConsumptionByCompteur(compteurId, timeRange)` - On chart time range change
+- `equipmentAPI.getEquipmentByCompteurs(compteurIds)` - Filter table by selected compteurs
+- WebSocket subscription: `dashboard:site_a` channel (real-time updates for selected compteurs)
 
 **Computed Properties:**
-- `currentPower` - From dashboardStore.currentPower
-- `averageVoltage` - From dashboardStore.averageVoltage
-- `averageFrequency` - From dashboardStore.averageFrequency
-- `isConnected` - WebSocket connection state
-- `lastUpdateTime` - Formatted current time (French locale)
-- `chartData` - Last 10 readings from store
-- `chartLabels` - Timestamps for X-axis
+- `selectedCompteurs` - Filtered list of user-selected compteur objects
+- `aggregatedInstantaneous` - Sum of all selected compteurs' current kW values
+- `aggregatedToday` - Sum of all selected compteurs' kWh today
+- `aggregatedYesterday` - Sum of all selected compteurs' kWh yesterday
+- `filteredEquipment` - Equipment list filtered to those linked to selected compteurs
+- `chartDataAggregated` - Time-series sum of selected compteurs
+- `isConnected` - WebSocket connection state (boolean)
+- `lastUpdateTime` - Current time formatted as `dd/mm/yyyy, HH:MM:SS` (French locale)
+- `recentEvents` - Last 3 alerts from useAlertsStore (system-wide)
+
+**Local State:**
+- `selectedCompteurs`: Array<string> (compteur IDs), persisted to localStorage
+- `widgetModes`: Object mapping compteurId → "instantanée" | "jour" | "hier"
+- `isExporting`: Boolean (prevents double-click on export button)
+- `showCompteurSelector`: Boolean (modal/panel visibility)
 
 **State Management:**
-- Real-time data refresh: 15-second interval (`setInterval`)
-- Clock update: 1-second interval for timestamp
-- Export state: `isExporting` boolean (prevents double-clicks)
+- Real-time data refresh: 5-second interval for compteur values (WebSocket + polling fallback)
+- Clock update: 1-second interval for lastUpdateTime display
+- Export state: `isExporting` boolean (loading indicator)
+- Compteur selection persistence: localStorage key `dashboard_selected_compteurs`
+
+**Mode Aggregation Logic:**
+- When aggregating across multiple compteurs with mixed modes (Widget 1 "instantanée", Widget 2 "jour"):
+  - **Primary aggregation:** Use instantanée mode for real-time aggregated sum (most common use case)
+  - **Alternative:** Provide separate aggregations for each mode (optional advanced view)
 
 **Mock Data:** Enabled in development (`MOCK_DATA_ENABLED = true`)
+- Simulates 12 compteurs with realistic names
+- Generates time-series data for chart
+- Updates every 5 seconds
 
 ### E. Gaps & Observations
 
-**Completed:**
+#### What Changed from Previous Spec
+
+| Item | Previous | Updated | Why |
+|------|----------|---------|-----|
+| **Dashboard Scope** | Single-site aggregation | Multi-compteur aggregation | FR1 clarification: Dashboard aggregates multiple meters |
+| **Widget Model** | Fixed 4 stat cards (KPIs) | Dynamic 4 compteur widgets (user-configurable) | Compteurs are what users care about, not generic KPIs |
+| **Mode Switching** | Global (all charts) | Per-widget, independent | FR1: "Each widget allows switching between modes" |
+| **Aggregation** | Implicit (all equipment) | Explicit (only selected compteurs) | Reduces noise, allows focused monitoring |
+| **Widget Interactions** | Static cards | Compteur selector, mode tabs, navigation | Enable user control without redesign |
+| **Equipment Table** | Show all equipment | Filter to selected compteurs | Content relevance improvement |
+| **Events Widget** | Filtered by equipment | System-wide alerts | Informational; comprehensive view |
+| **Time Range Tabs** | 4 tabs (1h/24h/7d/30d) | Same 4 tabs, but only 1h functional (defer rest) | Phased implementation; 1h sufficient for MVP |
+
+#### Completed Features
 - ✅ French localization applied
 - ✅ Export button functional with loading states
-- ✅ Real-time data flow working (mock)
+- ✅ Real-time data flow working (mock WebSocket)
 - ✅ Dark mode support via Tailwind classes
 - ✅ Responsive grid layout (mobile, tablet, desktop)
+- ✅ Live connection status indicator
+- ✅ Equipment table with status badges
+- ✅ Phase balance visualization
+- ✅ Recent events widget
 
-**Implementation Gaps:**
-- ⚠️ Equipment table row click navigation not wired (placeholder comment in code)
-- ⚠️ Print function uses browser default (no custom PDF template)
-- ⚠️ Chart time range tabs visible but not functional (only 1h data shown)
+#### Implementation Gaps *(Must Close Before Phase 7 Validation)*
+- ❌ **Compteur selection UI** - Modal/panel component needs implementation
+- ❌ **localStorage persistence** - Selected compteur IDs not yet persisted
+- ❌ **Mode switching per widget** - Currently not wired (stat cards exist but mode tabs missing)
+- ❌ **Aggregation logic** - Needs `useCompteurSelection()` composable
+- ❌ **Widget configuration model** - Need data structure for per-widget modes
+- ❌ **Equipment table filtering** - Currently shows all, needs to filter by selected compteurs
 
-**Validation Needs:**
-- WebSocket reconnection logic under network interruption (needs integration test)
-- Export CSV format validation against ISO 50001 compliance requirements
-- Phase balance thresholds (when does imbalance trigger alert?)
+#### Validation Needs *(Phase 7 Testing)*
+- WebSocket reconnection under network interruption (integration test)
+- Real-time sync across multiple widgets (lag/consistency test)
+- localStorage persistence across browser sessions (functional test)
+- CSV export format validation against ISO 50001 requirements
+- Phase balance threshold detection (when does imbalance trigger warning?)
+- Mode aggregation accuracy (sum of modes must be mathematically correct)
 
-**Risks:**
-- **Performance:** Chart re-renders on every 15s update - may cause lag with large datasets
-- **Accessibility:** Pulsing connection indicator may not meet WCAG 2.1 AA (motion sensitivity)
-- **i18n:** Hardcoded French text - English/Arabic translations not implemented (FR79 planned Sprint 8)
+#### Risks
+- **Performance:** Real-time updates for 10+ widgets may cause re-renders; needs optimization (Chart.js `.update()` method)
+- **Accessibility:** Pulsing connection indicator may fail WCAG 2.1 AA (motion sensitivity); add skip option
+- **Localization:** French-only for MVP; English/Arabic deferred to Sprint 8 (FR79)
+- **Data Consistency:** Widget mode state must sync with store (avoid desync bugs)
+- **UX Clarity:** Users may be confused if aggregated sum doesn't match expected value (need clear labeling)
 
 ---
 

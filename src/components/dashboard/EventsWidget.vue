@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-[#2a3649]">
       <h3 class="text-gray-900 dark:text-white text-base font-bold">{{ title }}</h3>
-      <button class="text-primary text-xs font-bold uppercase tracking-wider hover:text-blue-400 transition-colors">
+      <button class="text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
         {{ actionLabel }}
       </button>
     </div>
