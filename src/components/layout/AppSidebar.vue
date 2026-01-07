@@ -17,23 +17,14 @@
       :class="['pt-8 pb-7 flex', !isExpanded && !isHovered ? 'xl:justify-center' : 'justify-start']"
     >
       <router-link to="/">
-        <img
-          v-if="isExpanded || isHovered || isMobileOpen"
-          class="dark:hidden"
-          src="/images/logo/logo.svg"
-          alt="Logo"
-          width="150"
-          height="40"
-        />
-        <img
-          v-if="isExpanded || isHovered || isMobileOpen"
-          class="hidden dark:block"
-          src="/images/logo/logo-dark.svg"
-          alt="Logo"
-          width="150"
-          height="40"
-        />
-        <img v-else src="/images/logo/logo-icon.svg" alt="Logo" width="32" height="32" />
+        <div v-if="isExpanded || isHovered || isMobileOpen" class="flex items-center gap-2 w-full pr-2">
+          <img class="h-8 w-8 flex-shrink-0 object-contain" src="/images/logo/Indusmind_logo.png" alt="IndusMind Energy" />
+          <div class="flex items-baseline gap-1 min-w-0">
+            <span class="text-[16px] leading-none font-bold tracking-tight text-gray-900 dark:text-white truncate">IndusMind</span>
+            <span class="text-[11px] leading-none font-semibold uppercase text-primary-600 dark:text-primary-400 truncate">Energy</span>
+          </div>
+        </div>
+        <img v-else class="h-8 w-8 object-contain" src="/images/logo/Indusmind_logo.png" alt="IndusMind Energy" />
       </router-link>
     </div>
     <div class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
@@ -218,6 +209,9 @@ import {
   MoreDots,
   BotIcon,
   CallIcon,
+  BellIcon,
+  BarChartIcon,
+  BoxIcon,
 } from '../../icons'
 import SidebarWidget from './SidebarWidget.vue'
 import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
@@ -229,179 +223,128 @@ const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar()
 
 const menuGroups = [
   {
-    title: 'Menu',
+    title: 'Monitoring',
     items: [
       {
         icon: GridIcon,
         name: 'Dashboard',
-        subItems: [
-          { name: 'Ecommerce', path: '/' },
-          { name: 'Analytics', path: '/analytics' },
-          { name: 'Marketing', path: '/marketing' },
-          { name: 'CRM', path: '/crm' },
-          { name: 'Stocks', path: '/stocks' },
-          { name: 'SaaS', path: '/saas', new: true },
-          { name: 'Logistics', path: '/logistics', new: true },
-        ],
-      },
-      {
-        icon: BotIcon,
-        name: 'AI Assistant',
-        new: true,
-        subItems: [
-          { name: 'Text Generator', path: '/text-generator' },
-          { name: 'Image Generator', path: '/image-generator' },
-          { name: 'Code Generator', path: '/code-generator' },
-          { name: 'Video Generator', path: '/video-generator' },
-        ],
-      },
-      {
-        icon: CartIcon,
-        name: 'E-commerce',
-        new: true,
-        subItems: [
-          { name: 'Products', path: '/products' },
-          { name: 'Add Product', path: '/add-product' },
-          { name: 'Billing', path: '/billing' },
-          { name: 'Invoices', path: '/invoices' },
-          { name: 'Single Invoice', path: '/single-invoice' },
-          { name: 'Create Invoice', path: '/create-invoice' },
-          { name: 'Transactions', path: '/transactions' },
-          { name: 'Single Transaction', path: '/single-transaction' },
-        ],
-      },
-      {
-        icon: CalenderIcon,
-        name: 'Calendar',
-        path: '/calendar',
-      },
-      {
-        icon: UserCircleIcon,
-        name: 'User Profile',
-        path: '/profile',
-      },
-      {
-        name: 'Task',
-        icon: TaskIcon,
-        subItems: [
-          { name: 'List', path: '/task-list', pro: true },
-          { name: 'Kanban', path: '/task-kanban', pro: true },
-        ],
-      },
-      {
-        name: 'Forms',
-        icon: ListIcon,
-        subItems: [
-          { name: 'Form Elements', path: '/form-elements', pro: false },
-          { name: 'Form Layout', path: '/form-layout', pro: true },
-        ],
-      },
-      {
-        name: 'Tables',
-        icon: TableIcon,
-        subItems: [
-          { name: 'Basic Tables', path: '/basic-tables', pro: true },
-          { name: 'Data Tables', path: '/data-tables', pro: true },
-        ],
-      },
-      {
-        name: 'Pages',
-        icon: PageIcon,
-        subItems: [
-          { name: 'File Manager', path: '/file-manager' },
-          { name: 'Pricing Tables', path: '/pricing-tables' },
-          { name: 'FAQ', path: '/faq' },
-          { name: 'Black Page', path: '/blank', pro: false },
-          { name: 'API Keys', path: '/api-keys', new: true },
-          { name: 'Integrations', path: '/integrations', new: true },
-          { name: '404 Page', path: '/error-404', pro: false },
-          { name: '500 Page', path: '/error-500', pro: false },
-          { name: '503 Page', path: '/error-503', pro: false },
-          { name: 'Coming Soon', path: '/coming-soon', pro: false },
-          { name: 'Maintenance', path: '/maintenance', pro: false },
-          { name: 'Success', path: '/success', pro: false },
-        ],
+        path: '/dashboard',
       },
     ],
   },
   {
-    title: 'Support',
+    title: 'Consumption',
     items: [
       {
-        icon: ChatIcon,
-        name: 'Chat',
-        path: '/chat',
+        icon: CartIcon,
+        name: 'Consumption',
+        path: '/consumption',
       },
       {
-        icon: MailIcon,
-        name: 'Email',
-        subItems: [
-          { name: 'Inbox', path: '/inbox', pro: true },
-          { name: 'Details', path: '/inbox-details', pro: true },
-        ],
+        icon: PieChartIcon,
+        name: 'Base Load',
+        path: '/base-load',
       },
       {
-        icon: CallIcon,
-        name: 'Support Ticket',
-        new: true,
-        subItems: [
-          { name: 'Ticket List', path: '/ticket-list' },
-          { name: 'Ticket Reply', path: '/ticket-reply' },
-        ],
+        icon: BarChartIcon,
+        name: 'Peak Demand',
+        path: '/peak-demand',
       },
     ],
   },
   {
-    title: 'Others',
+    title: 'Analysis',
     items: [
       {
         icon: PieChartIcon,
-        name: 'Charts',
-        subItems: [
-          { name: 'Line Chart', path: '/line-chart', pro: true },
-          { name: 'Bar Chart', path: '/bar-chart', pro: true },
-          { name: 'Doughnut Chart', path: '/doughnut-chart', pro: true },
-        ],
+        name: 'Analysis',
+        path: '/analysis',
       },
       {
-        icon: BoxCubeIcon,
-        name: 'UI Elements',
-        subItems: [
-          { name: 'Alerts', path: '/alerts', pro: false },
-          { name: 'Avatars', path: '/avatars', pro: false },
-          { name: 'Badge', path: '/badge', pro: false },
-          { name: 'Breadcrumb', path: '/breadcrumb', pro: true },
-          { name: 'Buttons', path: '/buttons', pro: false },
-          { name: 'Buttons Group', path: '/buttons-group', pro: true },
-          { name: 'Cards', path: '/cards', pro: true },
-          { name: 'Carousel', path: '/carousel', pro: true },
-          { name: 'Dropdowns', path: '/dropdowns', pro: true },
-          { name: 'Images', path: '/images', pro: false },
-          { name: 'Links', path: '/links', pro: true },
-          { name: 'List', path: '/list', pro: true },
-          { name: 'Modals', path: '/modals', pro: true },
-          { name: 'Notifications', path: '/notifications', pro: true },
-          { name: 'Pagination', path: '/pagination', pro: true },
-          { name: 'Popovers', path: '/popovers', pro: true },
-          { name: 'Progress Bars', path: '/progress-bar', pro: true },
-          { name: 'Ribbons', path: '/ribbons', pro: true },
-          { name: 'Spinners', path: '/spinners', pro: true },
-          { name: 'Tabs', path: '/tabs', pro: true },
-          { name: 'Tooltips', path: '/tooltips', pro: true },
-          { name: 'Videos', path: '/videos', pro: false },
-        ],
+        icon: CartIcon,
+        name: 'Cost Analysis',
+        path: '/cost-analysis',
       },
       {
-        icon: PlugInIcon,
-        name: 'Authentication',
-        subItems: [
-          { name: 'Sign In', path: '/signin', pro: false },
-          { name: 'Sign Up', path: '/signup', pro: false },
-          { name: 'Reset Password', path: '/reset-password', pro: true },
-          { name: 'Two Step Verification', path: '/two-step-verification', pro: true },
-        ],
+        icon: BarChartIcon,
+        name: 'Comparison',
+        path: '/comparison',
       },
-      // ... Add other menu items here
+    ],
+  },
+  {
+    title: 'Reports',
+    items: [
+      {
+        icon: PageIcon,
+        name: 'Reports',
+        path: '/reports',
+      },
+      {
+        icon: CalenderIcon,
+        name: 'History',
+        path: '/history',
+      },
+    ],
+  },
+  {
+    title: 'Alerts',
+    items: [
+      {
+        icon: BellIcon,
+        name: 'Alerts',
+        path: '/alerts',
+      },
+      {
+        icon: TaskIcon,
+        name: 'Alert Rules',
+        path: '/alert-config',
+      },
+    ],
+  },
+  {
+    title: 'Performance',
+    items: [
+      {
+        icon: BarChartIcon,
+        name: 'KPI Dashboard',
+        path: '/performance',
+      },
+      {
+        icon: CartIcon,
+        name: 'Benchmarking',
+        path: '/benchmarking',
+      },
+    ],
+  },
+  {
+    title: 'Inventory',
+    items: [
+      {
+        icon: BoxIcon,
+        name: 'Equipment',
+        path: '/equipment',
+      },
+      {
+        icon: UserCircleIcon,
+        name: 'Sites & Locations',
+        path: '/locations',
+      },
+    ],
+  },
+  {
+    title: 'Configuration',
+    items: [
+      {
+        icon: PageIcon,
+        name: 'Settings',
+        path: '/settings',
+      },
+      {
+        icon: UserCircleIcon,
+        name: 'User Management',
+        path: '/users',
+      },
     ],
   },
 ]

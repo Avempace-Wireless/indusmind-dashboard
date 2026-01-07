@@ -29,3 +29,6 @@ coverage
 
 *.tsbuildinfo
 .vercel
+.clinerules/*
+.github/*
+package-lock.json
