@@ -191,6 +191,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import {
   CartIcon,
@@ -221,6 +222,8 @@ const route = useRoute()
 
 const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar()
 
+const { t } = useI18n()
+
 const menuGroups = [
   {
     title: 'Monitoring',
@@ -237,7 +240,7 @@ const menuGroups = [
     items: [
       {
         icon: BarChartIcon,
-        name: 'Puissance',
+        name: t('puissance.pageTitle'),
         path: '/puissance',
       },
       {

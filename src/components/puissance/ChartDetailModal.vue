@@ -62,19 +62,19 @@
             <!-- Statistics -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
-                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">Average</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ t('puissance.labels.average') }}</p>
                 <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ avgValue.toFixed(1) }} kW</p>
               </div>
               <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
-                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">Peak</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ t('puissance.labels.peak') }}</p>
                 <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ maxValue.toFixed(1) }} kW</p>
               </div>
               <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
-                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">Minimum</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ t('puissance.labels.minimum') }}</p>
                 <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ minValue.toFixed(1) }} kW</p>
               </div>
               <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
-                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">Total</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ t('puissance.labels.total') }}</p>
                 <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ totalValue.toFixed(1) }} kWh</p>
               </div>
             </div>
@@ -87,13 +87,13 @@
               class="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-slate-700 transition"
             >
               <span class="material-symbols-outlined inline mr-2 text-lg align-text-bottom">download</span>
-              Export
+              {{ t('common.export') }}
             </button>
             <button
               @click="closeModal"
               class="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium hover:shadow-lg transition"
             >
-              Close
+              {{ t('common.close') }}
             </button>
           </div>
         </div>
@@ -104,6 +104,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -139,6 +140,7 @@ interface Props {
   yearlyData?: { labels: string[]; values: number[] }
 }
 
+
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -146,6 +148,7 @@ const emit = defineEmits<{
 }>()
 
 const selectedPeriod = ref<'hour' | 'day' | 'week' | 'month' | 'year'>('day')
+const { t, locale } = useI18n()
 const detailChartRef = ref<HTMLCanvasElement | null>(null)
 let detailChartInstance: Chart | null = null
 
@@ -201,39 +204,21 @@ const periodData = computed(() => {
   }
 })
 
-// Dynamic chart title based on period
+// Dynamic chart title based on period (i18n)
 const dynamicChartTitle = computed(() => {
-  switch (selectedPeriod.value) {
-    case 'hour':
-      return `${props.meterName} - Hourly Power`
-    case 'day':
-      return `${props.meterName} - Daily Power`
-    case 'week':
-      return `${props.meterName} - Weekly Power`
-    case 'month':
-      return `${props.meterName} - Monthly Power`
-    case 'year':
-      return `${props.meterName} - Yearly Power`
-    default:
-      return props.chartTitle
+  try {
+    return t(`puissance.chartTitles.${selectedPeriod.value}`, { meter: props.meterName })
+  } catch (e) {
+    return props.chartTitle
   }
 })
 
-// Dynamic subtitle based on period
+// Dynamic subtitle based on period (i18n)
 const dynamicSubtitle = computed(() => {
-  switch (selectedPeriod.value) {
-    case 'hour':
-      return 'Last 24 hours'
-    case 'day':
-      return 'Last 30 days'
-    case 'week':
-      return 'Last 12 weeks'
-    case 'month':
-      return 'Last 12 months'
-    case 'year':
-      return 'Yearly overview'
-    default:
-      return props.chartSubtitle
+  try {
+    return t(`puissance.subtitles.${selectedPeriod.value}`)
+  } catch (e) {
+    return props.chartSubtitle
   }
 })
 
@@ -329,10 +314,25 @@ const initDetailChart = () => {
     },
   }
 
+  // Format labels to locale-aware month/day names when appropriate
+  const dfMonth = new Intl.DateTimeFormat(locale.value, { month: 'short' })
+  const dfDate = new Intl.DateTimeFormat(locale.value, { day: '2-digit', month: 'short' })
+  const formatLabel = (lbl: string) => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(lbl)) {
+      const d = new Date(lbl)
+      return dfDate.format(d)
+    }
+    if (/^[A-Za-z]{3}$/.test(lbl)) {
+      const monthIndex = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(lbl)
+      if (monthIndex >= 0) return dfMonth.format(new Date(2020, monthIndex, 1))
+    }
+    return lbl
+  }
+
   detailChartInstance = new ChartJS(ctx, {
     type: 'bar',
     data: {
-      labels: visibleLabels.value,
+      labels: visibleLabels.value.map(formatLabel),
       datasets: [
         {
           label: dynamicChartTitle.value,
@@ -373,6 +373,14 @@ watch(
     initDetailChart()
   },
   { deep: true }
+)
+
+// Re-init chart when locale changes so axis labels update
+watch(
+  () => locale.value,
+  () => {
+    if (props.isOpen) initDetailChart()
+  }
 )
 
 // Re-sync slider bounds when data changes

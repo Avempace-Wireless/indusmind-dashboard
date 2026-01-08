@@ -41,10 +41,10 @@ const router = createRouter({
     },
     {
       path: '/puissance',
-      name: 'Puissance',
+      name: 'puissance',
       component: () => import('../views/PuissanceView.vue'),
       meta: {
-        title: 'Puissance',
+        title: 'puissance.pageTitle',
         requiresAuth: true,
       },
     },

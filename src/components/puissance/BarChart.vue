@@ -16,6 +16,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -54,6 +55,32 @@ const props = withDefaults(defineProps<Props>(), {
 
 const chartRef = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
+
+const { locale } = useI18n()
+
+const formatLabelsForLocale = (labels: string[]) => {
+  // Detect ISO date (YYYY-MM-DD), month short names (Jan), or hour labels
+  const dfMonth = new Intl.DateTimeFormat(locale.value, { month: 'short' })
+  const dfDate = new Intl.DateTimeFormat(locale.value, { day: '2-digit', month: 'short' })
+
+  return labels.map((lbl) => {
+    // ISO date YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(lbl)) {
+      const d = new Date(lbl)
+      return dfDate.format(d)
+    }
+    // Month short like Jan, Feb
+    if (/^[A-Za-z]{3}$/.test(lbl)) {
+      // Use a fixed date to format month name
+      const monthIndex = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(lbl)
+      if (monthIndex >= 0) {
+        const d = new Date(2020, monthIndex, 1)
+        return dfMonth.format(d)
+      }
+    }
+    return lbl
+  })
+}
 
 const initChart = () => {
   if (!chartRef.value) return
@@ -126,7 +153,7 @@ const initChart = () => {
   chartInstance = new ChartJS(ctx, {
     type: 'bar',
     data: {
-      labels: props.labels,
+      labels: formatLabelsForLocale(props.labels),
       datasets: [
         {
           label: props.subtitle,
@@ -152,6 +179,14 @@ watch(
     initChart()
   },
   { deep: true }
+)
+
+// Re-init when locale changes so labels are re-formatted
+watch(
+  () => locale.value,
+  () => {
+    initChart()
+  }
 )
 </script>
 

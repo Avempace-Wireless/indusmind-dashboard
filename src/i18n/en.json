@@ -22,7 +22,8 @@
       "volt": "V",
       "ampere": "A",
       "kwh": "kWh"
-    }
+    },
+    "viewDetails": "View Details"
   },
   "navigation": {
     "home": "Home",
@@ -189,6 +190,15 @@
   },
   "puissance": {
     "pageTitle": "Electrical Consumption – Power",
+      "displayMode": "Display Mode",
+      "views": {
+        "overview": "Overview",
+        "charts": "Charts",
+        "tables": "Tables"
+      },
+      "overview": {
+        "yearly": "Yearly Overview"
+      },
     "sidebar": {
       "title": "ELECTRICAL MONITORING",
       "globalView": "Global View",
@@ -216,6 +226,33 @@
       "monthlyAverage": "Average Monthly Power",
       "dailyPower": "Daily Power – Current Month",
       "hourlyPower": "Power Hour by Hour – Today"
+    },
+    "chartTitles": {
+      "hour": "{meter} - Hourly Power",
+      "day": "{meter} - Daily Power",
+      "week": "{meter} - Weekly Power",
+      "month": "{meter} - Monthly Power",
+      "year": "{meter} - Yearly Power"
+    },
+    "subtitles": {
+      "hour": "Last 24 hours",
+      "day": "Last 30 days",
+      "week": "Last 12 weeks",
+      "month": "Last 12 months",
+      "year": "Yearly overview"
+    },
+    "labels": {
+      "metrics": "Metrics",
+      "daily": "Daily",
+      "hourly": "Hourly",
+      "hourlyData": "Hourly Data",
+      "dailyTotal": "Daily Total",
+      "dailyAverage": "Daily Average",
+      "yearlyOverview": "Yearly Overview",
+      "average": "Average",
+      "peak": "Peak",
+      "minimum": "Minimum",
+      "total": "Total"
     },
     "tables": {
       "hourlyPower": "Power {meter} Hour by Hour",

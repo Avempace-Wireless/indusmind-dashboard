@@ -22,7 +22,8 @@
       "volt": "V",
       "ampere": "A",
       "kwh": "kWh"
-    }
+    },
+    "viewDetails": "Voir les détails"
   },
   "navigation": {
     "home": "Accueil",
@@ -189,6 +190,15 @@
   },
   "puissance": {
     "pageTitle": "Consommation électrique – Puissance",
+      "displayMode": "Mode d'affichage",
+      "views": {
+        "overview": "Aperçu",
+        "charts": "Graphiques",
+        "tables": "Tableaux"
+      },
+      "overview": {
+        "yearly": "Aperçu annuel"
+      },
     "sidebar": {
       "title": "SUIVI ÉLECTRIQUE",
       "globalView": "Vue Globale",
@@ -216,6 +226,33 @@
       "monthlyAverage": "Puissance moyenne mensuelle",
       "dailyPower": "Puissance journalière – Mois en cours",
       "hourlyPower": "Puissance heure par heure – Aujourd'hui"
+    },
+    "chartTitles": {
+      "hour": "{meter} - Puissance horaire",
+      "day": "{meter} - Puissance journalière",
+      "week": "{meter} - Puissance hebdomadaire",
+      "month": "{meter} - Puissance mensuelle",
+      "year": "{meter} - Puissance annuelle"
+    },
+    "subtitles": {
+      "hour": "Dernières 24 heures",
+      "day": "Derniers 30 jours",
+      "week": "Dernières 12 semaines",
+      "month": "Derniers 12 mois",
+      "year": "Aperçu annuel"
+    },
+    "labels": {
+      "metrics": "Métriques",
+      "daily": "Journalier",
+      "hourly": "Horaire",
+      "hourlyData": "Données horaires",
+      "dailyTotal": "Total journalier",
+      "dailyAverage": "Moyenne journalière",
+      "yearlyOverview": "Aperçu annuel",
+      "average": "Moyenne",
+      "peak": "Pic",
+      "minimum": "Minimum",
+      "total": "Total"
     },
     "tables": {
       "hourlyPower": "Puissance {meter} heure par heure",

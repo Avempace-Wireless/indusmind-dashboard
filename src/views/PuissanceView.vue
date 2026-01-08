@@ -18,7 +18,7 @@
           <!-- Meter Tabs -->
           <div class="flex-1">
             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-              Select Meter
+              {{ $t('compteur.selector.title') }}
             </p>
             <div class="flex gap-2 overflow-x-auto pb-2">
               <button
@@ -44,7 +44,7 @@
           <!-- View Toggle -->
           <div>
             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-              Display Mode
+              {{ $t('puissance.displayMode') }}
             </p>
             <div class="flex gap-2 bg-white dark:bg-slate-800 rounded-lg p-1 border border-gray-200 dark:border-slate-700">
               <button
@@ -57,7 +57,7 @@
                 ]"
               >
                 <span class="material-symbols-outlined text-lg">dashboard</span>
-                Overview
+                {{ $t('puissance.views.overview') }}
               </button>
               <button
                 @click="viewMode = 'charts'"
@@ -69,7 +69,7 @@
                 ]"
               >
                 <span class="material-symbols-outlined text-lg">bar_chart</span>
-                Charts
+                {{ $t('puissance.views.charts') }}
               </button>
               <button
                 @click="viewMode = 'tables'"
@@ -81,7 +81,7 @@
                 ]"
               >
                 <span class="material-symbols-outlined text-lg">table_chart</span>
-                Tables
+                {{ $t('puissance.views.tables') }}
               </button>
             </div>
           </div>
@@ -94,9 +94,9 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left Column: KPI Cards (1 col) -->
         <div class="lg:col-span-1 space-y-4">
-          <div class="flex items-center gap-3 mb-4">
+            <div class="flex items-center gap-3 mb-4">
             <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Metrics</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.metrics') }}</h2>
           </div>
 
           <!-- KPI Cards in Column -->
@@ -119,15 +119,15 @@
           <div>
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3">
-                <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Yearly Overview</h2>
-              </div>
+                  <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
+                  <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.overview.yearly') }}</h2>
+                </div>
               <button
                 @click="showChartModal('monthly')"
                 class="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition border border-blue-200 dark:border-blue-800"
               >
                 <span class="material-symbols-outlined inline text-lg align-text-bottom mr-1">zoom_in</span>
-                View Details
+                {{ $t('common.viewDetails') }}
               </button>
             </div>
             <BarChart
@@ -145,7 +145,7 @@
               <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-3">
                   <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-                  <h3 class="text-lg font-bold text-gray-900 dark:text-white">Daily</h3>
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.daily') }}</h3>
                 </div>
                 <button
                   @click="showChartModal('daily')"
@@ -167,7 +167,7 @@
               <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-3">
                   <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-                  <h3 class="text-lg font-bold text-gray-900 dark:text-white">Hourly</h3>
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.hourly') }}</h3>
                 </div>
                 <button
                   @click="showChartModal('hourly')"
@@ -194,16 +194,16 @@
       <!-- Monthly Chart -->
       <div>
         <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3">
             <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Yearly Overview</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.yearlyOverview') }}</h2>
           </div>
           <button
             @click="showChartModal('monthly')"
             class="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition border border-blue-200 dark:border-blue-800"
           >
             <span class="material-symbols-outlined inline text-lg align-text-bottom mr-1">zoom_in</span>
-            View Details
+            {{ $t('common.viewDetails') }}
           </button>
         </div>
         <BarChart
@@ -219,9 +219,9 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3">
               <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Daily</h2>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.daily') }}</h2>
             </div>
             <button
               @click="showChartModal('daily')"
@@ -241,9 +241,9 @@
 
         <div>
           <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-3">
               <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Hourly</h2>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.hourly') }}</h2>
             </div>
             <button
               @click="showChartModal('hourly')"
@@ -268,16 +268,16 @@
       <!-- Hourly Table -->
       <div>
         <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3">
             <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Hourly Data</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.hourlyData') }}</h2>
           </div>
           <button
             @click="showTableModal('hourly')"
             class="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-200 dark:border-purple-800"
           >
             <span class="material-symbols-outlined inline text-lg align-text-bottom mr-1">zoom_in</span>
-            View Details
+            {{ $t('common.viewDetails') }}
           </button>
         </div>
         <DataTable
@@ -296,10 +296,10 @@
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Daily Total</h2>
-            </div>
+          <div class="flex items-center gap-3">
+            <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.dailyTotal') }}</h2>
+          </div>
             <button
               @click="showTableModal('daily')"
               class="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-200 dark:border-purple-800"
@@ -321,10 +321,10 @@
 
         <div>
           <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-              <h2 class="text-xl font-bold text-gray-900 dark:text-white">Daily Average</h2>
-            </div>
+          <div class="flex items-center gap-3">
+            <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.dailyAverage') }}</h2>
+          </div>
             <button
               @click="showTableModal('monthly')"
               class="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-200 dark:border-purple-800"
@@ -391,7 +391,7 @@ import { allMeters } from '@/data/puissanceData'
 const { t } = useI18n()
 
 // Selected meter
-const selectedMeter = ref('compressor')
+const selectedMeter = ref('tgbt')
 
 // View mode toggle
 const viewMode = ref<'overview' | 'charts' | 'tables'>('overview')
