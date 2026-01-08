@@ -9,7 +9,7 @@
         <span :class="['material-symbols-outlined text-xl', colorClasses.text]">bolt</span>
         <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ compteur.name }} – {{ modeTitle }}</h3>
       </div>
-      <p class="text-xs text-slate-600 dark:text-slate-400">{{ compteur.subtitle }}</p>
+      <p class="text-xs text-slate-600 dark:text-slate-400">{{ translatedSubtitle }}</p>
     </div>
 
     <!-- Mode Tabs -->
@@ -66,9 +66,9 @@
             </div>
           </div>
           <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
-            <span>-30min</span>
-            <span>-15min</span>
-            <span>Maintenant</span>
+            <span>{{ $t('compteur.time.min30') }}</span>
+            <span>{{ $t('compteur.time.min15') }}</span>
+            <span>{{ $t('compteur.time.now') }}</span>
           </div>
         </div>
 
@@ -93,11 +93,11 @@
             </div>
           </div>
           <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
-            <span>0h</span>
-            <span>6h</span>
-            <span>12h</span>
-            <span>18h</span>
-            <span>Maintenant</span>
+            <span>{{ $t('compteur.time.h0') }}</span>
+            <span>{{ $t('compteur.time.h6') }}</span>
+            <span>{{ $t('compteur.time.h12') }}</span>
+            <span>{{ $t('compteur.time.h18') }}</span>
+            <span>{{ $t('compteur.time.now') }}</span>
           </div>
         </div>
 
@@ -122,11 +122,11 @@
             </div>
           </div>
           <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
-            <span>0h</span>
-            <span>6h</span>
-            <span>12h</span>
-            <span>18h</span>
-            <span>24h</span>
+            <span>{{ $t('compteur.time.h0') }}</span>
+            <span>{{ $t('compteur.time.h6') }}</span>
+            <span>{{ $t('compteur.time.h12') }}</span>
+            <span>{{ $t('compteur.time.h18') }}</span>
+            <span>{{ $t('compteur.time.h24') }}</span>
           </div>
         </div>
       </div>
@@ -143,6 +143,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Compteur, CompteurMode } from '@/composables/useCompteurSelection'
 
 // ============================================================================
@@ -168,13 +169,9 @@ const emit = defineEmits<{
 // CONSTANTS
 // ============================================================================
 
-const modes: CompteurMode[] = ['instantanée', 'jour', 'hier']
+const { t } = useI18n()
 
-const modeLabels: Record<CompteurMode, string> = {
-  instantanée: 'Instantané',
-  jour: 'Aujourd\'hui',
-  hier: 'Hier',
-}
+const modes: CompteurMode[] = ['instantanée', 'jour', 'hier']
 
 // ============================================================================
 // STATE
@@ -192,9 +189,23 @@ const tooltip = ref({
 // COMPUTED
 // ============================================================================
 
-/**
- * Semantic color classes based on compteur color
- */
+const modeLabels = computed(() => ({
+  instantanée: t('compteur.modes.instantaneousLabel'),
+  jour: t('compteur.modes.daily'),
+  hier: t('compteur.modes.yesterday'),
+}))
+
+const translatedSubtitle = computed(() => {
+  const subtitleMap: Record<string, string> = {
+    'Compresseurs industriels': t('equipment.compressorsIndustrial'),
+    'Climatisation générale': t('equipment.climGeneral'),
+    'Climatisation bureaux': t('equipment.climOffices'),
+    'Éclairage général': t('equipment.lightingGeneral'),
+    'Compresseur secondaire': t('equipment.compressorSecondary'),
+  }
+  return subtitleMap[props.compteur.subtitle] || props.compteur.subtitle
+})
+
 const colorClasses = computed(() => {
   const colorMap = {
     red: {
@@ -255,11 +266,11 @@ const unitForMode = computed(() => {
 const modeTitle = computed(() => {
   switch (currentMode.value) {
     case 'instantanée':
-      return 'Conso instantanée'
+      return t('compteur.modes.instantaneousConsumptionLabel')
     case 'jour':
-      return 'Conso du jour'
+      return t('compteur.modes.dailyConsumption')
     case 'hier':
-      return 'Conso d\'hier'
+      return t('compteur.modes.yesterdayConsumption')
   }
 })
 
@@ -269,11 +280,11 @@ const modeTitle = computed(() => {
 const modeLabel = computed(() => {
   switch (currentMode.value) {
     case 'instantanée':
-      return 'Instantanée'
+      return t('compteur.modes.instantaneousLabel')
     case 'jour':
-      return 'Conso du jour'
+      return t('compteur.modes.dailyConsumption')
     case 'hier':
-      return 'Conso d\'hier'
+      return t('compteur.modes.yesterdayConsumption')
   }
 })
 
@@ -283,7 +294,7 @@ const modeLabel = computed(() => {
 const timestamp = computed(() => {
   switch (currentMode.value) {
     case 'instantanée':
-      return 'Maintenant'
+      return t('compteur.time.now')
     case 'jour':
       return '10m ago'
     case 'hier':

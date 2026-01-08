@@ -37,7 +37,8 @@ const mockCompteurs: Compteur[] = [
     instantaneous: 4605,
     today: 4085.2,
     yesterday: 0,
-    linkedEquipment: ['eq-4', 'eq-5']
+    linkedEquipment: ['eq-4', 'eq-5'],
+    translationKey: 'equipment.compressorsIndustrial'
   },
   {
     id: 'compteur-3',
@@ -48,7 +49,8 @@ const mockCompteurs: Compteur[] = [
     instantaneous: 3785.5,
     today: 2134.5,
     yesterday: 0,
-    linkedEquipment: ['eq-6', 'eq-7']
+    linkedEquipment: ['eq-6', 'eq-7'],
+    translationKey: 'equipment.climGeneral'
   },
   {
     id: 'compteur-4',
@@ -59,7 +61,8 @@ const mockCompteurs: Compteur[] = [
     instantaneous: 3387.8,
     today: 3039.6,
     yesterday: 0,
-    linkedEquipment: ['eq-8']
+    linkedEquipment: ['eq-8'],
+    translationKey: 'equipment.lightingGeneral'
   },
   {
     id: 'compteur-5',
@@ -70,7 +73,8 @@ const mockCompteurs: Compteur[] = [
     instantaneous: 2156.3,
     today: 1876.4,
     yesterday: 0,
-    linkedEquipment: ['eq-9']
+    linkedEquipment: ['eq-9'],
+    translationKey: 'equipment.compressorSecondary'
   },
   {
     id: 'compteur-6',
@@ -81,7 +85,8 @@ const mockCompteurs: Compteur[] = [
     instantaneous: 1245.7,
     today: 987.3,
     yesterday: 0,
-    linkedEquipment: ['eq-10', 'eq-11']
+    linkedEquipment: ['eq-10', 'eq-11'],
+    translationKey: 'equipment.climOffices'
   },
 ]
 

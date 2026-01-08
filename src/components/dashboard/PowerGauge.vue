@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Total Power</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $t('compteur.totalPower') }}</h3>
       <div :class="statusClass">
         <svg class="w-2 h-2 fill-current" viewBox="0 0 8 8">
           <circle cx="4" cy="4" r="4" />
@@ -17,7 +17,7 @@
       <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ formattedValue }}</p>
       <p class="text-sm text-gray-500 dark:text-gray-400">kW</p>
       <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-        Target: {{ target }} kW
+        {{ $t('compteur.target') }}: {{ target }} kW
       </p>
     </div>
   </div>

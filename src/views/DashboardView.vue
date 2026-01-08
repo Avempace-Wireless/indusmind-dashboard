@@ -13,24 +13,24 @@
       <!-- Breadcrumbs & Header -->
       <div class="flex flex-col gap-6">
         <nav class="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400">
-          <a class="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Accueil</a>
+          <a class="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">{{ $t('navigation.home') }}</a>
           <span class="mx-2 text-slate-400 dark:text-slate-600">/</span>
-          <a class="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Tableau de bord</a>
+          <a class="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">{{ $t('navigation.dashboard') }}</a>
           <span class="mx-2 text-slate-400 dark:text-slate-600">/</span>
-          <span class="text-blue-600 dark:text-blue-400">Temps réel</span>
+          <span class="text-blue-600 dark:text-blue-400">{{ $t('navigation.realtime') }}</span>
         </nav>
 
         <!-- Page title with status -->
         <div class="flex flex-wrap justify-between items-end gap-4 border-b border-slate-200 dark:border-border-dark pb-6">
           <div class="flex flex-col gap-2">
-            <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">Surveillance en temps réel</h1>
+            <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">{{ $t('dashboard.title') }}</h1>
             <div class="flex items-center gap-3">
               <span :class="[
                 'flex h-2.5 w-2.5 rounded-full animate-pulse',
                 isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
               ]"></span>
               <p class="text-slate-600 dark:text-slate-400 text-sm font-mono">
-                {{ isConnected ? 'Connecté - ' : 'Déconnecté - ' }}Dernière mise à jour: {{ lastUpdateTime }}
+                {{ isConnected ? $t('dashboard.status.connected') : $t('dashboard.status.disconnected') }}{{ $t('dashboard.status.lastUpdate') }} {{ lastUpdateTime }}
               </p>
             </div>
           </div>
@@ -44,7 +44,7 @@
           class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
         >
           <span class="material-symbols-outlined text-base">tune</span>
-          Gérer les compteurs
+          {{ $t('dashboard.manageMeters') }}
         </button>
       </div>
 
@@ -57,14 +57,14 @@
           <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-5xl mb-4">
             dashboard
           </span>
-          <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">Aucun compteur sélectionné</p>
-          <p class="text-gray-600 dark:text-text-muted text-sm mb-6">Sélectionnez des compteurs pour afficher les données de consommation</p>
+          <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">{{ $t('dashboard.noMetersSelected.title') }}</p>
+          <p class="text-gray-600 dark:text-text-muted text-sm mb-6">{{ $t('dashboard.noMetersSelected.description') }}</p>
           <button
             @click="showCompteurSelector = true"
             class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors shadow-lg"
           >
             <span class="material-symbols-outlined text-lg">add</span>
-            Ajouter des compteurs
+            {{ $t('dashboard.noMetersSelected.action') }}
           </button>
         </div>
 
@@ -95,14 +95,14 @@
         <div class="flex flex-col gap-6">
           <!-- Phase Balance Widget -->
           <PhaseBalance
-            title="Équilibrage des phases"
+            :title="$t('dashboard.phaseBalance.title')"
             :phases="phaseBalanceData"
           />
 
           <!-- Events Widget -->
           <EventsWidget
-            title="Derniers Événements"
-            action-label="Voir tout"
+            :title="$t('dashboard.recentEvents.title')"
+            :action-label="$t('dashboard.recentEvents.viewAll')"
             :events="recentEvents"
           />
         </div>
@@ -111,38 +111,38 @@
       <!-- Equipment Status Table -->
       <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-          <h3 class="text-lg font-bold text-slate-900 dark:text-white">État des Équipements – Compteurs Sélectionnés</h3>
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.title') }}</h3>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Compteur</th>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Type</th>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">État</th>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Valeur Actuelle</th>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Unité</th>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">Dernière Mise à Jour</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.meter') }}</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.type') }}</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.status') }}</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.currentValue') }}</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.unit') }}</th>
+                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.lastUpdate') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
               <!-- Energy Compteurs -->
               <tr v-for="compteur in selectedCompteurs" :key="compteur.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ compteur.name }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">Énergie</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('dashboard.equipment.columns.energy') }}</td>
                 <td class="px-6 py-3">
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-200">
-                    En service
+                    {{ $t('dashboard.equipment.status.online') }}
                   </span>
                 </td>
                 <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ compteur.instantaneous.toFixed(1) }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">kW</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">Just now</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.unit.kw') }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.justNow') }}</td>
               </tr>
               <!-- Temperature Zones -->
               <tr v-for="zone in temperatureZones" :key="zone.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ zone.name }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">Température</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('dashboard.equipment.columns.temperature') }}</td>
                 <td class="px-6 py-3">
                   <span :class="[
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
@@ -154,13 +154,13 @@
                   </span>
                 </td>
                 <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ zone.value.toFixed(1) }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">°C</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.unit.celsius') }}</td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ zone.lastUpdate }}</td>
               </tr>
               <!-- Empty state -->
               <tr v-if="selectedCompteurs.length === 0 && temperatureZones.length === 0">
                 <td colspan="6" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
-                  Sélectionnez des compteurs pour afficher les données
+                  {{ $t('dashboard.equipment.noData') }}
                 </td>
               </tr>
             </tbody>
@@ -174,6 +174,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import UnifiedChart from '@/components/dashboard/UnifiedChart.vue'
 import PhaseBalance from '@/components/dashboard/PhaseBalance.vue'
@@ -186,6 +187,8 @@ import { useCompteurSelection, type CompteurMode } from '@/composables/useCompte
 // ============================================================================
 // COMPOSABLES
 // ============================================================================
+
+const { t } = useI18n()
 
 const currentTime = ref(new Date())
 const chartMode = ref<'energy' | 'temperature'>('energy')
@@ -225,13 +228,10 @@ const metrics = computed(() => dashboardStore.metrics)
 const isConnected = computed(() => dashboardStore.isConnected)
 
 /**
- * Energy chart data based on selected period
- */
-/**
  * Unified chart subtitle
  */
 const unifiedChartSubtitle = computed(() => {
-  return `${selectedCompteurs.value.length} compteur(s) sélectionné(s)`
+  return t('dashboard.unifiedChart.subtitle', { count: selectedCompteurs.value.length })
 })
 
 /**
@@ -239,9 +239,9 @@ const unifiedChartSubtitle = computed(() => {
  */
 const temperatureZones = computed(() => {
   return [
-    { id: 'zone-6', name: 'Zone 6 (ZAP2 SLS)', value: 48.6, status: 'Normal', lastUpdate: 'Just now' },
-    { id: 'zone-4', name: 'Zone 4 (ZAP2 EM)', value: -17.2, status: 'Alerte', lastUpdate: '1 min ago' },
-    { id: 'zone-1', name: 'Zone 1 (ZAP 1&3)', value: 56.3, status: 'Normal', lastUpdate: 'Just now' }
+    { id: 'zone-6', name: t('temperature.zones.zone6'), value: 48.6, status: 'Normal', lastUpdate: t('common.justNow') },
+    { id: 'zone-4', name: t('temperature.zones.zone4'), value: -17.2, status: t('dashboard.equipment.status.alert'), lastUpdate: '1 min ago' },
+    { id: 'zone-1', name: t('temperature.zones.zone1'), value: 56.3, status: 'Normal', lastUpdate: t('common.justNow') }
   ]
 })
 
@@ -264,7 +264,7 @@ const recentEvents = computed(() => {
       Emergency: 'warning',
     }
     return {
-      message: alert.message,
+      message: t(alert.message),
       time: `il y a ${Math.round((Date.now() - alert.detectedAt.getTime()) / 60000)} min`,
       location: alert.equipmentId,
       severity: severityMap[alert.level] || 'info',
@@ -315,23 +315,23 @@ const phaseBalanceData = computed(() => {
 
   return [
     {
-      label: 'Phase L1',
+      label: t('dashboard.phaseBalance.phase.l1'),
       value: 230.1,
-      unit: 'V',
+      unit: t('common.unit.volt'),
       percentage: Math.round((l1 / maxPhase) * 100),
       color: 'bg-blue-500'
     },
     {
-      label: 'Phase L2',
+      label: t('dashboard.phaseBalance.phase.l2'),
       value: 229.8,
-      unit: 'V',
+      unit: t('common.unit.volt'),
       percentage: Math.round((l2 / maxPhase) * 100),
       color: 'bg-cyan-500'
     },
     {
-      label: 'Phase L3',
+      label: t('dashboard.phaseBalance.phase.l3'),
       value: 230.4,
-      unit: 'V',
+      unit: t('common.unit.volt'),
       percentage: Math.round((l3 / maxPhase) * 100),
       color: 'bg-indigo-500'
     }

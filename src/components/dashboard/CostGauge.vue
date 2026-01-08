@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Real-Time Cost</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $t('compteur.realTimeCost') }}</h3>
       <div class="text-xs text-gray-500 dark:text-gray-400">per hour</div>
     </div>
 

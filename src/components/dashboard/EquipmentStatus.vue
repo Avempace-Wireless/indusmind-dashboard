@@ -40,7 +40,7 @@
 
     <div class="mt-4">
       <div class="flex items-center justify-between text-sm">
-        <span class="text-gray-500 dark:text-gray-400">Uptime (24h)</span>
+        <span class="text-gray-500 dark:text-gray-400">{{ $t('compteur.time.uptime24h') }}</span>
         <span class="font-semibold text-gray-900 dark:text-white">{{ uptimePercentage }}%</span>
       </div>
       <div class="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">

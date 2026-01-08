@@ -1,0 +1,190 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "close": "Fermer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "import": "Importer",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "warning": "Avertissement",
+    "info": "Information",
+    "justNow": "À l'instant",
+    "unit": {
+      "kw": "kW",
+      "celsius": "°C",
+      "volt": "V",
+      "ampere": "A",
+      "kwh": "kWh"
+    }
+  },
+  "navigation": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "realtime": "Temps réel"
+  },
+  "dashboard": {
+    "title": "Surveillance en temps réel",
+    "pageTitle": "Surveillance en temps réel",
+    "breadcrumb": {
+      "home": "Accueil",
+      "dashboard": "Tableau de bord",
+      "realtime": "Temps réel"
+    },
+    "status": {
+      "connected": "Connecté - ",
+      "disconnected": "Déconnecté - ",
+      "lastUpdate": "Dernière mise à jour: "
+    },
+    "manageMeters": "Gérer les compteurs",
+    "noMetersSelected": {
+      "title": "Aucun compteur sélectionné",
+      "description": "Sélectionnez des compteurs pour afficher les données de consommation",
+      "action": "Ajouter des compteurs"
+    },
+    "unifiedChart": {
+      "title": "Énergie & Température",
+      "subtitle": "{count} compteur(s) sélectionné(s)"
+    },
+    "energy": "Énergie",
+    "temperature": "Température",
+    "period": {
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "sevenDays": "7 jours",
+      "thirtyDays": "30 jours"
+    },
+    "equipment": {
+      "title": "État des Équipements – Compteurs Sélectionnés",
+      "columns": {
+        "meter": "Compteur",
+        "type": "Type",
+        "status": "État",
+        "currentValue": "Valeur Actuelle",
+        "unit": "Unité",
+        "lastUpdate": "Dernière Mise à Jour",
+        "energy": "Énergie",
+        "temperature": "Température"
+      },
+      "status": {
+        "online": "En ligne",
+        "offline": "Hors ligne",
+        "maintenance": "Maintenance",
+        "normal": "Normal",
+        "alert": "Alerte"
+      },
+      "noData": "Sélectionnez des compteurs pour afficher les données"
+    },
+    "phaseBalance": {
+      "title": "Équilibrage des phases",
+      "phase": {
+        "l1": "Phase L1",
+        "l2": "Phase L2",
+        "l3": "Phase L3"
+      }
+    },
+    "recentEvents": {
+      "title": "Derniers Événements",
+      "viewAll": "Voir tout",
+      "noEvents": "Aucun événement récent"
+    }
+  },
+  "compteur": {
+    "selector": {
+      "title": "Sélectionner les compteurs",
+      "search": "Rechercher des compteurs...",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "selected": "{count} sélectionné(s)",
+      "noResults": "Aucun compteur trouvé",
+      "apply": "Appliquer",
+      "cancel": "Annuler",
+      "categories": {
+        "all": "Tous",
+        "essential": "Essentiels",
+        "optional": "Optionnels"
+      }
+    },
+    "modes": {
+      "instantaneous": "Instantané",
+      "instantaneousLabel": "Instantané",
+      "instantaneousConsumption": "Consommation instantanée",
+      "daily": "Jour",
+      "yesterday": "Hier",
+      "instantaneousConsumptionLabel": "Conso instantanée",
+      "dailyConsumption": "Conso du jour",
+      "yesterdayConsumption": "Conso d'hier"
+    },
+    "time": {
+      "now": "Maintenant",
+      "min30": "-30min",
+      "min15": "-15min",
+      "h0": "0h",
+      "h6": "6h",
+      "h12": "12h",
+      "h18": "18h",
+      "h24": "24h",
+      "uptime24h": "Disponibilité (24h)"
+    },
+    "meter": "Compteur",
+    "power": "Puissance",
+    "consumption": "Consommation",
+    "data": "Données",
+    "powerFactor": "Facteur de Puissance",
+    "powerFactorTarget": "Objectif: ≥ 0,95 • Norme Industrie: 0,85-0,95",
+    "realTimeCost": "Coût en Temps Réel",
+    "totalPower": "Puissance Totale",
+    "target": "Objectif"
+  },
+  "temperature": {
+    "zones": {
+      "zone1": "Zone 1 (ZAP 1&3)",
+      "zone4": "Zone 4 (ZAP2 EM)",
+      "zone6": "Zone 6 (ZAP2 SLS)"
+    }
+  },
+  "equipment": {
+    "compressors": "Compresseurs",
+    "compressorsIndustrial": "Compresseurs industriels",
+    "compressorSecondary": "Compresseur secondaire",
+    "climGeneral": "Climatisation générale",
+    "climGeneralLabel": "Climatisation générale",
+    "climOffices": "Climatisation bureaux",
+    "lighting": "Éclairage",
+    "lightingGeneral": "Éclairage général"
+  },
+  "alerts": {
+    "noAlerts": "Aucune alerte",
+    "critical": "Critique",
+    "high": "Élevé",
+    "medium": "Moyen",
+    "low": "Faible",
+    "info": "Information",
+    "success": "Succès",
+    "messages": {
+      "highConsumption": "Consommation élevée détectée",
+      "criticalTemperature": "Température critique",
+      "equipmentOffline": "Équipement hors ligne",
+      "lowPowerFactor": "Facteur de puissance bas"
+    },
+    "descriptions": {
+      "highConsumption": "La puissance dépasse 500 kW depuis 5 minutes",
+      "criticalTemperature": "Température dépasse le seuil de sécurité",
+      "equipmentOffline": "Perte de communication avec le compteur",
+      "lowPowerFactor": "Facteur de puissance sous 0.85"
+    }
+  },
+  "language": {
+    "select": "Sélectionner la Langue",
+    "french": "Français",
+    "english": "English",
+    "auto": "Auto (Navigateur)",
+    "current": "Actuel: {language}"
+  }
+}

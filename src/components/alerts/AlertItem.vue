@@ -24,7 +24,10 @@
           {{ alert.equipmentId }}
         </h4>
         <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
-          {{ alert.message }}
+          {{ t(alert.message) }}
+        </p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {{ t(alert.description) }}
         </p>
 
         <!-- Notes (if acknowledged) -->
@@ -60,6 +63,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Alert } from '@/types'
 
 interface Props {
@@ -67,6 +71,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 
 defineEmits<{
   acknowledge: [id: string]

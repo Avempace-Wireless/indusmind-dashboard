@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Power Factor</h3>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ $t('compteur.powerFactor') }}</h3>
       <div :class="qualityBadge" class="px-2 py-1 rounded text-xs font-medium">
         {{ quality }}
       </div>
@@ -39,7 +39,7 @@
 
     <div class="mt-4 text-center">
       <p class="text-xs text-gray-400 dark:text-gray-500">
-        Target: ≥ 0.95 • Industry Standard: 0.85-0.95
+        {{ $t('compteur.powerFactorTarget') }}
       </p>
     </div>
   </div>

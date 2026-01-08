@@ -21,7 +21,7 @@
                 : 'text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-white'
             ]"
           >
-            {{ modeLabels[m] }}
+            {{ m === 'energy' ? $t('dashboard.energy') : $t('dashboard.temperature') }}
           </button>
         </div>
 
@@ -52,7 +52,7 @@
           {{ currentValue }}
         </p>
         <span class="text-slate-500 dark:text-slate-400 text-sm font-medium">
-          {{ mode === 'energy' ? 'kWh' : '°C' }}
+          {{ mode === 'energy' ? $t('common.unit.kwh') : $t('common.unit.celsius') }}
         </span>
       </div>
 
@@ -66,6 +66,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Chart, LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler } from 'chart.js'
 
 Chart.register(LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler)
@@ -96,18 +97,16 @@ const emit = defineEmits<{
   'update:period': [period: PeriodValue]
 }>()
 
-const modes: ChartMode[] = ['energy', 'temperature']
-const modeLabels = {
-  energy: 'Énergie',
-  temperature: 'Température'
-}
+const { t } = useI18n()
 
-const periods = [
-  { value: 'today', label: 'Aujourd\'hui' },
-  { value: 'yesterday', label: 'Hier' },
-  { value: '7days', label: '7 jours' },
-  { value: '30days', label: '30 jours' }
-] as const
+const modes: ChartMode[] = ['energy', 'temperature']
+
+const periods = computed(() => [
+  { value: 'today', label: t('dashboard.period.today') },
+  { value: 'yesterday', label: t('dashboard.period.yesterday') },
+  { value: '7days', label: t('dashboard.period.sevenDays') },
+  { value: '30days', label: t('dashboard.period.thirtyDays') }
+] as const)
 
 const chartRef = ref<HTMLCanvasElement>()
 let chartInstance: Chart | null = null
@@ -123,8 +122,8 @@ const isDarkMode = computed(() => {
 // Chart title based on mode
 const chartTitle = computed(() => {
   return props.mode === 'energy'
-    ? 'Évolution de la Consommation d\'Énergie'
-    : 'Évolution des Températures'
+    ? t('dashboard.energy')
+    : t('dashboard.temperature')
 })
 
 // Color mapping for compteur categories

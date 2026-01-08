@@ -38,7 +38,7 @@
       <!-- Empty state -->
       <div v-if="events.length === 0" class="flex flex-col items-center justify-center py-8 text-gray-600 dark:text-text-muted">
         <span class="material-symbols-outlined text-4xl mb-2">check_circle</span>
-        <p class="text-sm">No recent events</p>
+        <p class="text-sm">{{ $t('dashboard.recentEvents.noEvents') }}</p>
       </div>
     </div>
   </div>

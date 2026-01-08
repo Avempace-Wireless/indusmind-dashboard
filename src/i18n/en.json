@@ -1,0 +1,190 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information",
+    "justNow": "Just now",
+    "unit": {
+      "kw": "kW",
+      "celsius": "°C",
+      "volt": "V",
+      "ampere": "A",
+      "kwh": "kWh"
+    }
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "realtime": "Real-time"
+  },
+  "dashboard": {
+    "title": "Real-time Monitoring",
+    "pageTitle": "Real-time Surveillance",
+    "breadcrumb": {
+      "home": "Home",
+      "dashboard": "Dashboard",
+      "realtime": "Real-time"
+    },
+    "status": {
+      "connected": "Connected - ",
+      "disconnected": "Disconnected - ",
+      "lastUpdate": "Last update: "
+    },
+    "manageMeters": "Manage Meters",
+    "noMetersSelected": {
+      "title": "No meters selected",
+      "description": "Select meters to display energy consumption data",
+      "action": "Add Meters"
+    },
+    "unifiedChart": {
+      "title": "Energy & Temperature",
+      "subtitle": "{count} meter(s) selected"
+    },
+    "energy": "Energy",
+    "temperature": "Temperature",
+    "period": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "sevenDays": "7 days",
+      "thirtyDays": "30 days"
+    },
+    "equipment": {
+      "title": "Equipment Status – Selected Meters",
+      "columns": {
+        "meter": "Meter",
+        "type": "Type",
+        "status": "Status",
+        "currentValue": "Current Value",
+        "unit": "Unit",
+        "lastUpdate": "Last Update",
+        "energy": "Energy",
+        "temperature": "Temperature"
+      },
+      "status": {
+        "online": "Online",
+        "offline": "Offline",
+        "maintenance": "Maintenance",
+        "normal": "Normal",
+        "alert": "Alert"
+      },
+      "noData": "Select meters to display data"
+    },
+    "phaseBalance": {
+      "title": "Phase Balance",
+      "phase": {
+        "l1": "Phase L1",
+        "l2": "Phase L2",
+        "l3": "Phase L3"
+      }
+    },
+    "recentEvents": {
+      "title": "Recent Events",
+      "viewAll": "View all",
+      "noEvents": "No recent events"
+    }
+  },
+  "compteur": {
+    "selector": {
+      "title": "Select Meters",
+      "search": "Search meters...",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "selected": "{count} selected",
+      "noResults": "No meters found",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "categories": {
+        "all": "All",
+        "essential": "Essential",
+        "optional": "Optional"
+      }
+    },
+    "modes": {
+      "instantaneous": "Instantaneous",
+      "instantaneousLabel": "Instantaneous",
+      "instantaneousConsumption": "Instantaneous consumption",
+      "daily": "Daily",
+      "yesterday": "Yesterday",
+      "instantaneousConsumptionLabel": "Inst. Consumption",
+      "dailyConsumption": "Daily consumption",
+      "yesterdayConsumption": "Yesterday consumption"
+    },
+    "time": {
+      "now": "Now",
+      "min30": "-30min",
+      "min15": "-15min",
+      "h0": "0h",
+      "h6": "6h",
+      "h12": "12h",
+      "h18": "18h",
+      "h24": "24h",
+      "uptime24h": "Uptime (24h)"
+    },
+    "meter": "Meter",
+    "power": "Power",
+    "consumption": "Consumption",
+    "data": "Data",
+    "powerFactor": "Power Factor",
+    "powerFactorTarget": "Target: ≥ 0.95 • Industry Standard: 0.85-0.95",
+    "realTimeCost": "Real-Time Cost",
+    "totalPower": "Total Power",
+    "target": "Target"
+  },
+  "temperature": {
+    "zones": {
+      "zone1": "Zone 1 (ZAP 1&3)",
+      "zone4": "Zone 4 (ZAP2 EM)",
+      "zone6": "Zone 6 (ZAP2 SLS)"
+    }
+  },
+  "equipment": {
+    "compressors": "Compressors",
+    "compressorsIndustrial": "Industrial Compressors",
+    "compressorSecondary": "Secondary Compressor",
+    "climGeneral": "General Cooling",
+    "climGeneralLabel": "General Cooling",
+    "climOffices": "Office Cooling",
+    "lighting": "Lighting",
+    "lightingGeneral": "General Lighting"
+  },
+  "alerts": {
+    "noAlerts": "No alerts",
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "info": "Information",
+    "success": "Success",
+    "messages": {
+      "highConsumption": "High consumption detected",
+      "criticalTemperature": "Critical temperature",
+      "equipmentOffline": "Equipment offline",
+      "lowPowerFactor": "Low power factor"
+    },
+    "descriptions": {
+      "highConsumption": "Power exceeds 500 kW for 5 minutes",
+      "criticalTemperature": "Temperature exceeds safety threshold",
+      "equipmentOffline": "Loss of communication with meter",
+      "lowPowerFactor": "Power factor below 0.85"
+    }
+  },
+  "language": {
+    "select": "Select Language",
+    "french": "Français",
+    "english": "English",
+    "auto": "Auto (Browser)",
+    "current": "Current: {language}"
+  }
+}

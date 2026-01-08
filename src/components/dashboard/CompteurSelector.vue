@@ -15,12 +15,12 @@
         <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-5 bg-slate-50 dark:bg-slate-900/60 rounded-t-xl">
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-slate-500 dark:text-slate-300 text-2xl">electrical_services</span>
-            <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Sélectionner les compteurs</h2>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ $t('compteur.selector.title') }}</h2>
           </div>
           <button
             @click="close"
             class="text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-            aria-label="Fermer"
+            :aria-label="$t('common.close')"
           >
             <span class="material-symbols-outlined">close</span>
           </button>
@@ -34,27 +34,27 @@
               <input
                 v-model="query"
                 type="search"
-                placeholder="Rechercher un compteur..."
+                :placeholder="$t('compteur.selector.search')"
                 class="flex-1 h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700"
-                aria-label="Rechercher un compteur"
+                :aria-label="$t('compteur.selector.search')"
               />
               <button
                 @click="selectAll"
                 class="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
-                Tout sélectionner
+                {{ $t('compteur.selector.selectAll') }}
               </button>
               <button
                 v-if="selectedCount > 0"
                 @click="clearAll"
                 class="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
-                Tout désélectionner
+                {{ $t('compteur.selector.deselectAll') }}
               </button>
             </div>
             <div class="rounded-lg bg-slate-50 dark:bg-slate-800/40 p-3 border border-slate-200 dark:border-slate-700">
               <p class="text-xs text-slate-700 dark:text-slate-300">
-                {{ selectedCount }} sur {{ totalCount }} compteurs sélectionnés
+                {{ selectedCount }} {{ $t('compteur.selector.selected', { count: totalCount }) }}
               </p>
             </div>
           </div>
@@ -93,9 +93,9 @@
                 </div>
                 <div class="flex items-center gap-2 mt-1">
                   <span class="text-xs text-slate-600 dark:text-slate-400">
-                    <span class="font-mono">{{ formatValue(compteur.instantaneous) }} kW</span>
+                    <span class="font-mono">{{ formatValue(compteur.instantaneous) }} {{ $t('common.unit.kw') }}</span>
                     <span class="mx-1">·</span>
-                    <span>{{ compteur.subtitle }}</span>
+                    <span>{{ getTranslatedSubtitle(compteur.subtitle) }}</span>
                   </span>
                 </div>
               </label>
@@ -113,7 +113,7 @@
             <span class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-5xl mb-3">
               electrical_meter
             </span>
-            <p class="text-slate-600 dark:text-slate-400 text-sm font-medium">Aucun compteur disponible</p>
+            <p class="text-slate-600 dark:text-slate-400 text-sm font-medium">{{ $t('compteur.selector.noResults') }}</p>
           </div>
 
           <!-- Empty State (filter) -->
@@ -122,7 +122,7 @@
             class="flex flex-col items-center justify-center py-10 text-center"
           >
             <span class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-4xl mb-2">filter_alt_off</span>
-            <p class="text-slate-600 dark:text-slate-400 text-sm">Aucun résultat pour "{{ query }}"</p>
+            <p class="text-slate-600 dark:text-slate-400 text-sm">{{ $t('compteur.selector.noResults') }}</p>
           </div>
         </div>
 
@@ -134,7 +134,7 @@
           >
             <span class="flex items-center justify-center gap-2">
               <span class="material-symbols-outlined text-lg">close</span>
-              Annuler
+              {{ $t('common.cancel') }}
             </span>
           </button>
           <button
@@ -144,7 +144,7 @@
           >
             <span class="flex items-center justify-center gap-2">
               <span class="material-symbols-outlined text-lg">check</span>
-              Appliquer ({{ selectedCount }})
+              {{ $t('common.save') }} ({{ selectedCount }})
             </span>
           </button>
         </div>
@@ -155,6 +155,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Compteur } from '@/composables/useCompteurSelection'
 
 // ============================================================================
@@ -178,6 +179,12 @@ const emit = defineEmits<{
 }>()
 
 // ============================================================================
+// COMPOSABLES
+// ============================================================================
+
+const { t } = useI18n()
+
+// ============================================================================
 // STATE
 // ============================================================================
 
@@ -194,6 +201,19 @@ const query = ref('')
 
 const selectedCount = computed(() => localSelectedIds.value.length)
 const totalCount = computed(() => props.allCompteurs.length)
+
+const subtitleMap: Record<string, string> = {
+  'Compresseurs industriels': 'equipment.compressorsIndustrial',
+  'Climatisation générale': 'equipment.climGeneral',
+  'Climatisation bureaux': 'equipment.climOffices',
+  'Éclairage général': 'equipment.lightingGeneral',
+  'Compresseur secondaire': 'equipment.compressorSecondary',
+}
+
+const getTranslatedSubtitle = (subtitle: string): string => {
+  const key = subtitleMap[subtitle]
+  return key ? t(key) : subtitle
+}
 
 const filteredCompteurs = computed(() => {
   const q = query.value.trim().toLowerCase()

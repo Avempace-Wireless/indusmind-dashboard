@@ -129,6 +129,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { useAlertsStore } from '@/stores/useAlertsStore'
 import { useEquipmentStore } from '@/stores/useEquipmentStore'
@@ -140,6 +141,7 @@ import type { AlertLevel } from '@/types'
 const alertsStore = useAlertsStore()
 const equipmentStore = useEquipmentStore()
 const { isConnected } = useWebSocket('alerts:new')
+const { t } = useI18n()
 
 const showFilters = ref(true)
 const currentPage = ref(1)
@@ -185,7 +187,8 @@ const filteredAlerts = computed(() => {
     // Search filter
     if (filters.value.search) {
       const searchLower = filters.value.search.toLowerCase()
-      return alert.message.toLowerCase().includes(searchLower) ||
+      const translatedMessage = t(alert.message).toLowerCase()
+      return translatedMessage.includes(searchLower) ||
              alert.equipmentId.toLowerCase().includes(searchLower)
     }
 
