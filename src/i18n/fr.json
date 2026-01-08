@@ -186,5 +186,49 @@
     "english": "English",
     "auto": "Auto (Navigateur)",
     "current": "Actuel: {language}"
+  },
+  "puissance": {
+    "pageTitle": "Consommation électrique – Puissance",
+    "sidebar": {
+      "title": "SUIVI ÉLECTRIQUE",
+      "globalView": "Vue Globale",
+      "power": "Puissance",
+      "current": "Courant",
+      "history": "Historique",
+      "cooling": "Climatisation"
+    },
+    "meters": {
+      "tgbt": "TGBT",
+      "compressor": "Compresseur",
+      "cooling": "Climatisation",
+      "lighting": "Éclairage"
+    },
+    "kpi": {
+      "avgPowerLastMonth": "Puissance moyenne du mois dernier",
+      "avgPowerThisMonth": "Puissance moyenne ce mois-ci",
+      "avgPowerYesterday": "Puissance moyenne hier",
+      "avgPowerToday": "Puissance moyenne aujourd'hui",
+      "avgPowerBeforeYesterday": "Puissance moyenne avant-hier",
+      "instantaneousPower": "Puissance instantanée (cette heure)"
+    },
+    "charts": {
+      "monthlyPower": "Puissance mensuelle – Année en cours",
+      "monthlyAverage": "Puissance moyenne mensuelle",
+      "dailyPower": "Puissance journalière – Mois en cours",
+      "hourlyPower": "Puissance heure par heure – Aujourd'hui"
+    },
+    "tables": {
+      "hourlyPower": "Puissance {meter} heure par heure",
+      "dailyTotal": "Puissance totale sur 24h",
+      "dailyAverage": "Puissance jour par jour",
+      "realtimeLastDay": "Realtime – dernier jour",
+      "realtimeMonth": "Realtime – Mois en cours jusqu'à présent",
+      "columns": {
+        "timestamp": "Horodatage",
+        "power": "Puissance (kW)",
+        "dailyPower": "Puissance journalière (kW)",
+        "averagePower": "Puissance moyenne journalière (kW)"
+      }
+    }
   }
 }

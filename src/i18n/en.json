@@ -186,5 +186,49 @@
     "english": "English",
     "auto": "Auto (Browser)",
     "current": "Current: {language}"
+  },
+  "puissance": {
+    "pageTitle": "Electrical Consumption – Power",
+    "sidebar": {
+      "title": "ELECTRICAL MONITORING",
+      "globalView": "Global View",
+      "power": "Power",
+      "current": "Current",
+      "history": "History",
+      "cooling": "Cooling"
+    },
+    "meters": {
+      "tgbt": "TGBT",
+      "compressor": "Compressor",
+      "cooling": "Cooling",
+      "lighting": "Lighting"
+    },
+    "kpi": {
+      "avgPowerLastMonth": "Average Power Last Month",
+      "avgPowerThisMonth": "Average Power This Month",
+      "avgPowerYesterday": "Average Power Yesterday",
+      "avgPowerToday": "Average Power Today",
+      "avgPowerBeforeYesterday": "Average Power Before Yesterday",
+      "instantaneousPower": "Instantaneous Power (This Hour)"
+    },
+    "charts": {
+      "monthlyPower": "Monthly Power – Current Year",
+      "monthlyAverage": "Average Monthly Power",
+      "dailyPower": "Daily Power – Current Month",
+      "hourlyPower": "Power Hour by Hour – Today"
+    },
+    "tables": {
+      "hourlyPower": "Power {meter} Hour by Hour",
+      "dailyTotal": "Total Power Over 24h",
+      "dailyAverage": "Power Day by Day",
+      "realtimeLastDay": "Realtime – last day",
+      "realtimeMonth": "Realtime – Current month so far",
+      "columns": {
+        "timestamp": "Timestamp",
+        "power": "Power (kW)",
+        "dailyPower": "Daily Power (kW)",
+        "averagePower": "Average Daily Power (kW)"
+      }
+    }
   }
 }

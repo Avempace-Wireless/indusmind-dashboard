@@ -40,6 +40,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/puissance',
+      name: 'Puissance',
+      component: () => import('../views/PuissanceView.vue'),
+      meta: {
+        title: 'Puissance',
+        requiresAuth: true,
+      },
+    },
+    {
       path: '/equipment',
       name: 'Equipment',
       component: () => import('../views/EquipmentView.vue'),

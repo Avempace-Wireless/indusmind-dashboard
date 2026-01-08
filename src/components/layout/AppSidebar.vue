@@ -236,6 +236,11 @@ const menuGroups = [
     title: 'Consumption',
     items: [
       {
+        icon: BarChartIcon,
+        name: 'Puissance',
+        path: '/puissance',
+      },
+      {
         icon: CartIcon,
         name: 'Consumption',
         path: '/consumption',
