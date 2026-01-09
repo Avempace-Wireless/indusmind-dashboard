@@ -233,21 +233,31 @@ const menuGroups = [
         name: 'Dashboard',
         path: '/dashboard',
       },
-    ],
-  },
-  {
-    title: 'Consumption',
-    items: [
+      {
+        icon: CartIcon,
+        name: 'Electrical Consumption',
+        path: '/consumption',
+      },
       {
         icon: BarChartIcon,
         name: t('puissance.pageTitle'),
         path: '/puissance',
       },
       {
-        icon: CartIcon,
-        name: 'Consumption',
-        path: '/consumption',
+        icon: CalenderIcon,
+        name: 'History',
+        path: '/history',
       },
+      {
+        icon: BarChartIcon,
+        name: 'Comparison',
+        path: '/comparison',
+      },
+    ],
+  },
+  {
+    title: 'Analysis',
+    items: [
       {
         icon: PieChartIcon,
         name: 'Base Load',
@@ -258,11 +268,6 @@ const menuGroups = [
         name: 'Peak Demand',
         path: '/peak-demand',
       },
-    ],
-  },
-  {
-    title: 'Analysis',
-    items: [
       {
         icon: PieChartIcon,
         name: 'Analysis',
@@ -273,11 +278,6 @@ const menuGroups = [
         name: 'Cost Analysis',
         path: '/cost-analysis',
       },
-      {
-        icon: BarChartIcon,
-        name: 'Comparison',
-        path: '/comparison',
-      },
     ],
   },
   {
@@ -287,11 +287,6 @@ const menuGroups = [
         icon: PageIcon,
         name: 'Reports',
         path: '/reports',
-      },
-      {
-        icon: CalenderIcon,
-        name: 'History',
-        path: '/history',
       },
     ],
   },
