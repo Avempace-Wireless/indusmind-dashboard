@@ -338,5 +338,81 @@
       "hourly": "Hourly",
       "daily": "Daily"
     }
+  },
+  "comparison": {
+    "title": "Comparison - Multi-Meter Analysis",
+    "subtitle": "Compare performance across multiple meters, periods or characteristics",
+    "mode": {
+      "title": "Choose comparison type",
+      "byMeters": "By Meters",
+      "byMetersDesc": "Compare the same period across different meters",
+      "byPeriods": "By Periods",
+      "byPeriodsDesc": "Compare different periods for the same meter(s)",
+      "matrix": "Matrix",
+      "matrixDesc": "Compare meters AND periods simultaneously"
+    },
+    "meters": {
+      "title": "Select meters to compare",
+      "selected": "{count} meters selected",
+      "all": "All meters",
+      "search": "Search meters..."
+    },
+    "periods": {
+      "title": "Select periods to compare",
+      "selected": "{count} periods selected",
+      "presets": {
+        "last7Days": "Last 7 days",
+        "last4Weeks": "Last 4 weeks",
+        "last3Months": "Last 3 months",
+        "custom": "Custom"
+      }
+    },
+    "aggregation": {
+      "title": "Aggregation level",
+      "hourly": "Hourly",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "chartType": {
+      "title": "Chart type",
+      "bar": "Bar",
+      "line": "Line",
+      "heatmap": "Heatmap",
+      "table": "Table"
+    },
+    "viewOptions": {
+      "title": "Display options",
+      "showRanking": "Show ranking",
+      "showVariance": "Show variance %",
+      "highlightOutliers": "Highlight outliers",
+      "showTrendArrows": "Show trend arrows",
+      "showAverageLine": "Show average line"
+    },
+    "kpi": {
+      "highest": "Highest",
+      "lowest": "Lowest",
+      "average": "Average",
+      "total": "Total",
+      "variance": "Variance",
+      "allMeters": "All meters",
+      "items": "items",
+      "fromAverage": "from average"
+    },
+    "table": {
+      "rank": "Rank",
+      "label": "Label",
+      "value": "Value",
+      "variance": "Variance %",
+      "trend": "Trend"
+    },
+    "buttons": {
+      "apply": "Apply filters",
+      "reset": "Reset",
+      "export": "Export to CSV",
+      "generateReport": "Generate report",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all"
+    }
   }
 }

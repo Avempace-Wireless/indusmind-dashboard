@@ -338,5 +338,81 @@
       "hourly": "horaire",
       "daily": "quotidien"
     }
+  },
+  "comparison": {
+    "title": "Comparaison - Analyse Multi-Mètres",
+    "subtitle": "Comparez la performance entre plusieurs compteurs, périodes ou caractéristiques",
+    "mode": {
+      "title": "Choisir le type de comparaison",
+      "byMeters": "Par Compteurs",
+      "byMetersDesc": "Compare la même période entre différents compteurs",
+      "byPeriods": "Par Périodes",
+      "byPeriodsDesc": "Compare différentes périodes pour le/les même(s) compteur(s)",
+      "matrix": "Matrice",
+      "matrixDesc": "Compare compteurs ET périodes simultanément"
+    },
+    "meters": {
+      "title": "Sélectionnez les compteurs à comparer",
+      "selected": "{count} mètres sélectionnés",
+      "all": "Tous les compteurs",
+      "search": "Rechercher des compteurs..."
+    },
+    "periods": {
+      "title": "Sélectionnez les périodes à comparer",
+      "selected": "{count} périodes sélectionnées",
+      "presets": {
+        "last7Days": "7 derniers jours",
+        "last4Weeks": "4 dernières semaines",
+        "last3Months": "3 derniers mois",
+        "custom": "Personnalisé"
+      }
+    },
+    "aggregation": {
+      "title": "Niveau d'agrégation",
+      "hourly": "Horaire",
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel"
+    },
+    "chartType": {
+      "title": "Type de graphique",
+      "bar": "Barres",
+      "line": "Lignes",
+      "heatmap": "Carte thermique",
+      "table": "Tableau"
+    },
+    "viewOptions": {
+      "title": "Options d'affichage",
+      "showRanking": "Afficher le classement",
+      "showVariance": "Afficher l'écart %",
+      "highlightOutliers": "Surligner les valeurs aberrantes",
+      "showTrendArrows": "Afficher les flèches de tendance",
+      "showAverageLine": "Afficher la ligne de moyenne"
+    },
+    "kpi": {
+      "highest": "Plus élevé",
+      "lowest": "Plus bas",
+      "average": "Moyenne",
+      "total": "Total",
+      "variance": "Variance",
+      "allMeters": "Tous les compteurs",
+      "items": "éléments",
+      "fromAverage": "de la moyenne"
+    },
+    "table": {
+      "rank": "Rang",
+      "label": "Étiquette",
+      "value": "Valeur",
+      "variance": "Écart %",
+      "trend": "Tendance"
+    },
+    "buttons": {
+      "apply": "Appliquer les filtres",
+      "reset": "Réinitialiser",
+      "export": "Exporter en CSV",
+      "generateReport": "Générer un rapport",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner"
+    }
   }
 }
