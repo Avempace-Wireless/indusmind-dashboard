@@ -267,5 +267,76 @@
         "averagePower": "Puissance moyenne journalière (kW)"
       }
     }
+  },
+  "energyHistory": {
+    "title": "Énergie - Historique Multi-Métriques",
+    "subtitle": "Analysez, comparez et visualisez tout type de métriques de consommation ou de performance dans le temps",
+    "buttons": {
+      "csv": "CSV",
+      "pdf": "PDF",
+      "reset": "Réinitialiser",
+      "today": "Aujourd'hui",
+      "selectAll": "Tout"
+    },
+    "viewMode": {
+      "chart": "Graphique",
+      "table": "Tableau"
+    },
+    "chart": {
+      "title": "Analyse {resolution} par compteur",
+      "subtitle": {
+        "noData": "Sélectionnez des dates pour afficher les données",
+        "singleDay": "Analyse pour {date}",
+        "multipleDays": "Analyse pour {dates}",
+        "daysCount": "Analyse pour {count} dates sélectionnées"
+      },
+      "toggleType": "Toggle Chart Type"
+    },
+    "table": {
+      "title": "Historique détaillé",
+      "subtitle": {
+        "hourly": "Tableau horaire",
+        "daily": "Tableau quotidien"
+      },
+      "entries": "{count} entrées affichées",
+      "fullscreen": "Tableau en plein écran",
+      "zoomIn": "Zoom Tableau",
+      "columns": {
+        "hour": "Heure",
+        "date": "Date"
+      }
+    },
+    "pagination": {
+      "page": "Page {current} / {total}",
+      "perPage": "{count} par page",
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
+    "calendar": {
+      "title": "Calendrier",
+      "weekdays": {
+        "mon": "Lun",
+        "tue": "Mar",
+        "wed": "Mer",
+        "thu": "Jeu",
+        "fri": "Ven",
+        "sat": "Sam",
+        "sun": "Dim"
+      },
+      "periods": {
+        "title": "Sélectionner une période:",
+        "last7Days": "7 derniers jours",
+        "last30Days": "30 derniers jours",
+        "thisMonth": "Ce mois",
+        "lastMonth": "Mois dernier"
+      }
+    },
+    "characteristics": {
+      "title": "Caractéristiques"
+    },
+    "resolution": {
+      "hourly": "horaire",
+      "daily": "quotidien"
+    }
   }
 }

@@ -10,6 +10,7 @@ import type {
 } from '../types/metrics'
 import { DEFAULT_METRICS as METRICS_CONFIG } from '../types/metrics'
 import { useDashboardStore } from './useDashboardStore'
+import i18n from '../i18n'
 
 /**
  * Energy History Store - Multi-Metric Historical Data Analysis
@@ -316,7 +317,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
       // Calculate average when multiple days selected
       const displayValue = numDays > 1 ? sumTotal / numDays : sumTotal
-      const dateLabel = numDays === 1 ? dates[0] : `${numDays} jours`
+      const locale = i18n.global.locale.value
+      const daysText = locale === 'en' ? 'days' : 'jours'
+      const dateLabel = numDays === 1 ? dates[0] : `${numDays} ${daysText}`
 
       return {
         metricId: compteur.id,

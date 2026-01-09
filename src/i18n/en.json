@@ -267,5 +267,76 @@
         "averagePower": "Average Daily Power (kW)"
       }
     }
+  },
+  "energyHistory": {
+    "title": "Energy - Multi-Metrics History",
+    "subtitle": "Analyze, compare and visualize any type of consumption or performance metrics over time",
+    "buttons": {
+      "csv": "CSV",
+      "pdf": "PDF",
+      "reset": "Reset",
+      "today": "Today",
+      "selectAll": "All"
+    },
+    "viewMode": {
+      "chart": "Chart",
+      "table": "Table"
+    },
+    "chart": {
+      "title": "{resolution} Analysis by Meter",
+      "subtitle": {
+        "noData": "Select dates to display data",
+        "singleDay": "Analysis for {date}",
+        "multipleDays": "Analysis for {dates}",
+        "daysCount": "Analysis for {count} selected dates"
+      },
+      "toggleType": "Toggle Chart Type"
+    },
+    "table": {
+      "title": "Detailed History",
+      "subtitle": {
+        "hourly": "Hourly Table",
+        "daily": "Daily Table"
+      },
+      "entries": "{count} entries displayed",
+      "fullscreen": "Full Screen Table",
+      "zoomIn": "Zoom Table",
+      "columns": {
+        "hour": "Hour",
+        "date": "Date"
+      }
+    },
+    "pagination": {
+      "page": "Page {current} / {total}",
+      "perPage": "{count} per page",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "calendar": {
+      "title": "Calendar",
+      "weekdays": {
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat",
+        "sun": "Sun"
+      },
+      "periods": {
+        "title": "Select a period:",
+        "last7Days": "Last 7 days",
+        "last30Days": "Last 30 days",
+        "thisMonth": "This month",
+        "lastMonth": "Last month"
+      }
+    },
+    "characteristics": {
+      "title": "Characteristics"
+    },
+    "resolution": {
+      "hourly": "Hourly",
+      "daily": "Daily"
+    }
   }
 }

@@ -5,10 +5,10 @@
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            Énergie - Historique Multi-Métriques
+            {{ t('energyHistory.title') }}
           </h1>
           <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Analysez, comparez et visualisez tout type de métriques de consommation ou de performance dans le temps
+            {{ t('energyHistory.subtitle') }}
           </p>
         </div>
         <div class="flex gap-3">
@@ -17,21 +17,21 @@
             class="flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <span class="material-symbols-outlined text-lg">file_download</span>
-            CSV
+            {{ t('energyHistory.buttons.csv') }}
           </button>
           <button
             @click="exportToPDF"
             class="flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
-            PDF
+            {{ t('energyHistory.buttons.pdf') }}
           </button>
           <button
             @click="resetFilters"
             class="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             <span class="material-symbols-outlined text-lg">refresh</span>
-            Réinitialiser
+            {{ t('energyHistory.buttons.reset') }}
           </button>
         </div>
       </div>
@@ -64,8 +64,8 @@
         <!-- View Mode Toggle (global) -->
         <div class="flex items-center justify-end">
           <div class="flex items-center rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden">
-            <button @click="viewMode = 'chart'" :class="['px-3 py-1.5 text-xs', viewMode === 'chart' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300']">Graphique</button>
-            <button @click="viewMode = 'table'" :class="['px-3 py-1.5 text-xs', viewMode === 'table' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300']">Tableau</button>
+            <button @click="viewMode = 'chart'" :class="['px-3 py-1.5 text-xs', viewMode === 'chart' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300']">{{ t('energyHistory.viewMode.chart') }}</button>
+            <button @click="viewMode = 'table'" :class="['px-3 py-1.5 text-xs', viewMode === 'table' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300']">{{ t('energyHistory.viewMode.table') }}</button>
           </div>
         </div>
 
@@ -73,7 +73,7 @@
         <div v-show="viewMode === 'chart'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <div class="flex items-center justify-between mb-6">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Analyse {{ resolutionLabel }} par compteur</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('energyHistory.chart.title', { resolution: resolutionLabel }) }}</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {{ chartSubtitle }}
               </p>
@@ -118,13 +118,13 @@
           <div class="p-6 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between">
               <div>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Historique détaillé</h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('energyHistory.table.title') }}</h3>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {{ effectiveResolution === 'hourly' ? 'Tableau horaire' : 'Tableau quotidien' }} • {{ pagedRows.length }} entrées affichées
+                  {{ t(`energyHistory.table.subtitle.${effectiveResolution}`) }} • {{ t('energyHistory.table.entries', { count: pagedRows.length }) }}
                 </p>
               </div>
               <div class="flex items-center gap-2">
-                <button @click="isTableZoomed = true" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400" title="Zoom Tableau">
+                <button @click="isTableZoomed = true" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400" :title="t('energyHistory.table.zoomIn')">
                   <span class="material-symbols-outlined">zoom_in</span>
                 </button>
               </div>
@@ -136,7 +136,7 @@
               <thead class="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-800">
-                    {{ effectiveResolution === 'hourly' ? 'Heure' : 'Date' }}
+                    {{ t(`energyHistory.table.columns.${effectiveResolution === 'hourly' ? 'hour' : 'date'}`) }}
                   </th>
                    <template v-for="compteur in visibleCompteurs" :key="compteur.id">
                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -163,11 +163,11 @@
           <!-- Pagination -->
           <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <div class="text-xs text-gray-500 dark:text-gray-400">
-              Page {{ currentPage }} / {{ totalPages }} • {{ itemsPerPage }} par page
+              {{ t('energyHistory.pagination.page', { current: currentPage, total: totalPages }) }} • {{ t('energyHistory.pagination.perPage', { count: itemsPerPage }) }}
             </div>
             <div class="flex items-center gap-2">
-              <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1.5 text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50">Précédent</button>
-              <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1.5 text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50">Suivant</button>
+              <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1.5 text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50">{{ t('energyHistory.pagination.previous') }}</button>
+              <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1.5 text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50">{{ t('energyHistory.pagination.next') }}</button>
             </div>
           </div>
         </div>
@@ -178,12 +178,12 @@
         <!-- Calendar Selector -->
         <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Calendrier</h3>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('energyHistory.calendar.title') }}</h3>
             <button
               @click="goToToday"
               class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
             >
-              Aujourd'hui
+              {{ t('energyHistory.buttons.today') }}
             </button>
           </div>
 
@@ -248,31 +248,31 @@
 
           <!-- Period Presets -->
           <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Sélectionner une période:</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ t('energyHistory.calendar.periods.title') }}</p>
             <div class="grid grid-cols-2 gap-2">
               <button
                 @click="selectLast7Days"
                 class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                7 derniers jours
+                {{ t('energyHistory.calendar.periods.last7Days') }}
               </button>
               <button
                 @click="selectLast30Days"
                 class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                30 derniers jours
+                {{ t('energyHistory.calendar.periods.last30Days') }}
               </button>
               <button
                 @click="selectThisMonth"
                 class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                Ce mois
+                {{ t('energyHistory.calendar.periods.thisMonth') }}
               </button>
               <button
                 @click="selectLastMonth"
                 class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                Mois dernier
+                {{ t('energyHistory.calendar.periods.lastMonth') }}
               </button>
             </div>
           </div>
@@ -281,8 +281,8 @@
         <!-- Characteristics Filter (Meters Selection) -->
         <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Caractéristiques</h3>
-            <button @click="enableAllCompteurs" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Tout</button>
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('energyHistory.characteristics.title') }}</h3>
+            <button @click="enableAllCompteurs" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">{{ t('energyHistory.buttons.selectAll') }}</button>
           </div>
           <div class="space-y-3">
             <label
@@ -314,11 +314,11 @@
       <div class="table-zoom-content rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
       <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <div>
-          <h3 class="text-base font-semibold text-gray-900 dark:text-white">Tableau en plein écran</h3>
-          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ effectiveResolution === 'hourly' ? 'Horaire' : 'Quotidien' }} • {{ tableData.length }} entrées</p>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('energyHistory.table.fullscreen') }}</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ t(`energyHistory.resolution.${effectiveResolution}`) }} • {{ t('energyHistory.table.entries', { count: tableData.length }) }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <button @click="isTableZoomed = false" class="px-3 py-1.5 text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">Fermer</button>
+          <button @click="isTableZoomed = false" class="px-3 py-1.5 text-xs rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{ t('common.close') }}</button>
         </div>
       </div>
       <div class="overflow-auto h-[calc(85vh-64px)]">
@@ -326,7 +326,7 @@
           <thead class="bg-gray-50 dark:bg-gray-800">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-800">
-                {{ effectiveResolution === 'hourly' ? 'Heure' : 'Date' }}
+                {{ t(`energyHistory.table.columns.${effectiveResolution === 'hourly' ? 'hour' : 'date'}`) }}
               </th>
               <template v-for="compteur in visibleCompteurs" :key="compteur.id">
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -360,6 +360,7 @@ import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElemen
 import AdminLayout from '../components/layout/AdminLayout.vue'
 import { useEnergyHistoryStore } from '../stores/useEnergyHistoryStore'
 import { storeToRefs } from 'pinia'
+import { useI18n } from 'vue-i18n'
 
 // Register Chart.js components
 Chart.register(LineController, BarController, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler)
@@ -367,6 +368,7 @@ Chart.register(LineController, BarController, CategoryScale, LinearScale, PointE
 // ===========================
 // Store Integration
 // ===========================
+const { t, locale } = useI18n()
 const store = useEnergyHistoryStore()
 const {
   availableMetrics,
@@ -474,18 +476,27 @@ const dragStart = ref<string | null>(null)
 // ===========================
 // Computed Properties
 // ===========================
-const weekDays = computed(() => ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'])
+const weekDays = computed(() => [
+  t('energyHistory.calendar.weekdays.mon'),
+  t('energyHistory.calendar.weekdays.tue'),
+  t('energyHistory.calendar.weekdays.wed'),
+  t('energyHistory.calendar.weekdays.thu'),
+  t('energyHistory.calendar.weekdays.fri'),
+  t('energyHistory.calendar.weekdays.sat'),
+  t('energyHistory.calendar.weekdays.sun')
+])
 
 const monthLabel = computed(() => {
-  const month = currentMonth.value.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+  const localeCode = locale.value === 'en' ? 'en-US' : 'fr-FR'
+  const month = currentMonth.value.toLocaleDateString(localeCode, { month: 'long', year: 'numeric' })
   return month.charAt(0).toUpperCase() + month.slice(1)
 })
 
 const chartSubtitle = computed(() => {
-  if (selectedDates.value.length === 0) return 'Sélectionnez des dates pour afficher les données'
-  if (selectedDates.value.length === 1) return `Analyse pour ${selectedDates.value[0]}`
-  if (selectedDates.value.length <= 3) return `Analyse pour ${selectedDates.value.join(' • ')}`
-  return `Analyse pour ${selectedDates.value.length} dates sélectionnées`
+  if (selectedDates.value.length === 0) return t('energyHistory.chart.subtitle.noData')
+  if (selectedDates.value.length === 1) return t('energyHistory.chart.subtitle.singleDay', { date: selectedDates.value[0] })
+  if (selectedDates.value.length <= 3) return t('energyHistory.chart.subtitle.multipleDays', { dates: selectedDates.value.join(' • ') })
+  return t('energyHistory.chart.subtitle.daysCount', { count: selectedDates.value.length })
 })
 
 // ===========================
