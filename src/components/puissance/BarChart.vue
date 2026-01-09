@@ -54,7 +54,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const chartRef = ref<HTMLCanvasElement | null>(null)
-let chartInstance: Chart | null = null
+let chartInstance: ChartJS | null = null
 
 const { locale } = useI18n()
 

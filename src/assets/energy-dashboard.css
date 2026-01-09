@@ -1,0 +1,1035 @@
+/* Energy Dashboard - BEM CSS Architecture with UX Enhancements */
+
+/* ============================================
+   BLOCK: energy-dashboard
+   Main container with 60-40 split layout
+   ============================================ */
+.energy-dashboard {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+@media (min-width: 1024px) {
+  .energy-dashboard {
+    grid-template-columns: 3fr 2fr;
+    gap: 0;
+  }
+}
+
+/* Left panel with right border separation */
+.energy-dashboard__left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+}
+
+@media (min-width: 1024px) {
+  .energy-dashboard__left-panel {
+    box-shadow: inset -4px 0 8px rgba(0, 0, 0, 0.02);
+  }
+}
+
+/* Right panel with distinct background */
+.energy-dashboard__right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background-color: #fafafa;
+}
+
+@media (max-width: 1023px) {
+  .energy-dashboard__right-panel {
+    border-top: 1px solid #e5e7eb;
+  }
+}
+
+/* ============================================
+   BLOCK: metric-cards
+   Improved card display with hover effects
+   ============================================ */
+.metric-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.metric-cards__card {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-cards__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.metric-cards__date {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.metric-cards__value {
+  font-size: 2.25rem;
+  line-height: 2.75rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.metric-cards__label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  margin-top: 0.25rem;
+}
+
+/* ============================================
+   BLOCK: energy-chart
+   Professional chart styling with clear hierarchy
+   ============================================ */
+.energy-chart {
+  display: flex;
+  flex-direction: column;
+}
+
+.energy-chart__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.energy-chart__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.energy-chart__title {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.energy-chart__subtitle {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.energy-chart__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.energy-chart__control-btn {
+  padding: 0.625rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.energy-chart__control-btn:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.energy-chart__control-btn:active {
+  background-color: #e5e7eb;
+}
+
+.energy-chart__container {
+  position: relative;
+  height: 400px;
+  margin-bottom: 1.5rem;
+}
+
+.energy-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: center;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.energy-chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.energy-chart__legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.energy-chart__legend-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* ============================================
+   BLOCK: calendar-selector
+   Professional calendar with enhanced usability
+   ============================================ */
+.calendar-selector {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-selector__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-selector__nav-btn {
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.calendar-selector__nav-btn:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.calendar-selector__month-label {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  flex: 1;
+}
+
+.calendar-selector__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+}
+
+.calendar-selector__weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #6b7280;
+  padding: 0.5rem 0;
+  letter-spacing: 0.5px;
+}
+
+.calendar-selector__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  padding: 0.5rem;
+}
+
+.calendar-selector__day {
+  aspect-ratio: 1;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 2px solid transparent;
+  background-color: #ffffff;
+  color: #6b7280;
+  transition: all 0.15s ease;
+}
+
+.calendar-selector__day:hover:not(.calendar-selector__day--disabled) {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.calendar-selector__day--today {
+  border-color: #10b981;
+  background-color: #ecfdf5;
+  color: #059669;
+  font-weight: 700;
+}
+
+.calendar-selector__day--selected {
+  background-color: #10b981;
+  color: #ffffff;
+  font-weight: 600;
+  border-color: #059669;
+}
+
+.calendar-selector__day--selected:hover {
+  background-color: #059669;
+}
+
+.calendar-selector__day--other-month {
+  color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.calendar-selector__day--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ============================================
+   BLOCK: characteristics-filter
+   Metric characteristics selector with colors
+   ============================================ */
+.characteristics-filter {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.characteristics-filter__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.characteristics-filter__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.characteristics-filter__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.characteristics-filter__item:hover {
+  background-color: #f9fafb;
+}
+
+.characteristics-filter__item--active {
+  background-color: #f0fdf4;
+}
+
+.characteristics-filter__checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 0.375rem;
+  border: 2px solid #d1d5db;
+  cursor: pointer;
+  accent-color: #10b981;
+  transition: all 0.2s ease;
+}
+
+.characteristics-filter__item--active .characteristics-filter__checkbox {
+  border-color: #10b981;
+  background-color: #10b981;
+}
+
+.characteristics-filter__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+.characteristics-filter__item--active .characteristics-filter__label {
+  color: #059669;
+  font-weight: 600;
+}
+
+/* ============================================
+   BLOCK: meters-control
+   Input range selector for meter reading
+   ============================================ */
+.meters-control {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.meters-control__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.meters-control__inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.meters-control__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.meters-control__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  min-width: 2rem;
+  text-align: center;
+}
+
+.meters-control__input {
+  flex: 1;
+  max-width: 80px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  color: #111827;
+  transition: all 0.2s ease;
+}
+
+.meters-control__input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.meters-control__select {
+  padding: 0.5rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  color: #111827;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.meters-control__select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background-color: #ffffff;
+}
+
+/* ============================================
+   BLOCK: action-controls
+   Action buttons and toggles
+   ============================================ */
+.action-controls {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.action-controls__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.action-controls__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.action-controls__btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.action-controls__btn--primary {
+  background-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+}
+
+.action-controls__btn--primary:hover {
+  background-color: #059669;
+  box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3);
+}
+
+.action-controls__btn--primary:active {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.action-controls__btn--inactive {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.action-controls__btn--inactive:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.action-controls__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.action-controls__option:hover {
+  background-color: #f3f4f6;
+}
+
+.action-controls__option-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.action-controls__option-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-controls__checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 0.375rem;
+  border: 2px solid #d1d5db;
+  cursor: pointer;
+  accent-color: #10b981;
+  transition: all 0.2s ease;
+}
+
+.action-controls__percentage {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10b981;
+  background-color: #ecfdf5;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  min-width: 2.5rem;
+  text-align: center;
+}
+
+.energy-chart__control-btn:hover {
+  background-color: rgb(243 244 246);
+}
+
+.energy-chart__container {
+  height: 400px;
+}
+
+.energy-chart__legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.energy-chart__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.energy-chart__legend-color {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+}
+
+.energy-chart__legend-label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.energy-chart--loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ============================================
+   BLOCK: energy-table
+   ============================================ */
+.energy-table {
+  /* TailAdmin CardBox styling applied via classes */
+}
+
+.energy-table__header {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.energy-table__container {
+  overflow-x: auto;
+}
+
+.energy-table__table {
+  width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.energy-table__thead {
+  text-align: left;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-transform: uppercase;
+}
+
+.energy-table__th {
+  padding: 0.75rem 1rem;
+}
+
+.energy-table__tbody {
+  /* Inherited from TailAdmin */
+}
+
+.energy-table__tr {
+  border-top-width: 1px;
+  transition: background-color 0.2s;
+}
+
+.energy-table__tr:hover {
+  background-color: rgb(249 250 251);
+}
+
+.energy-table__td {
+  padding: 0.75rem 1rem;
+}
+
+/* ============================================
+   BLOCK: calendar-selector
+   ============================================ */
+.calendar-selector {
+  /* TailAdmin CardBox styling applied via classes */
+}
+
+.calendar-selector__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.calendar-selector__nav-btn {
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+}
+
+.calendar-selector__nav-btn:hover {
+  background-color: rgb(243 244 246);
+}
+
+.calendar-selector__month-label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+}
+
+.calendar-selector__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-selector__weekday {
+  font-weight: 500;
+  padding: 0.25rem;
+}
+
+.calendar-selector__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+}
+
+.calendar-selector__day {
+  aspect-ratio: 1;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+}
+
+.calendar-selector__day:hover:not(.calendar-selector__day--disabled) {
+  background-color: rgb(243 244 246);
+}
+
+.calendar-selector__day--selected {
+  background-color: rgb(16 185 129);
+  color: white;
+}
+
+.calendar-selector__day--today {
+  border-color: rgb(16 185 129);
+  color: rgb(16 185 129);
+}
+
+.calendar-selector__day--disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.calendar-selector__day--other-month {
+  opacity: 0.4;
+}
+
+/* ============================================
+   BLOCK: characteristics-filter
+   ============================================ */
+.characteristics-filter {
+  /* TailAdmin CardBox styling applied via classes */
+}
+
+.characteristics-filter__title {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.characteristics-filter__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.characteristics-filter__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.characteristics-filter__checkbox {
+  border-radius: 0.25rem;
+  accent-color: rgb(16 185 129);
+}
+
+.characteristics-filter__label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  cursor: pointer;
+}
+
+.characteristics-filter__item--active .characteristics-filter__label {
+  font-weight: 500;
+}
+
+/* ============================================
+   BLOCK: meters-control
+   ============================================ */
+.meters-control {
+  /* TailAdmin CardBox styling applied via classes */
+}
+
+.meters-control__title {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.meters-control__inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.meters-control__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.meters-control__label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  width: 3rem;
+}
+
+.meters-control__input {
+  border-width: 1px;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  width: 4rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.meters-control__select {
+  border-width: 1px;
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+/* ============================================
+   BLOCK: action-controls
+   ============================================ */
+.action-controls {
+  /* TailAdmin CardBox styling applied via classes */
+}
+
+.action-controls__title {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.action-controls__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.action-controls__btn {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.action-controls__btn--primary {
+  background-color: rgb(16 185 129);
+  color: white;
+}
+
+.action-controls__btn--primary:hover {
+  background-color: rgb(5 150 105);
+}
+
+.action-controls__btn--inactive {
+  background-color: rgb(243 244 246);
+  color: rgb(75 85 99);
+}
+
+.action-controls__btn--inactive:hover {
+  background-color: rgb(229 231 235);
+}
+
+.action-controls__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.action-controls__option-label {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.action-controls__option-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-controls__checkbox {
+  border-radius: 0.25rem;
+  accent-color: rgb(16 185 129);
+}
+
+.action-controls__percentage {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  color: rgb(16 185 129);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/* Mobile (< 768px) */
+@media (max-width: 767px) {
+  .energy-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .energy-dashboard__left-panel,
+  .energy-dashboard__right-panel {
+    padding: 1rem;
+    border: none;
+  }
+
+  .energy-dashboard__left-panel {
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .metric-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .energy-chart__container {
+    height: 300px;
+  }
+
+  .calendar-selector__day {
+    min-height: 40px;
+    font-size: 0.8rem;
+  }
+
+  .meters-control__input {
+    max-width: 60px;
+  }
+}
+
+/* Tablet (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .energy-dashboard {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .energy-dashboard__left-panel {
+    padding: 1.25rem;
+  }
+
+  .energy-dashboard__right-panel {
+    padding: 1.25rem;
+  }
+
+  .energy-chart__container {
+    height: 350px;
+  }
+
+  .metric-cards__value {
+    font-size: 1.875rem;
+  }
+}
+
+/* Desktop (1024px+) */
+@media (min-width: 1024px) {
+  .energy-dashboard__left-panel {
+    padding: 2rem;
+    border-right: 2px solid #e5e7eb;
+  }
+
+  .energy-dashboard__right-panel {
+    padding: 2rem;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+  }
+
+  .energy-chart__container {
+    height: 450px;
+  }
+}
+
+/* Large Desktop (1280px+) */
+@media (min-width: 1280px) {
+  .energy-chart__container {
+    height: 500px;
+  }
+
+  .metric-cards__value {
+    font-size: 2.5rem;
+  }
+}
+
+/* ============================================
+   ANIMATIONS & TRANSITIONS
+   ============================================ */
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.calendar-selector,
+.characteristics-filter,
+.meters-control,
+.action-controls {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* Smooth transitions for all interactive elements */
+button,
+input,
+select {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}

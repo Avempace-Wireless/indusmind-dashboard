@@ -140,6 +140,7 @@
           </button>
         </div>
       </div>
+      </div>
     </div>
   </AdminLayout>
 </template>

@@ -60,9 +60,18 @@ const router = createRouter({
     {
       path: '/history',
       name: 'History',
-      component: () => import('../views/HistoryView.vue'),
+      component: () => import('../views/EnergyHistorical.vue'),
       meta: {
-        title: 'Historical Data',
+        title: 'Énergie – Historique',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/historique',
+      name: 'Historique',
+      component: () => import('../views/HistoriqueView.vue'),
+      meta: {
+        title: 'Historique',
         requiresAuth: true,
       },
     },

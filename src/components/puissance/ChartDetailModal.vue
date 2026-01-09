@@ -119,7 +119,6 @@ import {
   Legend,
   type ChartOptions,
 } from 'chart.js'
-import Chart from 'chart.js/auto'
 import PeriodSelector from './PeriodSelector.vue'
 import RangeSlider from './RangeSlider.vue'
 
@@ -150,7 +149,7 @@ const emit = defineEmits<{
 const selectedPeriod = ref<'hour' | 'day' | 'week' | 'month' | 'year'>('day')
 const { t, locale } = useI18n()
 const detailChartRef = ref<HTMLCanvasElement | null>(null)
-let detailChartInstance: Chart | null = null
+let detailChartInstance: ChartJS | null = null
 
 // X-axis range controls (indices)
 const xStart = ref(0)
