@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MonitorElec - Inventaire</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body>
+<div class="relative flex h-screen w-full bg-background-light dark:bg-background-dark overflow-hidden font-display">
+<!-- Sidebar -->
+<div class="flex h-full w-72 flex-col border-r border-[#e5e7eb] bg-white dark:border-[#222e42] dark:bg-[#111722]">
+<div class="flex h-full flex-col justify-between p-4">
+<div class="flex flex-col gap-4">
+<!-- Brand -->
+<div class="flex items-center gap-3 px-2">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shadow-sm" data-alt="Abstract blue electric wave logo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBrK8LPU5T5T7TRbd1LyJM2JJiih5boDgQe_rdAO1T1ZeE13v0hbsTEjB0JY-KSzFWVitLtJaw7CEHKLjZtA2_PZyhGdii4uAt7LciVyB6pt6CPD3K6y-n2xd01eG4DbTNuWgIZ0Xx8nbj36Cx-A2Dk5tooxdMi1nwfhGeQ4F1FRAvECX1TQc2nQXoBaTME50UVfyPbrKCmpmTiZlD1yMd-8i8z6fa1t2TrUjKbRefGQZPUJ1IXXzbk8nMuxP3XB5npFydgLsuMGzPD");'></div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-base font-bold leading-normal">MonitorElec</h1>
+<p class="text-slate-500 dark:text-[#92a4c9] text-xs font-normal leading-normal">Gestion d'énergie</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-1 mt-4">
+<a class="group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1a2333] transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500 dark:text-[#92a4c9] group-hover:text-primary" style="font-size: 24px;">donut_small</span>
+<p class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium group-hover:text-primary">Tableau de bord</p>
+</a>
+<!-- Active Item -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 dark:bg-[#232f48] border-l-4 border-primary" href="#">
+<span class="material-symbols-outlined text-primary dark:text-white" style="font-size: 24px;">inventory_2</span>
+<p class="text-primary dark:text-white text-sm font-bold">Inventaire</p>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1a2333] transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500 dark:text-[#92a4c9] group-hover:text-primary" style="font-size: 24px;">bolt</span>
+<p class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium group-hover:text-primary">Consommation</p>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1a2333] transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500 dark:text-[#92a4c9] group-hover:text-primary" style="font-size: 24px;">warning</span>
+<p class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium group-hover:text-primary">Alertes</p>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1a2333] transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500 dark:text-[#92a4c9] group-hover:text-primary" style="font-size: 24px;">description</span>
+<p class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium group-hover:text-primary">Rapports</p>
+</a>
+<a class="group flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1a2333] transition-colors" href="#">
+<span class="material-symbols-outlined text-slate-500 dark:text-[#92a4c9] group-hover:text-primary" style="font-size: 24px;">settings</span>
+<p class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium group-hover:text-primary">Paramètres</p>
+</a>
+</nav>
+</div>
+<!-- User Profile -->
+<div class="flex flex-col gap-1 border-t border-slate-200 dark:border-[#222e42] pt-4">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1a2333]" href="#">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8" data-alt="Portrait of a professional engineer" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCCkMC9Y5I0BV4EFSZnFgN8LOkfoS1I89TXma3hqpA66XUAb4vtK16odx_3ncI2C69qayZxwGrCVOIc--YVL2ea6wFJtZOTEJBvmryptWxxw5lC_u9tBZgXmiuauoTxLQuFucvRmCGcrPOe2WSfUDNNgdJV0gRv0tKw1_f_60jyZ9zIYVHZGCbkOTt9c_qxDxVlj4pavAoQ3l85Dhr1npXm9YNJxWT3jAW-tAJlLo5r3YY8bClooZEolwgnrTtsDorfLfEf_n1HhlX9");'></div>
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white text-sm font-medium leading-none">Jean Dupont</p>
+<p class="text-slate-500 dark:text-[#92a4c9] text-xs font-normal">Technicien Senior</p>
+</div>
+</a>
+</div>
+</div>
+</div>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-background-light dark:bg-background-dark">
+<div class="flex-1 overflow-y-auto">
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+<!-- Page Heading -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+<div class="flex flex-col gap-2">
+<h1 class="text-slate-900 dark:text-white text-3xl font-black leading-tight tracking-tight">Inventaire des Équipements</h1>
+<p class="text-slate-500 dark:text-[#92a4c9] text-base font-normal max-w-2xl">Gérez et surveillez l'état de tous vos actifs électriques en temps réel. Suivez les maintenances et les spécifications techniques.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-white dark:bg-[#232f48] border border-slate-200 dark:border-transparent text-slate-700 dark:text-white text-sm font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-[#2d3b55] transition-colors">
+<span class="material-symbols-outlined text-base">download</span>
+<span class="truncate">Exporter</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold shadow-md hover:bg-blue-600 transition-colors">
+<span class="material-symbols-outlined text-base">add</span>
+<span class="truncate">Ajouter un équipement</span>
+</button>
+</div>
+</div>
+<!-- Search and Filters Section -->
+<div class="flex flex-col gap-4 mb-6">
+<!-- Search Bar -->
+<div class="w-full">
+<label class="relative flex w-full">
+<div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+<span class="material-symbols-outlined text-slate-400 dark:text-[#92a4c9]">search</span>
+</div>
+<input class="w-full h-12 rounded-xl bg-white dark:bg-[#232f48] border border-slate-200 dark:border-transparent text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#92a4c9] pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base shadow-sm transition-all" placeholder="Rechercher par nom, ID ou emplacement..."/>
+</label>
+</div>
+<!-- Filter Chips -->
+<div class="flex flex-wrap gap-3 items-center">
+<div class="flex items-center gap-2 text-slate-500 dark:text-[#92a4c9] text-sm font-medium mr-2">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+                                Filtres:
+                            </div>
+<button class="group flex h-9 items-center justify-center gap-2 rounded-lg bg-white dark:bg-[#232f48] border border-slate-200 dark:border-transparent pl-3 pr-2 shadow-sm hover:border-primary/50 transition-all">
+<p class="text-slate-700 dark:text-white text-sm font-medium">Type: Tous</p>
+<span class="material-symbols-outlined text-slate-400 dark:text-[#92a4c9] group-hover:text-primary text-lg">arrow_drop_down</span>
+</button>
+<button class="group flex h-9 items-center justify-center gap-2 rounded-lg bg-white dark:bg-[#232f48] border border-slate-200 dark:border-transparent pl-3 pr-2 shadow-sm hover:border-primary/50 transition-all">
+<p class="text-slate-700 dark:text-white text-sm font-medium">Bâtiment: Tous</p>
+<span class="material-symbols-outlined text-slate-400 dark:text-[#92a4c9] group-hover:text-primary text-lg">arrow_drop_down</span>
+</button>
+<button class="group flex h-9 items-center justify-center gap-2 rounded-lg bg-white dark:bg-[#232f48] border border-slate-200 dark:border-transparent pl-3 pr-2 shadow-sm hover:border-primary/50 transition-all">
+<p class="text-slate-700 dark:text-white text-sm font-medium">Statut: Tous</p>
+<span class="material-symbols-outlined text-slate-400 dark:text-[#92a4c9] group-hover:text-primary text-lg">arrow_drop_down</span>
+</button>
+<button class="group flex h-9 items-center justify-center gap-2 rounded-lg bg-white dark:bg-[#232f48] border border-slate-200 dark:border-transparent pl-3 pr-2 shadow-sm hover:border-primary/50 transition-all">
+<p class="text-slate-700 dark:text-white text-sm font-medium">Puissance: Toutes</p>
+<span class="material-symbols-outlined text-slate-400 dark:text-[#92a4c9] group-hover:text-primary text-lg">arrow_drop_down</span>
+</button>
+<button class="ml-auto text-sm text-primary font-medium hover:underline">Réinitialiser</button>
+</div>
+</div>
+<!-- Data Table -->
+<div class="w-full overflow-hidden rounded-xl border border-slate-200 dark:border-[#222e42] bg-white dark:bg-[#111722] shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-slate-50 dark:bg-[#192233]">
+<tr>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-[#92a4c9] uppercase tracking-wider">ID</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-[#92a4c9] uppercase tracking-wider w-1/4">Nom de l'équipement</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-[#92a4c9] uppercase tracking-wider">Type</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-[#92a4c9] uppercase tracking-wider">Emplacement</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-[#92a4c9] uppercase tracking-wider">Spécifications</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-[#92a4c9] uppercase tracking-wider">Statut</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 dark:text-[#92a4c9] uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-[#222e42]">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-[#1a2333]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-[#92a4c9]">#EQ-001</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Transformateur T-01</span>
+<span class="text-xs text-slate-500 dark:text-[#92a4c9]">Série: TR-88392</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/30 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-400/20">Transformateur</span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-slate-400 dark:text-[#92a4c9]">location_on</span>
+                                                Sous-station A
+                                            </div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">20kV / 50Hz</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+<span class="text-sm font-medium text-emerald-700 dark:text-emerald-400">En ligne</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="text-slate-400 hover:text-red-500 dark:text-[#92a4c9] dark:hover:text-red-400 transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-[#1a2333]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-[#92a4c9]">#EQ-002</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Générateur G-04</span>
+<span class="text-xs text-slate-500 dark:text-[#92a4c9]">Série: GN-12004</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center rounded-md bg-purple-50 dark:bg-purple-900/30 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300 ring-1 ring-inset ring-purple-700/10 dark:ring-purple-400/20">Générateur</span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-slate-400 dark:text-[#92a4c9]">location_on</span>
+                                                Toit Bâtiment C
+                                            </div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">500kW / 400V</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+</span>
+<span class="text-sm font-medium text-amber-700 dark:text-amber-400">Maintenance</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="text-slate-400 hover:text-red-500 dark:text-[#92a4c9] dark:hover:text-red-400 transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-[#1a2333]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-[#92a4c9]">#EQ-003</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Disjoncteur D-12</span>
+<span class="text-xs text-slate-500 dark:text-[#92a4c9]">Série: DJ-00921</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center rounded-md bg-orange-50 dark:bg-orange-900/30 px-2 py-1 text-xs font-medium text-orange-700 dark:text-orange-300 ring-1 ring-inset ring-orange-700/10 dark:ring-orange-400/20">Disjoncteur</span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-slate-400 dark:text-[#92a4c9]">location_on</span>
+                                                Salle Serveur
+                                            </div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">400V / 32A</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-slate-400"></span>
+</span>
+<span class="text-sm font-medium text-slate-600 dark:text-slate-400">Hors ligne</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="text-slate-400 hover:text-red-500 dark:text-[#92a4c9] dark:hover:text-red-400 transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-[#1a2333]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-[#92a4c9]">#EQ-004</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Onduleur U-09</span>
+<span class="text-xs text-slate-500 dark:text-[#92a4c9]">Série: UPS-2210</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center rounded-md bg-teal-50 dark:bg-teal-900/30 px-2 py-1 text-xs font-medium text-teal-700 dark:text-teal-300 ring-1 ring-inset ring-teal-700/10 dark:ring-teal-400/20">Onduleur</span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-slate-400 dark:text-[#92a4c9]">location_on</span>
+                                                Laboratoire 2
+                                            </div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">230V / 16A</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+<span class="text-sm font-medium text-emerald-700 dark:text-emerald-400">En ligne</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="text-slate-400 hover:text-red-500 dark:text-[#92a4c9] dark:hover:text-red-400 transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-[#1a2333]/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-[#92a4c9]">#EQ-005</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Compteur C-22</span>
+<span class="text-xs text-slate-500 dark:text-[#92a4c9]">Série: CM-0911</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center rounded-md bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-700/10 dark:ring-indigo-400/20">Compteur</span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-base text-slate-400 dark:text-[#92a4c9]">location_on</span>
+                                                Entrée Principale
+                                            </div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-[#dbeafe]">Max 100A</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+<span class="text-sm font-medium text-emerald-700 dark:text-emerald-400">En ligne</span>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="text-slate-400 hover:text-red-500 dark:text-[#92a4c9] dark:hover:text-red-400 transition-colors"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+<button class="text-slate-400 hover:text-primary dark:text-[#92a4c9] dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-[20px]">visibility</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="flex items-center justify-between border-t border-slate-200 dark:border-[#222e42] bg-white dark:bg-[#111722] px-4 py-3 sm:px-6">
+<div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+<div>
+<p class="text-sm text-slate-700 dark:text-[#92a4c9]">
+                                        Affichage de <span class="font-medium text-slate-900 dark:text-white">1</span> à <span class="font-medium text-slate-900 dark:text-white">5</span> sur <span class="font-medium text-slate-900 dark:text-white">42</span> résultats
+                                    </p>
+</div>
+<div>
+<nav aria-label="Pagination" class="isolate inline-flex -space-x-px rounded-md shadow-sm">
+<a class="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 dark:ring-[#222e42] hover:bg-slate-50 dark:hover:bg-[#1a2333] focus:z-20 focus:outline-offset-0" href="#">
+<span class="sr-only">Précédent</span>
+<span class="material-symbols-outlined text-lg">chevron_left</span>
+</a>
+<a aria-current="page" class="relative z-10 inline-flex items-center bg-primary px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" href="#">1</a>
+<a class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-[#222e42] hover:bg-slate-50 dark:hover:bg-[#1a2333] focus:z-20 focus:outline-offset-0" href="#">2</a>
+<a class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-[#222e42] hover:bg-slate-50 dark:hover:bg-[#1a2333] focus:z-20 focus:outline-offset-0" href="#">3</a>
+<span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 dark:text-[#92a4c9] ring-1 ring-inset ring-slate-300 dark:ring-[#222e42] focus:outline-offset-0">...</span>
+<a class="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 dark:ring-[#222e42] hover:bg-slate-50 dark:hover:bg-[#1a2333] focus:z-20 focus:outline-offset-0" href="#">
+<span class="sr-only">Suivant</span>
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</a>
+</nav>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Comparaison Énergétique - EnerVision</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-dark": "#192233",
+                        "surface-light": "#ffffff",
+                        "border-dark": "#232f48",
+                        "border-light": "#e5e7eb",
+                        "text-primary-dark": "#ffffff",
+                        "text-secondary-dark": "#92a4c9",
+                        "text-primary-light": "#111827",
+                        "text-secondary-light": "#6b7280",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for better look in dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101622; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #324467; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b6694; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-primary-light dark:text-text-primary-dark font-display antialiased overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- Sidebar -->
+<div class="w-64 flex-shrink-0 border-r border-border-light dark:border-border-dark flex flex-col bg-surface-light dark:bg-background-dark">
+<div class="p-6">
+<div class="flex flex-col">
+<h1 class="text-xl font-bold leading-normal text-primary dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-size: 28px;">bolt</span>
+                        EnerVision
+                    </h1>
+<p class="text-text-secondary-light dark:text-text-secondary-dark text-xs font-normal mt-1">Monitoring Industriel</p>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto px-4 space-y-2">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-sm font-medium">Tableau de bord</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">show_chart</span>
+<span class="text-sm font-medium">Temps Réel</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">location_on</span>
+<span class="text-sm font-medium">Sites</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary/10 text-primary dark:bg-primary/20 dark:text-white" href="#">
+<span class="material-symbols-outlined text-primary dark:text-white" style="font-variation-settings: 'FILL' 1;">compare_arrows</span>
+<span class="text-sm font-medium">Comparaison</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">warning</span>
+<span class="text-sm font-medium">Alertes</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">settings</span>
+<span class="text-sm font-medium">Paramètres</span>
+</a>
+</nav>
+<div class="p-4 border-t border-border-light dark:border-border-dark">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-surface-dark flex items-center justify-center overflow-hidden">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="User profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFxYIhv7Sc9vThD0rbtOMuvJEEfDxxPctp-zZe5LmNqBNWhEKIVywZ_yvi3t2AvlW7QpCTtfPWRIZZBVA2bjvxjBXzWe7SibQgtDIls3dqFtcfE87PaPW0odEv_w3aP8Bnw7N4WXXzDyxsp8PapPRsTX-IzAfITZhQ0-y1nJmq2RtHWjYHsx7I7rI3vdLcQ2Rilg032Yztinu_q_1RoPiQH3FdiKn5Qr2iP7-_mfMK9Wg3pq45nH4XA7pCfSrIQSgPOJgSNEL7FALZ"/>
+</div>
+<div>
+<p class="text-sm font-medium dark:text-white">Jean Dupont</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Ingénieur Lead</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Header & Controls -->
+<div class="flex-shrink-0 border-b border-border-light dark:border-border-dark bg-surface-light dark:bg-background-dark z-10">
+<div class="px-8 py-6">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="flex flex-col gap-2">
+<h2 class="text-3xl font-black tracking-tight dark:text-white">Comparaison Énergétique</h2>
+<p class="text-text-secondary-light dark:text-text-secondary-dark">Analysez les écarts de performance entre sites ou périodes temporelles.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-white hover:bg-blue-600 transition-colors shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">play_arrow</span>
+<span class="text-sm font-medium">Générer le rapport</span>
+</button>
+<button class="flex h-10 w-10 items-center justify-center rounded-lg border border-border-light dark:border-border-dark hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark">download</span>
+</button>
+</div>
+</div>
+<!-- Filter Tabs -->
+<div class="mt-8 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+<button class="flex h-9 items-center gap-2 rounded-full bg-primary/10 px-4 text-primary dark:bg-primary dark:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">domain</span>
+<span class="text-sm font-medium whitespace-nowrap">Site vs Site</span>
+</button>
+<button class="flex h-9 items-center gap-2 rounded-full border border-border-light dark:border-border-dark bg-transparent px-4 text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span class="text-sm font-medium whitespace-nowrap">Période vs Période</span>
+</button>
+<button class="flex h-9 items-center gap-2 rounded-full border border-border-light dark:border-border-dark bg-transparent px-4 text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-sm">track_changes</span>
+<span class="text-sm font-medium whitespace-nowrap">Benchmarks</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-8">
+<div class="mx-auto max-w-7xl flex flex-col gap-8">
+<!-- Inputs Section -->
+<div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-5 shadow-sm">
+<div class="flex flex-wrap items-end gap-4">
+<div class="flex-1 min-w-[200px]">
+<label class="block text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-2">Site de Référence (A)</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark">factory</span>
+<select class="w-full h-11 pl-10 pr-4 rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-primary-light dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none appearance-none">
+<option>Usine Nord - Lyon</option>
+<option>Centre Logistique - Paris</option>
+</select>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex items-center justify-center pb-3 px-2">
+<span class="material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark bg-background-light dark:bg-background-dark p-2 rounded-full border border-border-light dark:border-border-dark">compare_arrows</span>
+</div>
+<div class="flex-1 min-w-[200px]">
+<label class="block text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-2">Site de Comparaison (B)</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark">factory</span>
+<select class="w-full h-11 pl-10 pr-4 rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-primary-light dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none appearance-none">
+<option>Usine Sud - Marseille</option>
+<option>Centre Logistique - Lille</option>
+</select>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex-1 min-w-[200px]">
+<label class="block text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark mb-2">Période d'analyse</label>
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark">date_range</span>
+<input class="w-full h-11 pl-10 pr-4 rounded-lg bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark text-text-primary-light dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none" type="text" value="01 Jan 2023 - 31 Jan 2023"/>
+</div>
+</div>
+<button class="h-11 px-6 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-colors shadow-lg shadow-primary/20">
+                                Comparer
+                            </button>
+</div>
+</div>
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-5 relative overflow-hidden group">
+<div class="absolute right-0 top-0 h-full w-1 bg-red-500"></div>
+<div class="flex justify-between items-start mb-2">
+<p class="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">Écart Consommation</p>
+<span class="flex items-center text-xs font-bold text-red-500 bg-red-500/10 px-2 py-1 rounded">+12.4%</span>
+</div>
+<p class="text-2xl font-bold text-text-primary-light dark:text-white">45,230 <span class="text-sm font-normal text-text-secondary-light dark:text-text-secondary-dark">kWh</span></p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark mt-2">A: 380,120 vs B: 425,350</p>
+</div>
+<div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-5 relative overflow-hidden">
+<div class="absolute right-0 top-0 h-full w-1 bg-emerald-500"></div>
+<div class="flex justify-between items-start mb-2">
+<p class="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">Écart Coût</p>
+<span class="flex items-center text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">-5.2%</span>
+</div>
+<p class="text-2xl font-bold text-text-primary-light dark:text-white">-3,450 <span class="text-sm font-normal text-text-secondary-light dark:text-text-secondary-dark">€</span></p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark mt-2">Économie potentielle sur site B</p>
+</div>
+<div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-5 relative overflow-hidden">
+<div class="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
+<div class="flex justify-between items-start mb-2">
+<p class="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">Puissance Max</p>
+<span class="flex items-center text-xs font-bold text-blue-500 bg-blue-500/10 px-2 py-1 rounded">+2.1%</span>
+</div>
+<p class="text-2xl font-bold text-text-primary-light dark:text-white">450 <span class="text-sm font-normal text-text-secondary-light dark:text-text-secondary-dark">kW</span></p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark mt-2">Pic atteint le 14 Jan à 10:00</p>
+</div>
+<div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-5 relative overflow-hidden">
+<div class="absolute right-0 top-0 h-full w-1 bg-amber-500"></div>
+<div class="flex justify-between items-start mb-2">
+<p class="text-sm font-medium text-text-secondary-light dark:text-text-secondary-dark">Émissions CO2</p>
+<span class="flex items-center text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-1 rounded">+8.3%</span>
+</div>
+<p class="text-2xl font-bold text-text-primary-light dark:text-white">12.5 <span class="text-sm font-normal text-text-secondary-light dark:text-text-secondary-dark">Tonnes</span></p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark mt-2">Impact carbone direct</p>
+</div>
+</div>
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Main Chart -->
+<div class="lg:col-span-2 rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-6">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold text-text-primary-light dark:text-white">Évolution de la Puissance (kW)</h3>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Usine Nord</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-cyan-400"></span>
+<span class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Usine Sud</span>
+</div>
+</div>
+</div>
+<!-- Mock Chart Representation using CSS Gradients/Bars -->
+<div class="h-64 w-full flex items-end gap-1 relative pt-4">
+<!-- Grid lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+<div class="w-full h-px bg-border-light dark:bg-border-dark"></div>
+<div class="w-full h-px bg-border-light dark:bg-border-dark"></div>
+<div class="w-full h-px bg-border-light dark:bg-border-dark"></div>
+<div class="w-full h-px bg-border-light dark:bg-border-dark"></div>
+<div class="w-full h-px bg-border-light dark:bg-border-dark"></div>
+</div>
+<!-- Chart Bars Loop (Simulated) -->
+<div class="w-full h-full flex items-end justify-between px-2 gap-1 z-0">
+<!-- Each group represents a day/point -->
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[40%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[35%] hover:bg-cyan-400 transition-all"></div>
+<!-- Tooltip -->
+<div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs p-2 rounded opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap z-20 pointer-events-none">
+                                            Nord: 400kW | Sud: 350kW
+                                        </div>
+</div>
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[55%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[45%] hover:bg-cyan-400 transition-all"></div>
+</div>
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[70%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[60%] hover:bg-cyan-400 transition-all"></div>
+</div>
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[65%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[80%] hover:bg-cyan-400 transition-all"></div>
+</div>
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[50%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[55%] hover:bg-cyan-400 transition-all"></div>
+</div>
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[45%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[40%] hover:bg-cyan-400 transition-all"></div>
+</div>
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[30%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[25%] hover:bg-cyan-400 transition-all"></div>
+</div>
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[60%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[75%] hover:bg-cyan-400 transition-all"></div>
+</div>
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[80%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[90%] hover:bg-cyan-400 transition-all"></div>
+</div>
+<div class="flex-1 flex items-end gap-[2px] h-full justify-center group/bar relative">
+<div class="w-2 bg-primary/80 rounded-t-sm h-[50%] hover:bg-primary transition-all"></div>
+<div class="w-2 bg-cyan-400/80 rounded-t-sm h-[45%] hover:bg-cyan-400 transition-all"></div>
+</div>
+</div>
+</div>
+<div class="flex justify-between text-xs text-text-secondary-light dark:text-text-secondary-dark mt-4 px-2">
+<span>01 Jan</span>
+<span>05 Jan</span>
+<span>10 Jan</span>
+<span>15 Jan</span>
+<span>20 Jan</span>
+<span>25 Jan</span>
+<span>30 Jan</span>
+</div>
+</div>
+<!-- Secondary Analysis / Donut or Distribution -->
+<div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-6 flex flex-col">
+<h3 class="text-lg font-bold text-text-primary-light dark:text-white mb-6">Répartition par Usage</h3>
+<div class="flex-1 flex flex-col justify-center items-center relative">
+<!-- Abstract Donut Chart -->
+<div class="w-48 h-48 rounded-full border-[16px] border-border-light dark:border-[#232f48] relative flex items-center justify-center">
+<svg class="w-full h-full absolute inset-0 -rotate-90" viewbox="0 0 36 36">
+<!-- Ring 1 -->
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="60, 100" stroke-width="3"></path>
+<!-- Ring 2 -->
+<path class="text-cyan-400" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="25, 100" stroke-dashoffset="-65" stroke-width="3"></path>
+</svg>
+<div class="text-center">
+<p class="text-3xl font-bold dark:text-white">60%</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">HVAC</p>
+</div>
+</div>
+</div>
+<div class="mt-6 space-y-3">
+<div class="flex justify-between items-center text-sm">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded bg-primary"></div>
+<span class="text-text-primary-light dark:text-white">HVAC (Chauffage/Ventilation)</span>
+</div>
+<span class="font-medium text-text-primary-light dark:text-white">60%</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded bg-cyan-400"></div>
+<span class="text-text-primary-light dark:text-white">Éclairage</span>
+</div>
+<span class="font-medium text-text-primary-light dark:text-white">25%</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded bg-gray-500"></div>
+<span class="text-text-primary-light dark:text-white">Machines</span>
+</div>
+<span class="font-medium text-text-primary-light dark:text-white">15%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Data Table -->
+<div class="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark overflow-hidden">
+<div class="p-6 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+<h3 class="text-lg font-bold text-text-primary-light dark:text-white">Données Détaillées</h3>
+<button class="text-sm text-primary hover:text-blue-400 font-medium">Exporter CSV</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm">
+<thead class="bg-background-light dark:bg-background-dark text-text-secondary-light dark:text-text-secondary-dark uppercase font-medium">
+<tr>
+<th class="px-6 py-4">Date</th>
+<th class="px-6 py-4">Usine Nord (kWh)</th>
+<th class="px-6 py-4">Usine Sud (kWh)</th>
+<th class="px-6 py-4">Différence</th>
+<th class="px-6 py-4">% Écart</th>
+<th class="px-6 py-4">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light dark:divide-border-dark text-text-primary-light dark:text-gray-300">
+<tr class="hover:bg-gray-50 dark:hover:bg-surface-dark/50 transition-colors">
+<td class="px-6 py-4 font-medium dark:text-white">30 Jan 2023</td>
+<td class="px-6 py-4">12,450</td>
+<td class="px-6 py-4">13,200</td>
+<td class="px-6 py-4 text-red-500 font-medium">+750</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 text-red-500 bg-red-500/10 px-2 py-1 rounded text-xs font-bold">
+<span class="material-symbols-outlined text-xs">trending_up</span> 6.0%
+                                            </span>
+</td>
+<td class="px-6 py-4"><span class="w-2 h-2 rounded-full bg-red-500 block" title="Attention"></span></td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-surface-dark/50 transition-colors">
+<td class="px-6 py-4 font-medium dark:text-white">29 Jan 2023</td>
+<td class="px-6 py-4">11,800</td>
+<td class="px-6 py-4">11,500</td>
+<td class="px-6 py-4 text-emerald-500 font-medium">-300</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded text-xs font-bold">
+<span class="material-symbols-outlined text-xs">trending_down</span> 2.5%
+                                            </span>
+</td>
+<td class="px-6 py-4"><span class="w-2 h-2 rounded-full bg-emerald-500 block" title="OK"></span></td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-surface-dark/50 transition-colors">
+<td class="px-6 py-4 font-medium dark:text-white">28 Jan 2023</td>
+<td class="px-6 py-4">10,200</td>
+<td class="px-6 py-4">10,250</td>
+<td class="px-6 py-4 text-text-secondary-light dark:text-gray-400 font-medium">+50</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 text-gray-500 bg-gray-500/10 px-2 py-1 rounded text-xs font-bold">
+<span class="material-symbols-outlined text-xs">remove</span> 0.5%
+                                            </span>
+</td>
+<td class="px-6 py-4"><span class="w-2 h-2 rounded-full bg-emerald-500 block" title="OK"></span></td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-surface-dark/50 transition-colors">
+<td class="px-6 py-4 font-medium dark:text-white">27 Jan 2023</td>
+<td class="px-6 py-4">13,500</td>
+<td class="px-6 py-4">14,800</td>
+<td class="px-6 py-4 text-red-500 font-medium">+1,300</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 text-red-500 bg-red-500/10 px-2 py-1 rounded text-xs font-bold">
+<span class="material-symbols-outlined text-xs">trending_up</span> 9.6%
+                                            </span>
+</td>
+<td class="px-6 py-4"><span class="w-2 h-2 rounded-full bg-red-500 block" title="Attention"></span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-border-light dark:border-border-dark flex justify-center">
+<button class="text-sm text-text-secondary-light dark:text-text-secondary-dark hover:text-primary transition-colors flex items-center gap-1">
+                                Voir plus de données <span class="material-symbols-outlined text-base">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Contrôle - Gestion Électrique</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111722", // Matches component bg
+                        "card-dark": "#192233",
+                        "border-dark": "#324467",
+                        "text-secondary": "#92a4c9",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem", 
+                        "lg": "0.5rem", 
+                        "xl": "0.75rem", 
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Range Slider Styling for Webkit */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+        }
+        input[type=range]:focus {
+            outline: none; 
+        }
+        /* Custom scrollbar to match dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111722; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #324467; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b659b; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-x-hidden">
+<div class="relative flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<div class="hidden lg:flex w-72 flex-col border-r border-border-dark bg-background-dark p-4">
+<div class="flex flex-col gap-4 h-full">
+<!-- Profile / Brand -->
+<div class="flex gap-3 items-center pb-4 border-b border-border-dark/50">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 border-2 border-primary" data-alt="Profile picture of the system administrator" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCAnLyAQ3xw2vje9wBCKBgiDu8jkGEe-TfxwimanHoVhLfvjzjeGVhBY9mzBbSycpCZqQI_B3JV8Zgc07fsXuvg6UZMDEj3JAY4Mi2SIElZ7sUr3o8jhOdUfbR7kHsWUnE0Dj-4YFYlF-zO4OYE6Amlk-9WhPymBEEcP-J_yIg80XHFxi0yPSjTOfeqdNN-uOXyghlp5YV75Nq0sA1cRWpLo3YN7x62jmIyPjjxNNC9bOzwDi6xdIFJs9SlnCVp9Yr8WDCeYUsNWEcI");'>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-bold leading-normal">Admin Système</h1>
+<p class="text-text-secondary text-xs font-normal leading-normal">Installation Principale</p>
+</div>
+</div>
+<!-- Navigation -->
+<div class="flex flex-col gap-2 flex-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-white">dashboard</span>
+<p class="text-text-secondary group-hover:text-white text-sm font-medium leading-normal">Tableau de bord</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-white">analytics</span>
+<p class="text-text-secondary group-hover:text-white text-sm font-medium leading-normal">Analyses</p>
+</a>
+<!-- Active Item -->
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-[#232f48] border-l-4 border-primary shadow-sm" href="#">
+<span class="material-symbols-outlined text-primary fill-1">tune</span>
+<p class="text-white text-sm font-bold leading-normal">Contrôle</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-white">description</span>
+<p class="text-text-secondary group-hover:text-white text-sm font-medium leading-normal">Rapports</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors group" href="#">
+<span class="material-symbols-outlined text-text-secondary group-hover:text-white">settings</span>
+<p class="text-text-secondary group-hover:text-white text-sm font-medium leading-normal">Paramètres</p>
+</a>
+</div>
+<!-- Footer Action -->
+<button class="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg h-10 px-4 bg-white/5 hover:bg-white/10 text-white text-sm font-bold transition-colors mt-auto">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+<span class="truncate">Déconnexion</span>
+</button>
+</div>
+</div>
+<!-- Main Content -->
+<div class="flex-1 flex flex-col h-full overflow-y-auto relative scroll-smooth">
+<div class="layout-container flex h-full grow flex-col">
+<div class="px-6 lg:px-12 flex flex-1 justify-center py-8">
+<div class="layout-content-container flex flex-col w-full max-w-[1200px] flex-1 gap-8">
+<!-- Header -->
+<div class="flex flex-wrap justify-between items-center gap-4">
+<div class="flex flex-col gap-1">
+<h2 class="text-white text-3xl font-black leading-tight tracking-tight">Gestion des Systèmes</h2>
+<p class="text-text-secondary text-base font-normal">Panneau de commande en temps réel</p>
+</div>
+<div class="flex gap-3">
+<button class="flex cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-red-500/10 hover:bg-red-500/20 border border-red-500/50 text-red-500 text-sm font-bold transition-all">
+<span class="material-symbols-outlined mr-2 text-[20px]">motion_mode</span>
+                                Arrêt d'urgence
+                            </button>
+<button class="flex cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold shadow-lg shadow-blue-900/20 transition-all">
+<span class="material-symbols-outlined mr-2 text-[20px]">save</span>
+                                Enregistrer
+                            </button>
+</div>
+</div>
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="flex flex-col gap-2 rounded-xl p-5 border border-border-dark bg-card-dark/50">
+<div class="flex justify-between items-start">
+<p class="text-text-secondary text-sm font-medium">Consommation Totale</p>
+<span class="material-symbols-outlined text-primary">bolt</span>
+</div>
+<p class="text-white text-2xl font-bold">450 kW</p>
+<p class="text-emerald-500 text-xs font-medium flex items-center mt-1">
+<span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>
+                                +2.5% vs hier
+                            </p>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 border border-border-dark bg-card-dark/50">
+<div class="flex justify-between items-start">
+<p class="text-text-secondary text-sm font-medium">Charge Actuelle</p>
+<span class="material-symbols-outlined text-amber-500">speed</span>
+</div>
+<p class="text-white text-2xl font-bold">85%</p>
+<p class="text-amber-500 text-xs font-medium flex items-center mt-1">
+<span class="material-symbols-outlined text-[14px] mr-1">warning</span>
+                                Charge élevée
+                            </p>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 border border-border-dark bg-card-dark/50">
+<div class="flex justify-between items-start">
+<p class="text-text-secondary text-sm font-medium">Fréquence</p>
+<span class="material-symbols-outlined text-purple-500">show_chart</span>
+</div>
+<p class="text-white text-2xl font-bold">50.02 Hz</p>
+<p class="text-text-secondary text-xs font-medium flex items-center mt-1">
+                                Stable
+                            </p>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-5 border border-border-dark bg-card-dark/50">
+<div class="flex justify-between items-start">
+<p class="text-text-secondary text-sm font-medium">Unités Actives</p>
+<span class="material-symbols-outlined text-emerald-500">grid_view</span>
+</div>
+<p class="text-white text-2xl font-bold">12/15</p>
+<p class="text-emerald-500 text-xs font-medium flex items-center mt-1">
+<span class="material-symbols-outlined text-[14px] mr-1">add_circle</span>
+                                +1 Activée
+                            </p>
+</div>
+</div>
+<!-- Main Systems Control -->
+<div class="flex flex-col gap-4">
+<h3 class="text-white text-xl font-bold px-1">Systèmes Critiques</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+<!-- Card 1: HVAC -->
+<div class="rounded-xl border border-border-dark bg-card-dark overflow-hidden group">
+<div class="h-40 bg-cover bg-center relative" data-alt="Abstract blue ventilation system background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBwHOCeULm3MbWApIP8SPGpTqCtirCF8gL2nCyogXLzAChJwaCnY9k_wpLyHFBkBTYdg-qBLC4jYFM75LXfatwrduHNcda0BBGW6nPOd5nHhlnkh4JtKeCJJf46tfDvS2M5SNYUqfMI3OtN3SO9OymdS7da_B9R7L6YI-qqKPRSa3SKB8f5O-A66Krfeh0CmjdRlq0OwQC0WpVI41LfVQN7gaBArNxknuFQKE1iZIbxUxzvKj5c6PQbo_5LJ_7oSLC09ca8_RbZgKcI');">
+<div class="absolute inset-0 bg-gradient-to-t from-card-dark to-transparent opacity-90"></div>
+<div class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        En Ligne
+                                    </div>
+<div class="absolute bottom-4 left-4">
+<p class="text-text-secondary text-xs font-medium uppercase tracking-wider mb-1">CVC Système A</p>
+<h4 class="text-white text-lg font-bold">Ventilation Sud</h4>
+</div>
+</div>
+<div class="p-5 flex flex-col gap-5">
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-text-secondary text-xs">Température Cible</span>
+<span class="text-white text-xl font-bold">21°C</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-text-secondary text-xs">RPM</span>
+<span class="text-white text-xl font-bold">1200</span>
+</div>
+</div>
+<!-- Controls -->
+<div class="flex flex-col gap-3">
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-sm font-medium text-white">Mode Automatique</span>
+<div class="relative">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</label>
+<div class="pt-2">
+<div class="flex justify-between text-xs text-text-secondary mb-1">
+<span>16°C</span>
+<span>28°C</span>
+</div>
+<input class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary" max="28" min="16" type="range" value="21"/>
+</div>
+</div>
+</div>
+<div class="px-5 py-3 border-t border-border-dark bg-white/5 flex justify-between items-center">
+<span class="text-xs text-text-secondary">Dernière maj: 2min</span>
+<button class="text-primary hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Configuration</button>
+</div>
+</div>
+<!-- Card 2: Lighting -->
+<div class="rounded-xl border border-border-dark bg-card-dark overflow-hidden group">
+<div class="h-40 bg-cover bg-center relative" data-alt="Abstract lighting grid background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuABfiLLOLVVOtDrAU0s2M7-4SZSWKJPBCTpMaEEeQDDVVHiFfNx5OM0Ki6sUhWLuOcnJDBikHRxBbXsKPz8E3nQpeYtpfvYycGQlC_A3UyJe2-KfZd-oL1D6uHjjb_Q9pWyA-bZNj3JN1HMZYBnNUyRAlQBJYih6-B2pvDwtG_CrMiYE5yI9P4RRcz5gXAvOqDCDmZD9cKsWDoTqwCC7f6G9rerbtBppWQVOQakt_ixgeQcDT017WC5go4QqjelvqbmGq850LRkFSVZ');">
+<div class="absolute inset-0 bg-gradient-to-t from-card-dark to-transparent opacity-90"></div>
+<div class="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        Actif
+                                    </div>
+<div class="absolute bottom-4 left-4">
+<p class="text-text-secondary text-xs font-medium uppercase tracking-wider mb-1">Zone B</p>
+<h4 class="text-white text-lg font-bold">Éclairage Entrepôt</h4>
+</div>
+</div>
+<div class="p-5 flex flex-col gap-5">
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-text-secondary text-xs">Intensité</span>
+<span class="text-white text-xl font-bold">80%</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-text-secondary text-xs">Conso</span>
+<span class="text-white text-xl font-bold">12 kW</span>
+</div>
+</div>
+<!-- Controls -->
+<div class="flex flex-col gap-3">
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-sm font-medium text-white">Détecteur de Mouvement</span>
+<div class="relative">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</label>
+<div class="pt-2">
+<div class="flex justify-between text-xs text-text-secondary mb-1">
+<span>0%</span>
+<span>100%</span>
+</div>
+<input class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary" max="100" min="0" type="range" value="80"/>
+</div>
+</div>
+</div>
+<div class="px-5 py-3 border-t border-border-dark bg-white/5 flex justify-between items-center">
+<span class="text-xs text-text-secondary">Dernière maj: &lt;1min</span>
+<button class="text-primary hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Configuration</button>
+</div>
+</div>
+<!-- Card 3: Generator -->
+<div class="rounded-xl border border-border-dark bg-card-dark overflow-hidden group">
+<div class="h-40 bg-cover bg-center relative" data-alt="Close up of an industrial generator interface" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_hyHaSnR4a5InYO84-YTv8RTN4pkEyVukqYoDCxqGUm8vvYttrhQ-7BVCE6A2aM3lbRMYdMWYk1vpsnN2rADWDVYoNH4oVoOVevQyVHSkPmc5M0j_0SFqSL1ze9Ej4Sv4QJB8yADfYkiy7YRczJCdyi8mXIiMrV41nRdQn_l1HmTcvIdYHz_yNxijHbVLue2KgUkN8uGyP0i2_4FXY_C53GJT-7PlnRdogqLOJo2DJoVgDaGJv5qwlMGfdEn9Q0jWUNILhhxSXN7u');">
+<div class="absolute inset-0 bg-gradient-to-t from-card-dark to-transparent opacity-90"></div>
+<div class="absolute top-4 right-4 bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-1 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        En Veille
+                                    </div>
+<div class="absolute bottom-4 left-4">
+<p class="text-text-secondary text-xs font-medium uppercase tracking-wider mb-1">Urgence</p>
+<h4 class="text-white text-lg font-bold">Générateur Principal</h4>
+</div>
+</div>
+<div class="p-5 flex flex-col gap-5">
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="text-text-secondary text-xs">Carburant</span>
+<span class="text-white text-xl font-bold">94%</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-text-secondary text-xs">Batterie</span>
+<span class="text-white text-xl font-bold">24.4V</span>
+</div>
+</div>
+<!-- Controls -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between p-2 rounded bg-slate-800/50 border border-slate-700">
+<span class="text-xs text-text-secondary">Dernier test</span>
+<span class="text-xs text-white font-medium">Il y a 3 jours</span>
+</div>
+<button class="w-full mt-1 py-2 rounded bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors border border-slate-600">
+                                            Lancer Test Diagnostic
+                                        </button>
+</div>
+</div>
+<div class="px-5 py-3 border-t border-border-dark bg-white/5 flex justify-between items-center">
+<span class="text-xs text-text-secondary">Prêt à démarrer</span>
+<button class="text-primary hover:text-white text-xs font-bold uppercase tracking-wider transition-colors">Détails</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Controls Section -->
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-end">
+<h3 class="text-white text-xl font-bold px-1">Automatisation &amp; Zones</h3>
+<button class="text-primary text-sm font-bold hover:text-white transition-colors">Voir tout</button>
+</div>
+<div class="rounded-xl border border-border-dark bg-card-dark p-0 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-white/5 border-b border-border-dark text-text-secondary text-xs uppercase tracking-wider font-medium">
+<tr>
+<th class="px-6 py-4">Nom du Système</th>
+<th class="px-6 py-4">État</th>
+<th class="px-6 py-4">Prochaine Action</th>
+<th class="px-6 py-4 text-right">Contrôle Rapide</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-dark text-sm">
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">lightbulb</span>
+</div>
+<div class="flex flex-col">
+<span class="text-white font-medium">Éclairage Parking</span>
+<span class="text-text-secondary text-xs">Extérieur - Nord</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                                                    Désactivé
+                                                </span>
+</td>
+<td class="px-6 py-4 text-text-secondary">
+                                                Activation à <span class="text-white font-mono">19:30</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end">
+<div class="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-600/50" id="toggle1" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-700 cursor-pointer" for="toggle1"></label>
+</div>
+<style>
+                                                        .toggle-checkbox:checked {
+                                                            right: 0;
+                                                            border-color: #135bec;
+                                                        }
+                                                        .toggle-checkbox:checked + .toggle-label {
+                                                            background-color: #135bec;
+                                                        }
+                                                    </style>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-purple-500/20 flex items-center justify-center text-purple-400">
+<span class="material-symbols-outlined text-[18px]">router</span>
+</div>
+<div class="flex flex-col">
+<span class="text-white font-medium">Serveur A1</span>
+<span class="text-text-secondary text-xs">Salle Serveurs</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                                    En ligne
+                                                </span>
+</td>
+<td class="px-6 py-4 text-text-secondary">
+                                                Backup à <span class="text-white font-mono">02:00</span>
+</td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end gap-2">
+<button class="p-1 rounded hover:bg-white/10 text-text-secondary hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[20px]">restart_alt</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-amber-500/20 flex items-center justify-center text-amber-400">
+<span class="material-symbols-outlined text-[18px]">ac_unit</span>
+</div>
+<div class="flex flex-col">
+<span class="text-white font-medium">Climatisation Aux.</span>
+<span class="text-text-secondary text-xs">Bureaux 2ème</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                                    En ligne
+                                                </span>
+</td>
+<td class="px-6 py-4 text-text-secondary">
+                                                Mode Éco
+                                            </td>
+<td class="px-6 py-4 text-right">
+<div class="flex justify-end">
+<div class="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox-2 absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-primary" id="toggle2" name="toggle2" type="checkbox"/>
+<label class="toggle-label-2 block overflow-hidden h-5 rounded-full bg-primary cursor-pointer" for="toggle2"></label>
+</div>
+<style>
+                                                        .toggle-checkbox-2:checked {
+                                                            right: 0;
+                                                            border-color: #135bec;
+                                                        }
+                                                        .toggle-checkbox-2:checked + .toggle-label-2 {
+                                                            background-color: #135bec;
+                                                        }
+                                                        .toggle-checkbox-2 {
+                                                            right: 0;
+                                                            border-color: #135bec;
+                                                        }
+                                                    </style>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>

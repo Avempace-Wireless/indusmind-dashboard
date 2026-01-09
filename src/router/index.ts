@@ -6,8 +6,201 @@ const router = createRouter({
     return savedPosition || { left: 0, top: 0 }
   },
   routes: [
+    // Auth Routes
+    {
+      path: '/login',
+      name: 'Login',
+      component: () => import('../views/LoginView.vue'),
+      meta: {
+        title: 'Login',
+        requiresAuth: false,
+      },
+    },
+    // Dashboard Routes
     {
       path: '/',
+      redirect: '/dashboard',
+    },
+    {
+      path: '/dashboard',
+      name: 'Dashboard',
+      component: () => import('../views/DashboardView.vue'),
+      meta: {
+        title: 'Dashboard',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/alerts',
+      name: 'Alerts',
+      component: () => import('../views/AlertsView.vue'),
+      meta: {
+        title: 'Alerts',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/puissance',
+      name: 'puissance',
+      component: () => import('../views/PuissanceView.vue'),
+      meta: {
+        title: 'puissance.pageTitle',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/equipment',
+      name: 'Equipment',
+      component: () => import('../views/EquipmentView.vue'),
+      meta: {
+        title: 'Equipment',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/history',
+      name: 'History',
+      component: () => import('../views/EnergyHistorical.vue'),
+      meta: {
+        title: 'Énergie – Historique',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/historique',
+      name: 'Historique',
+      component: () => import('../views/HistoriqueView.vue'),
+      meta: {
+        title: 'Historique',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/reports',
+      name: 'Reports',
+      component: () => import('../views/ReportsView.vue'),
+      meta: {
+        title: 'Reports & Compliance',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/settings',
+      name: 'Settings',
+      component: () => import('../views/SettingsView.vue'),
+      meta: {
+        title: 'Settings',
+        requiresAuth: true,
+      },
+    },
+    // Consumption Routes
+    {
+      path: '/consumption',
+      name: 'consumption',
+      component: () => import('../views/ConsumptionView.vue'),
+      meta: {
+        title: 'Consumption Analysis',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/base-load',
+      name: 'base-load',
+      component: () => import('../views/BaseLoadView.vue'),
+      meta: {
+        title: 'Base Load Analysis',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/peak-demand',
+      name: 'peak-demand',
+      component: () => import('../views/PeakDemandView.vue'),
+      meta: {
+        title: 'Peak Demand',
+        requiresAuth: true,
+      },
+    },
+    // Analysis Routes
+    {
+      path: '/analysis',
+      name: 'analysis',
+      component: () => import('../views/AnalysisView.vue'),
+      meta: {
+        title: 'Analysis & Insights',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/cost-analysis',
+      name: 'cost-analysis',
+      component: () => import('../views/CostAnalysisView.vue'),
+      meta: {
+        title: 'Cost Analysis',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/comparison',
+      name: 'comparison',
+      component: () => import('../views/ComparisonView.vue'),
+      meta: {
+        title: 'Period Comparison',
+        requiresAuth: true,
+      },
+    },
+    // Alert Configuration
+    {
+      path: '/alert-config',
+      name: 'alert-config',
+      component: () => import('../views/AlertConfigView.vue'),
+      meta: {
+        title: 'Alert Configuration',
+        requiresAuth: true,
+      },
+    },
+    // Performance Routes
+    {
+      path: '/performance',
+      name: 'performance',
+      component: () => import('../views/PerformanceView.vue'),
+      meta: {
+        title: 'KPI Dashboard',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/benchmarking',
+      name: 'benchmarking',
+      component: () => import('../views/BenchmarkingView.vue'),
+      meta: {
+        title: 'Benchmarking',
+        requiresAuth: true,
+      },
+    },
+    // Inventory Routes
+    {
+      path: '/locations',
+      name: 'locations',
+      component: () => import('../views/LocationsView.vue'),
+      meta: {
+        title: 'Sites & Locations',
+        requiresAuth: true,
+      },
+    },
+    // User Management
+    {
+      path: '/users',
+      name: 'users',
+      component: () => import('../views/UsersView.vue'),
+      meta: {
+        title: 'User Management',
+        requiresAuth: true,
+      },
+    },
+    // Legacy template routes (can be removed later)
+    {
+      path: '/ecommerce',
       name: 'Ecommerce',
       component: () => import('../views/Ecommerce.vue'),
       meta: {
@@ -552,9 +745,10 @@ const router = createRouter({
     },
     {
       path: '/:pathMatch(.*)*',
-      component: () => import('../views/Errors/FourZeroFour.vue'),
+      name: 'NotFound',
+      component: () => import('../views/NotFoundView.vue'),
       meta: {
-        title: '500 Error Page',
+        title: '404 Not Found',
       },
     },
     {
@@ -608,9 +802,25 @@ const router = createRouter({
   ],
 })
 
-export default router
-
+// Navigation guards
 router.beforeEach((to, from, next) => {
-  document.title = `Vue.js ${to.meta.title} | TailAdmin - Vue.js Tailwind CSS Dashboard Template`
-  next()
+  // Update page title
+  document.title = `${to.meta.title || 'Dashboard'} | IndusMind Energy Dashboard`
+
+  // Check authentication
+  const token = sessionStorage.getItem('auth_token')
+  const isAuthenticated = !!token
+  const requiresAuth = to.meta.requiresAuth !== false // Default to true
+
+  if (requiresAuth && !isAuthenticated && to.name !== 'Login') {
+    // Redirect to login if not authenticated
+    next({ name: 'Login', query: { redirect: to.fullPath } })
+  } else if (to.name === 'Login' && isAuthenticated) {
+    // Redirect to dashboard if already logged in
+    next({ name: 'Dashboard' })
+  } else {
+    next()
+  }
 })
+
+export default router

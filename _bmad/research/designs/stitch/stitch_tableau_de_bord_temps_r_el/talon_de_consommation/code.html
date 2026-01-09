@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MonitorElec - Talon de consommation</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;family=Noto+Sans:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-dark": "#1e293b", // Slightly lighter for cards
+                        "border-dark": "#324467",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for dark mode */
+        .dark ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #101622; 
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #324467; 
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #4b5f87; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<aside class="hidden md:flex flex-col w-72 bg-[#111722] border-r border-border-dark flex-shrink-0 h-full">
+<div class="flex flex-col h-full p-4 justify-between">
+<!-- Top Section -->
+<div class="flex flex-col gap-6">
+<!-- Brand -->
+<div class="flex gap-3 items-center px-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 border border-border-dark shadow-sm" data-alt="MonitorElec Abstract Logo showing energy wave" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCrBwLukLxOLmMql2a7kVpp5w6ZB7a1SUCF1ACxo7IhW_NMmeIHfWGwlbmtmySOhRROKVWepAv8v2tpu46wuGvgekN_g5GQZjiNyGrqMwDHUjdgSLUqPvBgxC-L3KYckpCIC_jW3U89g0Sj5dbNNvY-QrzbThJzZIkYfsGTscibJ0yTqIMEo_aBMiuxGJkU-ZbuN86ys07q-dX6592cHgA1ZPViX0NpOFQC-nv2orDuvxRvgrR69FxR5Y7WfCJ4YLjK_Jb3ZpM5ziDw");'></div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-bold leading-tight tracking-tight">MonitorElec</h1>
+<p class="text-[#92a4c9] text-xs font-normal">Industrie v2.4.0</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1e293b] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-sm font-medium">Tableau de bord</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1e293b] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">show_chart</span>
+<span class="text-sm font-medium">Temps réel</span>
+</a>
+<!-- Active Item -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white shadow-md shadow-primary/20" href="#">
+<span class="material-symbols-outlined fill-1">trending_down</span>
+<span class="text-sm font-medium">Talon de consommation</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1e293b] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">warning</span>
+<span class="text-sm font-medium">Alertes</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#1e293b] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">settings</span>
+<span class="text-sm font-medium">Configuration</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Section -->
+<div class="flex flex-col gap-2 pt-4 border-t border-border-dark">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#92a4c9] hover:bg-[#1e293b] hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-sm font-medium">Profil Ingénieur</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#92a4c9] hover:bg-[#1e293b] hover:text-red-400 transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-sm font-medium">Déconnexion</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-y-auto bg-background-light dark:bg-background-dark relative">
+<div class="layout-container flex flex-col grow h-full max-w-[1400px] mx-auto w-full px-6 py-8 gap-8">
+<!-- Page Heading -->
+<header class="flex flex-wrap justify-between items-end gap-6 pb-2">
+<div class="flex flex-col gap-2">
+<h2 class="text-slate-900 dark:text-white text-3xl md:text-4xl font-black leading-tight tracking-tight">Talon de consommation</h2>
+<p class="text-slate-500 dark:text-[#92a4c9] text-base font-normal">Analyse de la charge de base et optimisation énergétique des infrastructures.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center h-10 px-4 rounded-lg border border-border-dark bg-[#1e293b] text-white text-sm font-medium hover:bg-[#2a3855] transition-colors gap-2">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+<span>Actualiser</span>
+</button>
+<button class="flex items-center justify-center h-10 px-4 rounded-lg bg-primary hover:bg-blue-600 text-white text-sm font-bold shadow-lg shadow-primary/20 transition-all gap-2">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Exporter le rapport</span>
+</button>
+</div>
+</header>
+<!-- Filters -->
+<section class="flex flex-wrap items-end gap-4 bg-white dark:bg-[#1e293b] p-4 rounded-xl border dark:border-border-dark shadow-sm">
+<div class="flex flex-col min-w-[200px] flex-1">
+<label class="text-slate-700 dark:text-gray-300 text-sm font-medium mb-1.5 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">calendar_month</span>
+                            Période d'analyse
+                        </label>
+<div class="relative">
+<select class="form-select w-full rounded-lg border-gray-300 dark:border-border-dark bg-slate-50 dark:bg-[#111722] text-slate-900 dark:text-white h-11 pl-3 pr-10 text-sm focus:border-primary focus:ring-primary">
+<option>Derniers 7 jours</option>
+<option>Mois en cours</option>
+<option>Trimestre précédent</option>
+</select>
+</div>
+</div>
+<div class="flex flex-col min-w-[200px] flex-1">
+<label class="text-slate-700 dark:text-gray-300 text-sm font-medium mb-1.5 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">factory</span>
+                            Site de production
+                        </label>
+<div class="relative">
+<select class="form-select w-full rounded-lg border-gray-300 dark:border-border-dark bg-slate-50 dark:bg-[#111722] text-slate-900 dark:text-white h-11 pl-3 pr-10 text-sm focus:border-primary focus:ring-primary">
+<option>Usine Principale (Zone A)</option>
+<option>Entrepôt Logistique</option>
+<option>Bureaux Siège</option>
+</select>
+</div>
+</div>
+<div class="flex flex-col min-w-[200px] flex-1">
+<label class="text-slate-700 dark:text-gray-300 text-sm font-medium mb-1.5 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">filter_alt</span>
+                             Filtre équipement
+                        </label>
+<input class="form-input w-full rounded-lg border-gray-300 dark:border-border-dark bg-slate-50 dark:bg-[#111722] text-slate-900 dark:text-white h-11 px-3 text-sm focus:border-primary focus:ring-primary placeholder:text-gray-500" placeholder="Tous les équipements" type="text"/>
+</div>
+</section>
+<!-- KPI Stats Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Stat 1 -->
+<div class="flex flex-col justify-between rounded-xl p-5 border border-gray-200 dark:border-border-dark bg-white dark:bg-[#1e293b] shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-white">bolt</span>
+</div>
+<div>
+<p class="text-slate-500 dark:text-[#92a4c9] text-sm font-medium mb-1">Talon Actuel (Moyenne)</p>
+<div class="flex items-baseline gap-2">
+<p class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">45 kW</p>
+</div>
+</div>
+<div class="flex items-center gap-1 mt-3">
+<span class="material-symbols-outlined text-[#0bda5e] text-lg">trending_down</span>
+<p class="text-[#0bda5e] text-sm font-bold">-2%</p>
+<p class="text-slate-400 dark:text-slate-500 text-xs font-normal ml-1">vs semaine dernière</p>
+</div>
+</div>
+<!-- Stat 2 -->
+<div class="flex flex-col justify-between rounded-xl p-5 border border-gray-200 dark:border-border-dark bg-white dark:bg-[#1e293b] shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-white">vertical_align_bottom</span>
+</div>
+<div>
+<p class="text-slate-500 dark:text-[#92a4c9] text-sm font-medium mb-1">Minimum Absolu (24h)</p>
+<div class="flex items-baseline gap-2">
+<p class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">42 kW</p>
+</div>
+</div>
+<div class="flex items-center gap-1 mt-3">
+<span class="material-symbols-outlined text-slate-400 text-lg">remove</span>
+<p class="text-slate-400 text-sm font-bold">Stable</p>
+<p class="text-slate-400 dark:text-slate-500 text-xs font-normal ml-1">vs hier</p>
+</div>
+</div>
+<!-- Stat 3 -->
+<div class="flex flex-col justify-between rounded-xl p-5 border border-gray-200 dark:border-border-dark bg-white dark:bg-[#1e293b] shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-white">euro</span>
+</div>
+<div>
+<p class="text-slate-500 dark:text-[#92a4c9] text-sm font-medium mb-1">Coût Annuel Estimé</p>
+<div class="flex items-baseline gap-2">
+<p class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">12 500 €</p>
+</div>
+</div>
+<div class="flex items-center gap-1 mt-3">
+<span class="material-symbols-outlined text-[#fa6238] text-lg">trending_up</span>
+<p class="text-[#fa6238] text-sm font-bold">+1.2%</p>
+<p class="text-slate-400 dark:text-slate-500 text-xs font-normal ml-1">Impact hausse tarif</p>
+</div>
+</div>
+<!-- Stat 4 -->
+<div class="flex flex-col justify-between rounded-xl p-5 border border-gray-200 dark:border-border-dark bg-white dark:bg-[#1e293b] shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-white">savings</span>
+</div>
+<div>
+<p class="text-slate-500 dark:text-[#92a4c9] text-sm font-medium mb-1">Gains Potentiels</p>
+<div class="flex items-baseline gap-2">
+<p class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">8.5 %</p>
+</div>
+</div>
+<div class="flex items-center gap-1 mt-3">
+<p class="text-primary text-sm font-bold underline cursor-pointer">Voir le plan d'action</p>
+</div>
+</div>
+</section>
+<!-- Chart Section -->
+<section class="rounded-xl border border-gray-200 dark:border-border-dark bg-white dark:bg-[#1e293b] p-6 shadow-sm">
+<div class="flex flex-wrap justify-between items-start mb-6 gap-4">
+<div class="flex flex-col gap-1">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold">Évolution de la puissance appelée vs Talon théorique</h3>
+<p class="text-slate-500 dark:text-[#92a4c9] text-sm">Visualisation sur 7 jours avec seuil d'alerte</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="text-xs text-slate-500 dark:text-[#92a4c9]">Réel</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-[#fa6238] opacity-50 border border-[#fa6238]"></span>
+<span class="text-xs text-slate-500 dark:text-[#92a4c9]">Seuil Talon (50 kW)</span>
+</div>
+</div>
+</div>
+<div class="relative w-full h-[300px] md:h-[350px]">
+<!-- SVG Chart Simulation -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 300">
+<!-- Grid lines -->
+<line stroke="#324467" stroke-dasharray="4 4" stroke-opacity="0.2" stroke-width="1" x1="0" x2="1000" y1="250" y2="250"></line>
+<line stroke="#324467" stroke-dasharray="4 4" stroke-opacity="0.2" stroke-width="1" x1="0" x2="1000" y1="200" y2="200"></line>
+<line stroke="#324467" stroke-dasharray="4 4" stroke-opacity="0.2" stroke-width="1" x1="0" x2="1000" y1="150" y2="150"></line>
+<line stroke="#324467" stroke-dasharray="4 4" stroke-opacity="0.2" stroke-width="1" x1="0" x2="1000" y1="100" y2="100"></line>
+<line stroke="#324467" stroke-dasharray="4 4" stroke-opacity="0.2" stroke-width="1" x1="0" x2="1000" y1="50" y2="50"></line>
+<!-- Base Load Threshold Line (Red Dashed) ~ 50kW -->
+<line opacity="0.6" stroke="#fa6238" stroke-dasharray="8 4" stroke-width="2" x1="0" x2="1000" y1="210" y2="210"></line>
+<text fill="#fa6238" font-size="12" opacity="0.8" x="10" y="205">Seuil d'alerte Talon (50 kW)</text>
+<!-- Area Gradient -->
+<defs>
+<lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#135bec" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#135bec" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- Data Path (Simulating peaks during day, low at night) -->
+<path d="
+                                M0,220 
+                                L50,230 L100,100 L140,80 L180,110 L220,225 
+                                L280,230 L320,90 L360,70 L400,100 L450,220
+                                L500,225 L550,110 L600,60 L650,90 L700,215
+                                L750,220 L800,80 L850,50 L900,85 L950,210 
+                                L1000,220
+                                V300 H0 Z
+                            " fill="url(#chartGradient)"></path>
+<!-- Line Path -->
+<path d="
+                                M0,220 
+                                L50,230 L100,100 L140,80 L180,110 L220,225 
+                                L280,230 L320,90 L360,70 L400,100 L450,220
+                                L500,225 L550,110 L600,60 L650,90 L700,215
+                                L750,220 L800,80 L850,50 L900,85 L950,210 
+                                L1000,220
+                            " fill="none" stroke="#135bec" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+</svg>
+</div>
+<div class="flex justify-between px-4 mt-2">
+<span class="text-xs text-slate-400">Lun 00:00</span>
+<span class="text-xs text-slate-400">Mar 00:00</span>
+<span class="text-xs text-slate-400">Mer 00:00</span>
+<span class="text-xs text-slate-400">Jeu 00:00</span>
+<span class="text-xs text-slate-400">Ven 00:00</span>
+<span class="text-xs text-slate-400">Sam 00:00</span>
+<span class="text-xs text-slate-400">Dim 00:00</span>
+</div>
+</section>
+<!-- Detailed Table Section -->
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-white text-xl font-bold px-1">Détail des périodes creuses</h3>
+<div class="overflow-hidden rounded-xl border border-gray-200 dark:border-border-dark shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-slate-100 dark:bg-[#111722] text-slate-500 dark:text-gray-400">
+<tr>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider">Période</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider">Type</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-right">Consommation Moy.</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-right">Écart vs Théorique</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-center">Statut</th>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-center">Action</th>
+</tr>
+</thead>
+<tbody class="bg-white dark:bg-[#1e293b] divide-y divide-gray-200 dark:divide-gray-800 text-slate-700 dark:text-gray-200">
+<tr class="hover:bg-slate-50 dark:hover:bg-[#253248] transition-colors">
+<td class="py-4 px-6 text-sm font-medium">Nuit dernière (00h - 06h)</td>
+<td class="py-4 px-6 text-sm">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                                                Heures Creuses
+                                            </span>
+</td>
+<td class="py-4 px-6 text-sm font-bold text-right font-mono">45.2 kW</td>
+<td class="py-4 px-6 text-sm text-right font-mono text-[#0bda5e]">-4.8 kW</td>
+<td class="py-4 px-6 text-sm text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0bda5e]/10 border border-[#0bda5e]/20 text-[#0bda5e] text-xs font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#0bda5e]"></span>
+                                                Optimisé
+                                            </div>
+</td>
+<td class="py-4 px-6 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-[#253248] transition-colors">
+<td class="py-4 px-6 text-sm font-medium">Weekend précédent (Sam-Dim)</td>
+<td class="py-4 px-6 text-sm">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">
+                                                Arrêt Production
+                                            </span>
+</td>
+<td class="py-4 px-6 text-sm font-bold text-right font-mono">52.1 kW</td>
+<td class="py-4 px-6 text-sm text-right font-mono text-[#fa6238]">+2.1 kW</td>
+<td class="py-4 px-6 text-sm text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fa6238]/10 border border-[#fa6238]/20 text-[#fa6238] text-xs font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#fa6238]"></span>
+                                                Anomalie
+                                            </div>
+</td>
+<td class="py-4 px-6 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-[#253248] transition-colors">
+<td class="py-4 px-6 text-sm font-medium">Moyenne 7 jours (Nuit)</td>
+<td class="py-4 px-6 text-sm">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300">
+                                                Mixte
+                                            </span>
+</td>
+<td class="py-4 px-6 text-sm font-bold text-right font-mono">46.5 kW</td>
+<td class="py-4 px-6 text-sm text-right font-mono text-slate-500">-3.5 kW</td>
+<td class="py-4 px-6 text-sm text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-xs font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                                Normal
+                                            </div>
+</td>
+<td class="py-4 px-6 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<footer class="mt-auto py-6 border-t border-gray-200 dark:border-border-dark text-center text-sm text-slate-500 dark:text-[#92a4c9]">
+<p>© 2024 MonitorElec Solutions. Tous droits réservés.</p>
+</footer>
+</div>
+</main>
+</div>
+</body></html>

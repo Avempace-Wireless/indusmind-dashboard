@@ -1,0 +1,964 @@
+{
+  "projectName": "Stitch Dashboard - Energy Monitoring System",
+  "description": "Comprehensive component pattern analysis from 16 Stitch design screens",
+  "extractionDate": "2026-01-06",
+  "totalScreens": 16,
+  "framework": "Vue 3 + Tailwind CSS + TypeScript",
+  "designLanguage": "Modern Energy Monitoring Dashboard",
+  "colorPalette": {
+    "primary": {
+      "hex": "#135bec",
+      "rgb": "rgb(19, 91, 236)",
+      "name": "Electric Blue",
+      "usage": "Primary actions, active states, main brand color"
+    },
+    "primaryDark": {
+      "hex": "#0f4bc9",
+      "rgb": "rgb(15, 75, 201)",
+      "name": "Dark Electric Blue",
+      "usage": "Primary hover states"
+    },
+    "primaryGreen": {
+      "hex": "#39E079",
+      "rgb": "rgb(57, 224, 121)",
+      "name": "Energy Green",
+      "usage": "Success states, positive metrics"
+    },
+    "successGreen": {
+      "hex": "#0bda5e",
+      "rgb": "rgb(11, 218, 94)",
+      "name": "Bright Green",
+      "usage": "Status indicators (online), positive trends"
+    },
+    "warningOrange": {
+      "hex": "#fa6238",
+      "rgb": "rgb(250, 98, 56)",
+      "name": "Warning Orange",
+      "usage": "Alerts, warning states, maintenance needed"
+    },
+    "warningAmber": {
+      "hex": "#fbbf24",
+      "rgb": "rgb(251, 191, 36)",
+      "name": "Amber",
+      "usage": "Caution alerts, elevated values"
+    },
+    "errorRed": {
+      "hex": "#ef4444",
+      "rgb": "rgb(239, 68, 68)",
+      "name": "Error Red",
+      "usage": "Critical alerts, errors, stop states"
+    },
+    "infoRed": {
+      "hex": "#EA2831",
+      "rgb": "rgb(234, 40, 49)",
+      "name": "System Red",
+      "usage": "Important information, critical status"
+    },
+    "backgroundLight": {
+      "hex": "#f6f6f8",
+      "rgb": "rgb(246, 246, 248)",
+      "name": "Light Background",
+      "usage": "Light mode main background"
+    },
+    "backgroundDark": {
+      "hex": "#101622",
+      "rgb": "rgb(16, 22, 34)",
+      "name": "Dark Background",
+      "usage": "Dark mode main background"
+    },
+    "surfaceLight": {
+      "hex": "#ffffff",
+      "rgb": "rgb(255, 255, 255)",
+      "name": "White",
+      "usage": "Light mode cards and surfaces"
+    },
+    "surfaceDark": {
+      "hex": "#1e293b",
+      "rgb": "rgb(30, 41, 59)",
+      "name": "Dark Surface",
+      "usage": "Dark mode card backgrounds"
+    },
+    "darkCard": {
+      "hex": "#1A2332",
+      "rgb": "rgb(26, 35, 50)",
+      "name": "Dark Card",
+      "usage": "Alternative dark surface"
+    },
+    "darkCardActive": {
+      "hex": "#232f48",
+      "rgb": "rgb(35, 47, 72)",
+      "name": "Dark Card Active",
+      "usage": "Hover states on dark backgrounds"
+    },
+    "sidebarDark": {
+      "hex": "#111722",
+      "rgb": "rgb(17, 23, 34)",
+      "name": "Sidebar Dark",
+      "usage": "Sidebar background"
+    },
+    "borderDark": {
+      "hex": "#324467",
+      "rgb": "rgb(50, 68, 103)",
+      "name": "Dark Border",
+      "usage": "Borders in dark mode"
+    },
+    "textSecondary": {
+      "hex": "#92a4c9",
+      "rgb": "rgb(146, 164, 201)",
+      "name": "Secondary Text",
+      "usage": "Secondary text, labels, descriptions"
+    },
+    "slate": {
+      "50": "#f8fafc",
+      "100": "#f1f5f9",
+      "200": "#e2e8f0",
+      "300": "#cbd5e1",
+      "400": "#94a3b8",
+      "500": "#64748b",
+      "600": "#475569",
+      "700": "#334155",
+      "800": "#1e293b",
+      "900": "#0f172a"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "primary": "Inter",
+      "fallback": "sans-serif"
+    },
+    "headings": {
+      "h1": {
+        "fontSize": "2.25rem",
+        "lineHeight": "2.5rem",
+        "fontWeight": "900",
+        "letterSpacing": "-0.02em",
+        "usage": "Page titles"
+      },
+      "h2": {
+        "fontSize": "2rem",
+        "lineHeight": "2.5rem",
+        "fontWeight": "800",
+        "letterSpacing": "-0.01em",
+        "usage": "Section headers"
+      },
+      "h3": {
+        "fontSize": "1.5rem",
+        "lineHeight": "2rem",
+        "fontWeight": "700",
+        "usage": "Subsection headers"
+      },
+      "h4": {
+        "fontSize": "1.125rem",
+        "lineHeight": "1.75rem",
+        "fontWeight": "700",
+        "usage": "Widget titles"
+      }
+    },
+    "body": {
+      "base": {
+        "fontSize": "1rem",
+        "lineHeight": "1.5rem",
+        "fontWeight": "400",
+        "usage": "Body text, paragraphs"
+      },
+      "medium": {
+        "fontSize": "1rem",
+        "lineHeight": "1.5rem",
+        "fontWeight": "500",
+        "usage": "Emphasized text, labels"
+      },
+      "bold": {
+        "fontSize": "1rem",
+        "lineHeight": "1.5rem",
+        "fontWeight": "700",
+        "usage": "Strong text, KPI values"
+      }
+    },
+    "small": {
+      "fontSize": "0.875rem",
+      "lineHeight": "1.25rem",
+      "fontWeight": "500",
+      "usage": "Secondary labels, helper text"
+    },
+    "tiny": {
+      "fontSize": "0.75rem",
+      "lineHeight": "1rem",
+      "fontWeight": "500",
+      "usage": "Badges, small labels, timestamps"
+    }
+  },
+  "spacing": {
+    "gaps": {
+      "xs": "0.5rem",
+      "sm": "1rem",
+      "md": "1.5rem",
+      "lg": "2rem",
+      "xl": "2.5rem",
+      "2xl": "3rem"
+    },
+    "padding": {
+      "card": "1.5rem",
+      "section": "2rem",
+      "container": "2.5rem"
+    },
+    "margins": {
+      "section": "2rem",
+      "element": "1rem"
+    }
+  },
+  "borderRadius": {
+    "none": "0",
+    "xs": "0.125rem",
+    "sm": "0.25rem",
+    "base": "0.25rem",
+    "md": "0.5rem",
+    "lg": "0.5rem",
+    "xl": "0.75rem",
+    "full": "9999px"
+  },
+  "componentPatterns": {
+    "cards": {
+      "statCard": {
+        "description": "KPI display card for metrics like power, voltage, frequency",
+        "structure": {
+          "layout": "flex flex-col gap-1",
+          "padding": "1.25rem",
+          "border": "1px solid (light: #e5e7eb, dark: #324467)",
+          "borderRadius": "0.75rem",
+          "shadow": "shadow-sm",
+          "background": "light: #ffffff, dark: #1e293b"
+        },
+        "components": {
+          "header": {
+            "layout": "flex items-center justify-between",
+            "label": "text-sm font-medium text-secondary",
+            "icon": "material-symbols-outlined (24px)"
+          },
+          "value": {
+            "layout": "flex items-baseline gap-2",
+            "main": "text-2xl font-bold text-slate-900 dark:text-white",
+            "unit": "text-lg text-slate-400 font-normal",
+            "trend": "flex items-center text-xs font-medium (green/red)"
+          },
+          "progressBar": {
+            "optional": true,
+            "height": "0.25rem",
+            "borderRadius": "0.5rem",
+            "background": "light: #e5e7eb, dark: #324467",
+            "fill": "gradient-to-r (primary to cyan-400)"
+          }
+        },
+        "interactions": {
+          "hover": "shadow-md transition-all",
+          "group": "group hover:shadow-md"
+        }
+      },
+      "chartCard": {
+        "description": "Container for data visualizations with header and controls",
+        "structure": {
+          "layout": "flex flex-col rounded-xl",
+          "padding": "1.5rem",
+          "border": "1px solid",
+          "background": "light: #ffffff, dark: #1e293b",
+          "minHeight": "400px"
+        },
+        "components": {
+          "header": {
+            "layout": "flex items-start justify-between",
+            "title": "text-lg font-bold text-slate-900 dark:text-white",
+            "subtitle": "text-sm text-text-secondary",
+            "controls": "flex items-center gap-2"
+          },
+          "chart": {
+            "type": "SVG or canvas-based visualization",
+            "gridLines": "dashed borders for reference",
+            "gradient": "linear gradient fill beneath curves"
+          },
+          "legend": {
+            "layout": "flex items-center gap-2",
+            "items": "flex items-center gap-2"
+          }
+        }
+      },
+      "alertCard": {
+        "description": "Alert/notification display card",
+        "structure": {
+          "layout": "flex items-center gap-4",
+          "padding": "1rem",
+          "borderLeft": "4px solid (red/orange/green/blue)"
+        },
+        "components": {
+          "icon": {
+            "size": "40px",
+            "background": "bg-color/10 (colored by severity)",
+            "borderRadius": "rounded-full",
+            "icon": "warning, info, check_circle, etc."
+          },
+          "content": {
+            "layout": "flex flex-1 flex-col",
+            "title": "text-sm font-semibold text-slate-900 dark:text-white",
+            "description": "text-xs text-text-secondary"
+          },
+          "badge": {
+            "type": "inline-flex items-center",
+            "style": "rounded-full border px-2 py-1",
+            "text": "text-xs font-medium uppercase"
+          }
+        }
+      }
+    },
+    "buttons": {
+      "primaryButton": {
+        "description": "Main action button (blue)",
+        "padding": "px-4 py-2",
+        "height": "h-10",
+        "background": "bg-primary hover:bg-primary-dark",
+        "text": "text-white text-sm font-bold",
+        "shadow": "shadow-lg shadow-primary/20",
+        "borderRadius": "rounded-lg",
+        "transition": "transition-all transform active:scale-95"
+      },
+      "secondaryButton": {
+        "description": "Secondary action button",
+        "padding": "px-4 py-2",
+        "height": "h-10",
+        "border": "border border-slate-200 dark:border-slate-700",
+        "background": "bg-white dark:bg-surface-dark",
+        "text": "text-slate-700 dark:text-slate-300",
+        "hover": "hover:bg-slate-50 dark:hover:bg-slate-700",
+        "transition": "transition-colors"
+      },
+      "iconButton": {
+        "description": "Button with icon only",
+        "size": "h-10 w-10",
+        "display": "flex items-center justify-center",
+        "borderRadius": "rounded-lg",
+        "hover": "hover:bg-slate-100 dark:hover:bg-slate-800"
+      },
+      "ghostButton": {
+        "description": "Transparent button",
+        "background": "bg-transparent",
+        "text": "text-primary hover:text-primary-dark",
+        "hover": "hover:underline"
+      }
+    },
+    "inputs": {
+      "textInput": {
+        "height": "h-11",
+        "padding": "px-4 py-2.5",
+        "border": "border border-slate-200 dark:border-slate-700",
+        "borderRadius": "rounded-lg",
+        "background": "bg-slate-50 dark:bg-slate-800",
+        "text": "text-slate-900 dark:text-white text-sm",
+        "placeholder": "placeholder:text-slate-400 dark:placeholder:text-slate-500",
+        "focus": "focus:ring-2 focus:ring-primary focus:border-transparent focus:outline-none"
+      },
+      "selectInput": {
+        "height": "h-11",
+        "padding": "pl-3 pr-10",
+        "appearance": "appearance-none",
+        "background": "bg-slate-50 dark:bg-slate-800",
+        "icon": "absolute right-3 top-1/2 -translate-y-1/2",
+        "chevron": "material-symbols-outlined expand_more"
+      },
+      "rangeSlider": {
+        "appearance": "appearance-none",
+        "height": "h-2",
+        "background": "bg-slate-200 dark:bg-slate-700",
+        "borderRadius": "rounded-lg",
+        "thumb": {
+          "appearance": "-webkit-appearance: none",
+          "background": "bg-primary",
+          "size": "h-5 w-5",
+          "borderRadius": "rounded-full",
+          "shadow": "shadow-sm"
+        }
+      },
+      "checkbox": {
+        "size": "w-4 h-4",
+        "borderRadius": "rounded border-slate-300",
+        "background": "bg-transparent",
+        "accent": "accent-primary",
+        "checked": "peer-checked:bg-primary"
+      },
+      "toggleSwitch": {
+        "width": "w-11",
+        "height": "h-6",
+        "borderRadius": "rounded-full",
+        "background": "bg-slate-200 dark:bg-slate-700",
+        "checked": "peer-checked:bg-primary",
+        "thumb": {
+          "size": "h-5 w-5",
+          "position": "peer-checked:translate-x-full",
+          "transition": "transition-all"
+        }
+      }
+    },
+    "tables": {
+      "structure": {
+        "container": "overflow-x-auto rounded-xl border shadow-sm",
+        "header": {
+          "background": "bg-slate-50 dark:bg-slate-800",
+          "border": "border-b border-slate-200 dark:border-slate-700",
+          "text": "text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400"
+        },
+        "body": {
+          "border": "divide-y divide-slate-200 dark:divide-slate-700",
+          "rowHover": "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+        }
+      },
+      "cells": {
+        "padding": "px-6 py-4",
+        "text": "text-sm text-slate-700 dark:text-slate-300",
+        "font": "font-medium"
+      },
+      "statusBadge": {
+        "onlineGreen": "bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-400",
+        "maintenanceAmber": "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400",
+        "offlineGrey": "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400",
+        "errorRed": "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400",
+        "borderRadius": "rounded-full",
+        "padding": "px-2.5 py-1",
+        "fontSize": "text-xs",
+        "fontWeight": "font-medium"
+      }
+    },
+    "badges": {
+      "alertBadge": {
+        "critical": {
+          "background": "bg-red-500/10 dark:bg-red-900/20",
+          "border": "border border-red-200 dark:border-red-500/30",
+          "text": "text-red-700 dark:text-red-400",
+          "padding": "px-2 py-0.5",
+          "fontSize": "text-xs",
+          "fontWeight": "font-medium",
+          "borderRadius": "rounded-full"
+        },
+        "warning": {
+          "background": "bg-orange-100 dark:bg-orange-500/20",
+          "border": "border border-orange-200 dark:border-orange-500/30",
+          "text": "text-orange-700 dark:text-orange-400"
+        },
+        "info": {
+          "background": "bg-blue-100 dark:bg-blue-500/20",
+          "border": "border border-blue-200 dark:border-blue-500/30",
+          "text": "text-blue-700 dark:text-blue-400"
+        }
+      },
+      "statusBadge": {
+        "online": "bg-emerald-500/10 text-emerald-500",
+        "offline": "bg-slate-500/10 text-slate-500",
+        "maintenance": "bg-amber-500/10 text-amber-500",
+        "error": "bg-red-500/10 text-red-500"
+      }
+    },
+    "progressBars": {
+      "structure": {
+        "container": "h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden",
+        "fill": "h-full rounded-full transition-all"
+      },
+      "colors": {
+        "success": "bg-emerald-500",
+        "warning": "bg-amber-500",
+        "danger": "bg-red-500",
+        "info": "bg-primary",
+        "neutral": "bg-slate-400"
+      },
+      "labels": {
+        "layout": "flex justify-between text-xs font-medium",
+        "text": "text-slate-500 dark:text-slate-400",
+        "value": "text-slate-900 dark:text-white"
+      }
+    },
+    "modals": {
+      "overlay": {
+        "background": "bg-black/50 dark:bg-black/70",
+        "position": "fixed inset-0"
+      },
+      "dialog": {
+        "background": "bg-white dark:bg-surface-dark",
+        "padding": "p-6",
+        "borderRadius": "rounded-xl",
+        "shadow": "shadow-xl",
+        "width": "max-w-md md:max-w-lg",
+        "maxHeight": "max-h-[90vh] overflow-y-auto"
+      },
+      "header": {
+        "layout": "flex items-center justify-between",
+        "title": "text-lg font-bold text-slate-900 dark:text-white",
+        "closeButton": "text-slate-500 hover:text-slate-900"
+      },
+      "footer": {
+        "layout": "flex items-center justify-end gap-3",
+        "border": "border-t border-slate-200 dark:border-slate-700",
+        "padding": "pt-6"
+      }
+    },
+    "navigation": {
+      "sidebar": {
+        "width": "w-64",
+        "background": "bg-white dark:bg-[#111722]",
+        "border": "border-r border-slate-200 dark:border-slate-800",
+        "padding": "p-4",
+        "layout": "flex flex-col h-full justify-between"
+      },
+      "navItem": {
+        "padding": "px-3 py-2.5",
+        "borderRadius": "rounded-lg",
+        "text": "text-sm font-medium",
+        "default": "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white",
+        "active": "bg-primary/10 dark:bg-primary/20 text-primary dark:text-white shadow-md",
+        "transition": "transition-colors"
+      },
+      "topbar": {
+        "height": "h-16",
+        "background": "bg-background-light/80 dark:bg-background-dark/80",
+        "border": "border-b border-slate-200 dark:border-slate-800",
+        "backdrop": "backdrop-blur-md",
+        "padding": "px-6 md:px-8",
+        "layout": "flex items-center justify-between"
+      }
+    },
+    "charts": {
+      "lineChart": {
+        "container": "relative w-full h-64 md:h-80",
+        "svg": {
+          "viewBox": "0 0 1000 200",
+          "preserveAspectRatio": "none"
+        },
+        "gradient": {
+          "fill": "url(#chartGradient)",
+          "startColor": "#135bec",
+          "startOpacity": "0.3",
+          "endOpacity": "0"
+        },
+        "line": {
+          "stroke": "#135bec",
+          "strokeWidth": "2-3",
+          "strokeLinecap": "round",
+          "vectorEffect": "non-scaling-stroke"
+        },
+        "gridLines": "dashed borders at 25% intervals",
+        "axisLabels": "text-xs text-slate-400 px-1"
+      },
+      "barChart": {
+        "bars": {
+          "background": "bg-primary or variant colors",
+          "borderRadius": "rounded-t-sm",
+          "hover": "group-hover:opacity-80",
+          "transition": "transition-all"
+        },
+        "labels": {
+          "position": "bottom",
+          "text": "text-xs text-slate-400",
+          "spacing": "justify-between"
+        },
+        "tooltip": {
+          "position": "absolute -top-8 left-1/2 -translate-x-1/2",
+          "background": "bg-slate-900 dark:bg-slate-800",
+          "text": "text-white text-xs py-1 px-2",
+          "opacity": "opacity-0 group-hover:opacity-100"
+        }
+      },
+      "pieChart": {
+        "legend": "flex items-center gap-2",
+        "legendItem": "h-3 w-3 rounded-full",
+        "percentageBar": {
+          "container": "h-3 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden",
+          "fill": "h-full rounded-full",
+          "value": "text-sm font-bold text-slate-900 dark:text-white"
+        }
+      }
+    },
+    "dialogs": {
+      "alertDialog": {
+        "title": "text-lg font-bold text-slate-900 dark:text-white",
+        "message": "text-sm text-slate-600 dark:text-slate-400",
+        "buttons": "flex gap-3 mt-6"
+      },
+      "confirmDialog": {
+        "layout": "flex flex-col gap-4",
+        "icon": "h-12 w-12 rounded-full",
+        "title": "text-lg font-bold",
+        "description": "text-sm text-slate-600 dark:text-slate-400"
+      }
+    }
+  },
+  "layoutPatterns": {
+    "mainLayout": {
+      "structure": "flex h-screen w-full",
+      "sidebar": {
+        "width": "w-64 hidden md:flex",
+        "position": "fixed or flex-shrink-0",
+        "direction": "flex-col"
+      },
+      "mainContent": {
+        "layout": "flex-1 flex flex-col h-full overflow-hidden",
+        "header": "sticky top-0 z-20",
+        "content": "flex-1 overflow-y-auto p-6 md:p-8"
+      }
+    },
+    "gridLayouts": {
+      "cardGrid": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4",
+      "doubleColumn": "grid grid-cols-1 lg:grid-cols-2 gap-6",
+      "tripleColumn": "grid grid-cols-1 md:grid-cols-3 gap-6",
+      "complexLayout": "grid grid-cols-1 lg:grid-cols-3 gap-6 (xl:col-span-2 for main)"
+    },
+    "responsiveBreakpoints": {
+      "mobile": "max-width: 640px (hidden sidebars, stacked layouts)",
+      "tablet": "min-width: 768px (md: prefix, show sidebars)",
+      "laptop": "min-width: 1024px (lg: prefix, full layouts)",
+      "desktop": "min-width: 1280px (xl: prefix, advanced grids)"
+    }
+  },
+  "interactionPatterns": {
+    "hoverStates": {
+      "cards": "shadow-md transition-all",
+      "buttons": "bg-opacity-80 hover:scale-105",
+      "tableRows": "hover:bg-slate-50 dark:hover:bg-slate-800/50",
+      "icons": "group-hover:text-primary transition-colors",
+      "links": "hover:text-primary hover:underline"
+    },
+    "activeStates": {
+      "navItem": "bg-primary text-white shadow-lg",
+      "button": "scale-95 active:scale-90",
+      "tab": "border-b-2 border-primary text-primary"
+    },
+    "disabledStates": {
+      "opacity": "opacity-50",
+      "cursor": "cursor-not-allowed",
+      "pointerEvents": "pointer-events-none"
+    },
+    "loadingStates": {
+      "spinner": "animate-spin",
+      "pulse": "animate-pulse",
+      "skeleton": "bg-slate-200 dark:bg-slate-700 rounded animate-pulse"
+    },
+    "transitions": {
+      "color": "transition-colors duration-200",
+      "all": "transition-all duration-300",
+      "opacity": "transition-opacity duration-200",
+      "transform": "transition-transform duration-300"
+    }
+  },
+  "screens": {
+    "1_tableau_de_bord": {
+      "name": "Main Dashboard",
+      "purpose": "Overview of energy monitoring for Site A in real-time",
+      "keyComponents": [
+        "KPI stat cards (Puissance Instantanée, Tension Moyenne, Facteur de Puissance, Fréquence)",
+        "Large line chart (Active Power consumption)",
+        "Phase balance widget (3-phase distribution)",
+        "Estimated cost widget with weekly breakdown",
+        "Recent alerts section",
+        "Network status map"
+      ],
+      "layout": "Main chart (2/3), side widgets (1/3), alerts section below",
+      "colorScheme": "Primary #135bec, success green, warning orange, error red",
+      "icons": "bolt, electric_meter, show_chart, waves, more_horiz, warning, info",
+      "typography": "H2 for sections, bold values for metrics, small for labels"
+    },
+    "2_indicateurs_de_performance": {
+      "name": "Performance Indicators",
+      "purpose": "Detailed performance metrics analysis and equipment tracking",
+      "keyComponents": [
+        "4 stat cards (Énergie Totale, Coût Estimé, Efficacité Globale, Empreinte Carbone)",
+        "Line chart with legend",
+        "Cost breakdown by department (stacked bars)",
+        "Equipment details table with power factor indicators"
+      ],
+      "layout": "Stats grid, chart + breakdown, detailed table",
+      "colorScheme": "Primary blue, success green, warning amber",
+      "icons": "offline_bolt, euro, monitoring, eco, more_vert",
+      "primaryColor": "#EA2831 (Red variant)"
+    },
+    "3_alertes_et_notification": {
+      "name": "Alerts & Notifications",
+      "purpose": "Manage incidents and real-time monitoring alerts",
+      "keyComponents": [
+        "3 stat cards (Active alerts, Critical alerts, Avg resolution time)",
+        "Filter tabs and search controls",
+        "Alerts table with severity badges and action buttons",
+        "Status indicators (critical, warning, info, resolved)"
+      ],
+      "layout": "Header with filters, stat cards, main alerts table",
+      "colorScheme": "Red #FF0000 for critical, orange for warning, blue for info",
+      "icons": "error, warning, info, timer, notifications, filter_alt",
+      "darkBackground": "#101622",
+      "surfaceDark": "#1a2230"
+    },
+    "4_inventaire": {
+      "name": "Equipment Inventory",
+      "purpose": "Manage and monitor electrical assets inventory",
+      "keyComponents": [
+        "Search bar with icon",
+        "Filter chips (Type, Building, Status, Power)",
+        "Equipment data table with specifications",
+        "Status indicators (online, offline, maintenance)",
+        "Action buttons (edit, delete, visibility)"
+      ],
+      "layout": "Search/filters, full-width table with pagination",
+      "colorScheme": "Blue for online, amber for maintenance, grey for offline",
+      "icons": "search, inventory_2, location_on, edit, delete, visibility",
+      "pagination": "Previous, numbered pages, Next"
+    },
+    "5_rapports": {
+      "name": "Reports Center",
+      "purpose": "Configure, generate and export energy consumption reports",
+      "keyComponents": [
+        "Template selection cards (Energy Balance, Network Quality, Billing)",
+        "Configuration panels for data selection",
+        "Export format selector",
+        "Scheduling toggle for automatic emails",
+        "Recent reports history table"
+      ],
+      "layout": "Step 1 templates (3-col), steps 2-3 side by side, history table",
+      "colorScheme": "Primary blue for active selections, success green for completed",
+      "icons": "download, tune, person, calendar_month, tune, save",
+      "formElements": "Radio buttons, checkboxes, selectors, toggle switches"
+    },
+    "6_talon_de_consommation": {
+      "name": "Base Load Analysis",
+      "purpose": "Analyze base load consumption and optimization opportunities",
+      "keyComponents": [
+        "Period and site filters with dropdowns",
+        "4 KPI cards (Current base load, Min absolute, Annual cost, Potential savings)",
+        "Line chart with threshold line overlay",
+        "Base load details table with status indicators"
+      ],
+      "layout": "Filters, stats grid, chart with thresholds, details table",
+      "colorScheme": "Primary blue, success green, warning orange",
+      "icons": "bolt, euro, vertical_align_bottom, savings, trending_down",
+      "chartFeature": "Red dashed threshold line overlay on chart"
+    },
+    "7_vue_globale": {
+      "name": "Global Overview",
+      "purpose": "Real-time overview of entire energy consumption",
+      "keyComponents": [
+        "4 KPI cards (Active power, Daily consumption, Power factor, Estimated cost)",
+        "Main consumption curve (24h chart)",
+        "Alerts timeline on the right",
+        "Zone status cards (Production A, Logistics B, Server Room)"
+      ],
+      "layout": "KPI grid, main chart (2/3) + alerts (1/3), zone cards below",
+      "colorScheme": "Primary blue, green for online, amber for warnings",
+      "icons": "bolt, electric_meter, functions, euro, warning, warehouse"
+    },
+    "8_temps_reel_1": {
+      "name": "Real-Time Monitoring Dashboard 1",
+      "purpose": "Live surveillance of electrical parameters with equipment status",
+      "keyComponents": [
+        "4 stat cards with trend indicators",
+        "Main consumption chart (hourly)",
+        "Phase balance widget (3 phases)",
+        "Events/alerts timeline",
+        "Equipment critical status table"
+      ],
+      "layout": "Header with breadcrumbs, stats (4-col), chart + sidebar, equipment table",
+      "colorScheme": "Primary blue, success green, warning amber, error red",
+      "icons": "bolt, electric_meter, pie_chart, waves, equalizer, warning"
+    },
+    "9_temps_reel_2": {
+      "name": "Real-Time Monitoring Dashboard 2 (Green theme)",
+      "purpose": "Alternative real-time monitoring with accent color variation",
+      "keyComponents": "Same as temps_reel_1 but with different accent color",
+      "primaryColor": "#39E079 (Green)",
+      "layout": "Similar to temps_reel_1",
+      "contrast": "Higher contrast with green accent"
+    },
+    "10_paramètres": {
+      "name": "Settings & Configuration",
+      "purpose": "User account, security, and preference management",
+      "keyComponents": [
+        "User profile with avatar editor",
+        "Personal information form",
+        "Password change section",
+        "2FA toggle",
+        "Notification preferences with toggles"
+      ],
+      "layout": "Sidebar nav, profile image + form, security section, notifications",
+      "colorScheme": "Primary blue for actions, success for enabled features",
+      "icons": "person, lock, notifications, settings, edit, mail, call",
+      "formElements": "Text inputs, image upload, toggle switches"
+    },
+    "11_facturation": {
+      "name": "Billing Management",
+      "purpose": "Cost management and billing history analysis",
+      "keyComponents": [
+        "3 stat cards (Amount due, Monthly estimate, Consumption)",
+        "Daily costs bar chart",
+        "Calendar widget for date selection",
+        "Payment button"
+      ],
+      "layout": "KPI cards, chart (2/3) + calendar (1/3)",
+      "colorScheme": "Primary blue for paid, orange for pending, success green for trends",
+      "icons": "payments, euro, trending_up, calendar_month, download"
+    },
+    "12_historique": {
+      "name": "Consumption History",
+      "purpose": "Historical energy consumption analysis and trends",
+      "keyComponents": [
+        "3 stat cards (Total consumption, Peak power, Estimated cost)",
+        "Day/week/month view selector",
+        "Main consumption evolution chart with grid",
+        "Details table with equipment and consumption logs"
+      ],
+      "layout": "Header with date picker, stats grid, chart, details table",
+      "colorScheme": "Primary blue, success green for positive, warning for anomalies",
+      "icons": "bolt, electric_meter, euro, download, search"
+    },
+    "13_contrôle": {
+      "name": "System Control Panel",
+      "purpose": "Real-time control of HVAC, lighting, and emergency systems",
+      "keyComponents": [
+        "4 stat cards (Consumption, Load %, Frequency, Active units)",
+        "System control cards with images, status, and controls",
+        "Temperature range slider",
+        "Intensity slider",
+        "Emergency stop button"
+      ],
+      "layout": "Stats, 3-column system control cards",
+      "colorScheme": "Green for online, amber for standby, red for emergency",
+      "interactions": "Range sliders, toggle switches, image backgrounds",
+      "icons": "tune, bolt, speed, grid_view, save, motion_mode"
+    },
+    "14_sécurité": {
+      "name": "Security & Access Management",
+      "purpose": "User access control, permissions, and audit logs",
+      "keyComponents": [
+        "User list table with roles and 2FA status",
+        "Add new user button",
+        "Search and filter controls",
+        "Action buttons for each user",
+        "Tab navigation (Access management, Audit log, Password policies)"
+      ],
+      "layout": "Tabs, search/filters, user table",
+      "colorScheme": "Purple for admin, blue for operator, grey for observer",
+      "icons": "group, shield, lock, history, edit, delete",
+      "statusBadges": "Inline with green dot for active users"
+    },
+    "15_analyse_modèle": {
+      "name": "Model-Based Analysis",
+      "purpose": "Predictive analysis and anomaly detection with ML models",
+      "keyComponents": [
+        "Model configuration dropdowns",
+        "Calendar widget",
+        "3 KPI cards (Model accuracy, Potential savings, Anomalies detected)",
+        "Real vs Prediction overlay chart",
+        "Detailed analysis below chart"
+      ],
+      "layout": "Config section (3-col) + calendar (1-col), KPI cards, main chart",
+      "colorScheme": "Blue for predictions, grey for real, warning colors for anomalies",
+      "icons": "tune, model_training, download, add, check_circle, bolt"
+    },
+    "16_comparaison": {
+      "name": "Comparison Analysis",
+      "purpose": "Compare energy metrics across different periods/equipment",
+      "keyComponents": [
+        "Period/equipment selector tabs",
+        "Comparison overview cards",
+        "Side-by-side comparison charts",
+        "Difference percentage indicators",
+        "Detailed comparison table"
+      ],
+      "layout": "Tabs, overview cards, charts, comparison table",
+      "colorScheme": "Green for better, red for worse, neutral for equal",
+      "icons": "compare_arrows, trending_up, trending_down"
+    }
+  },
+  "darkModeColors": {
+    "backgrounds": {
+      "main": "#101622",
+      "surface": "#1e293b",
+      "card": "#1A2332",
+      "cardActive": "#232f48",
+      "sidebar": "#111722",
+      "modal": "#1e293b"
+    },
+    "borders": {
+      "default": "#324467",
+      "light": "#2a3750",
+      "dark": "#0f172a"
+    },
+    "text": {
+      "primary": "#ffffff",
+      "secondary": "#92a4c9",
+      "tertiary": "#556987"
+    }
+  },
+  "lightModeColors": {
+    "backgrounds": {
+      "main": "#f6f6f8",
+      "surface": "#ffffff",
+      "card": "#ffffff",
+      "cardActive": "#f9fafb",
+      "sidebar": "#ffffff",
+      "modal": "#ffffff"
+    },
+    "borders": {
+      "default": "#e5e7eb",
+      "light": "#f3f4f6",
+      "dark": "#d1d5db"
+    },
+    "text": {
+      "primary": "#0f172a",
+      "secondary": "#64748b",
+      "tertiary": "#94a3b8"
+    }
+  },
+  "iconLibrary": {
+    "source": "Material Symbols Outlined",
+    "usage": "Google Fonts Material Symbols",
+    "commonIcons": {
+      "navigation": ["dashboard", "menu", "chevron_left", "chevron_right", "home", "settings", "person", "logout", "language"],
+      "actions": ["add", "edit", "delete", "save", "download", "upload", "print", "refresh", "search"],
+      "alerts": ["warning", "error", "info", "check_circle", "notifications"],
+      "status": ["done_all", "check", "close", "block"],
+      "analytics": ["bar_chart", "show_chart", "trending_up", "trending_down", "equalizer"],
+      "energy": ["bolt", "electric_bolt", "electric_meter", "waves", "power_settings_new"],
+      "equipment": ["ac_unit", "mode_fan", "dns", "precision_manufacturing", "conveyor_belt"],
+      "time": ["schedule", "calendar_today", "calendar_month", "history", "timer"],
+      "utility": ["tune", "filter_list", "more_vert", "more_horiz", "expand_more", "expand_less"]
+    }
+  },
+  "animationsAndTransitions": {
+    "durations": {
+      "fast": "200ms",
+      "normal": "300ms",
+      "slow": "500ms"
+    },
+    "easings": {
+      "standard": "ease-in-out",
+      "enter": "ease-out",
+      "exit": "ease-in"
+    },
+    "effects": {
+      "fadeIn": "opacity: 0 to 1",
+      "slideIn": "transform: translateX/Y",
+      "scale": "transform: scale(0.95) to (1)",
+      "pulse": "opacity: 0.5 to 1",
+      "spin": "rotate: 0 to 360deg"
+    }
+  },
+  "accessibilityGuidelines": {
+    "colorContrast": {
+      "normalText": "4.5:1 minimum",
+      "largeText": "3:1 minimum"
+    },
+    "focusStates": "ring-2 ring-primary focus:outline-none",
+    "ariaLabels": "Use for icon buttons and interactive elements",
+    "semanticHTML": "Use proper heading hierarchy",
+    "keyboardNavigation": "Tab order, Enter to activate buttons"
+  },
+  "implementationNotes": {
+    "framework": "Vue 3 Composition API with TypeScript",
+    "styling": "Tailwind CSS v3+ with custom config",
+    "icons": "Material Symbols Outlined from Google Fonts",
+    "darkMode": "Class-based dark mode toggle",
+    "responsive": "Mobile-first approach with md, lg, xl breakpoints",
+    "components": "Composable, reusable Vue components",
+    "state": "Pinia for global state management",
+    "charts": "SVG-based custom charts or Chart.js/ApexCharts",
+    "performance": "Lazy loading, code splitting, image optimization"
+  }
+}

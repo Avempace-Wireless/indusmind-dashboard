@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Historique - EnergyMonitor</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111722",
+                        "surface-dark": "#1e293b", 
+                        "border-dark": "#334155"
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit browsers */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111722; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- Sidebar -->
+<aside class="hidden md:flex flex-col w-64 h-full border-r border-[#232f48] bg-[#111722] overflow-y-auto shrink-0">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="bg-primary/20 flex items-center justify-center rounded-lg h-10 w-10 shrink-0">
+<span class="material-symbols-outlined text-primary text-2xl">bolt</span>
+</div>
+<div>
+<h1 class="text-white text-base font-bold leading-none">EnergyMonitor</h1>
+<p class="text-[#92a4c9] text-xs font-normal mt-1">Admin Dashboard</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#192233] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-white">dashboard</span>
+<span class="text-sm font-medium">Tableau de bord</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#192233] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-white">show_chart</span>
+<span class="text-sm font-medium">Temps réel</span>
+</a>
+<!-- Active Item -->
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-white border-l-4 border-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl text-primary" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="text-sm font-medium">Historique</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#192233] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-white">warning</span>
+<span class="text-sm font-medium">Alertes</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#192233] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:text-white">settings</span>
+<span class="text-sm font-medium">Configuration</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-6 border-t border-[#232f48]">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full h-10 w-10 border-2 border-primary/20" data-alt="Portrait of the user" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB8N-WAXKcYHzEXI1x5oS2QLSyGafxGdsQ4x7m3MZhNUPITjlS5WwEXtSY_XxhUVxry0w1MHA7Kbdsa-8iu5BJKtuZzK4n3CBuMyCowOEzHEC9OiJijQA9Ysa5dgPtfWSh5UCXusEvIGibbFoC-tZsz8vnhnGHa9DkcsxsJa-DQN5M-KYXUw2erRGWwBSGgwz2KtzmAovr3-WOIOoyOrCohM6oY96s-nzF_p-xTpDuhTzlsg34D3nC4vlx3Dz_m913Zz8-P4Z8GXzBn");'>
+</div>
+<div class="flex flex-col">
+<p class="text-white text-sm font-medium">Jean Dupont</p>
+<p class="text-[#92a4c9] text-xs">Administrateur</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-[#111722]">
+<!-- Header Area -->
+<header class="flex-none px-6 py-6 lg:px-12 border-b border-[#232f48]">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<div>
+<h2 class="text-white text-3xl font-black tracking-tight mb-1">Historique de consommation</h2>
+<p class="text-[#92a4c9] text-sm">Analysez les données énergétiques et exportez vos rapports mensuels.</p>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<!-- Date Range Picker Simulation -->
+<div class="relative group">
+<div class="flex items-center bg-[#192233] border border-[#324467] rounded-lg px-3 py-2 text-sm text-white cursor-pointer hover:border-primary transition-colors min-w-[240px]">
+<span class="material-symbols-outlined text-[#92a4c9] mr-2 text-xl">calendar_today</span>
+<span>01 Nov 2023 - 07 Nov 2023</span>
+<span class="material-symbols-outlined text-[#92a4c9] ml-auto text-xl">expand_more</span>
+</div>
+</div>
+<!-- Export Button -->
+<button class="flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-xl">download</span>
+<span>Exporter</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-6 lg:p-12 scroll-smooth">
+<div class="flex flex-col gap-6 max-w-[1400px] mx-auto">
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-[#192233] p-6 rounded-xl border border-[#232f48] relative overflow-hidden group">
+<div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-white">bolt</span>
+</div>
+<p class="text-[#92a4c9] text-sm font-medium mb-1">Consommation Totale</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-white">450 kWh</h3>
+<span class="text-[#0bda5e] text-sm font-medium flex items-center bg-[#0bda5e]/10 px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-sm mr-0.5">trending_up</span>
+                                    +5.2%
+                                </span>
+</div>
+<p class="text-[#556987] text-xs mt-2">Par rapport à la semaine dernière</p>
+</div>
+<div class="bg-[#192233] p-6 rounded-xl border border-[#232f48] relative overflow-hidden group">
+<div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-white">electric_meter</span>
+</div>
+<p class="text-[#92a4c9] text-sm font-medium mb-1">Pic de Puissance</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-white">12 kW</h3>
+<span class="text-[#92a4c9] text-sm font-medium flex items-center bg-[#232f48] px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-sm mr-0.5">remove</span>
+                                    0%
+                                </span>
+</div>
+<p class="text-[#556987] text-xs mt-2">Enregistré le 04 Nov à 18:30</p>
+</div>
+<div class="bg-[#192233] p-6 rounded-xl border border-[#232f48] relative overflow-hidden group">
+<div class="absolute right-0 top-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-white">euro</span>
+</div>
+<p class="text-[#92a4c9] text-sm font-medium mb-1">Coût Estimé</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-white">68 €</h3>
+<span class="text-[#fa6238] text-sm font-medium flex items-center bg-[#fa6238]/10 px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-sm mr-0.5">trending_down</span>
+                                    -1.2%
+                                </span>
+</div>
+<p class="text-[#556987] text-xs mt-2">Basé sur le tarif actuel</p>
+</div>
+</div>
+<!-- Main Chart Section -->
+<div class="bg-[#192233] rounded-xl border border-[#232f48] p-6">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h3 class="text-white text-lg font-bold">Évolution de la consommation</h3>
+<p class="text-[#92a4c9] text-sm">Aperçu quotidien en kWh</p>
+</div>
+<div class="flex bg-[#111722] rounded-lg p-1 border border-[#232f48]">
+<button class="px-3 py-1 text-xs font-medium text-[#92a4c9] hover:text-white rounded transition-colors">Heure</button>
+<button class="px-3 py-1 text-xs font-medium bg-[#232f48] text-white rounded shadow-sm">Jour</button>
+<button class="px-3 py-1 text-xs font-medium text-[#92a4c9] hover:text-white rounded transition-colors">Semaine</button>
+</div>
+</div>
+<!-- Chart Container (Simulated with CSS) -->
+<div class="relative w-full h-[300px] mt-4">
+<!-- Grid lines -->
+<div class="absolute inset-0 flex flex-col justify-between text-xs text-[#556987]">
+<div class="flex w-full items-center"><span class="w-8">100</span><div class="h-px bg-[#232f48] flex-1 ml-2"></div></div>
+<div class="flex w-full items-center"><span class="w-8">75</span><div class="h-px bg-[#232f48] flex-1 ml-2"></div></div>
+<div class="flex w-full items-center"><span class="w-8">50</span><div class="h-px bg-[#232f48] flex-1 ml-2"></div></div>
+<div class="flex w-full items-center"><span class="w-8">25</span><div class="h-px bg-[#232f48] flex-1 ml-2"></div></div>
+<div class="flex w-full items-center"><span class="w-8">0</span><div class="h-px bg-[#232f48] flex-1 ml-2"></div></div>
+</div>
+<!-- Chart Line (Simulated SVG) -->
+<svg class="absolute inset-0 h-full w-full pl-10 pt-2 pb-6" preserveaspectratio="none">
+<defs>
+<lineargradient id="gradient" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#135bec;stop-opacity:0.5"></stop>
+<stop offset="100%" style="stop-color:#135bec;stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+<path class="opacity-30" d="M0,280 L50,200 L100,220 L150,150 L200,180 L250,120 L300,160 L350,100 L400,130 L450,80 L500,110 L550,50 L600,90 L650,40 L700,70 L750,30 L800,60 L850,20 L900,50 L950,20 L1000,40 L1050,10 L1100,30 L1150,10 L1200,280 Z" fill="url(#gradient)"></path>
+<path d="M0,280 L50,200 L100,220 L150,150 L200,180 L250,120 L300,160 L350,100 L400,130 L450,80 L500,110 L550,50 L600,90 L650,40 L700,70 L750,30 L800,60 L850,20 L900,50 L950,20 L1000,40 L1050,10 L1100,30 L1150,10" fill="none" stroke="#135bec" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+<!-- Points on chart -->
+<circle cx="150" cy="150" fill="#111722" r="4" stroke="#135bec" stroke-width="2"></circle>
+<circle cx="450" cy="80" fill="#111722" r="4" stroke="#135bec" stroke-width="2"></circle>
+<circle cx="750" cy="30" fill="#111722" r="4" stroke="#135bec" stroke-width="2"></circle>
+</svg>
+<!-- X Axis Labels -->
+<div class="absolute bottom-0 left-10 right-0 flex justify-between text-xs text-[#92a4c9] pt-2">
+<span>01 Nov</span>
+<span>02 Nov</span>
+<span>03 Nov</span>
+<span>04 Nov</span>
+<span>05 Nov</span>
+<span>06 Nov</span>
+<span>07 Nov</span>
+</div>
+</div>
+</div>
+<!-- Data Table -->
+<div class="bg-[#192233] rounded-xl border border-[#232f48] overflow-hidden">
+<div class="px-6 py-4 border-b border-[#232f48] flex flex-wrap gap-4 items-center justify-between">
+<h3 class="text-white text-lg font-bold">Détails des relevés</h3>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-[#92a4c9] text-lg">search</span>
+<input class="bg-[#111722] text-white text-sm rounded-lg pl-10 pr-4 py-2 border border-[#324467] focus:outline-none focus:border-primary w-64 placeholder-[#556987]" placeholder="Rechercher..." type="text"/>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm text-[#92a4c9]">
+<thead class="bg-[#1d273a] text-xs uppercase font-medium text-white">
+<tr>
+<th class="px-6 py-4" scope="col">Date / Heure</th>
+<th class="px-6 py-4" scope="col">Équipement</th>
+<th class="px-6 py-4" scope="col">Consommation</th>
+<th class="px-6 py-4" scope="col">Coût (Est.)</th>
+<th class="px-6 py-4" scope="col">Statut</th>
+<th class="px-6 py-4 text-right" scope="col">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#232f48]">
+<tr class="hover:bg-[#232f48]/50 transition-colors group">
+<td class="px-6 py-4 text-white">07 Nov 2023, 14:30</td>
+<td class="px-6 py-4 flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                            Climatisation (Zone A)
+                                        </td>
+<td class="px-6 py-4 font-mono text-white">4.2 kWh</td>
+<td class="px-6 py-4">0.68 €</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#0bda5e]/10 text-[#0bda5e]">
+                                                Normal
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-[#556987] hover:text-white transition-colors">
+<span class="material-symbols-outlined text-xl">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-[#232f48]/50 transition-colors group">
+<td class="px-6 py-4 text-white">07 Nov 2023, 14:15</td>
+<td class="px-6 py-4 flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                                            Serveur Principal
+                                        </td>
+<td class="px-6 py-4 font-mono text-white">2.8 kWh</td>
+<td class="px-6 py-4">0.45 €</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#fa6238]/10 text-[#fa6238]">
+                                                Élevé
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-[#556987] hover:text-white transition-colors">
+<span class="material-symbols-outlined text-xl">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-[#232f48]/50 transition-colors group">
+<td class="px-6 py-4 text-white">07 Nov 2023, 14:00</td>
+<td class="px-6 py-4 flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                            Éclairage (Bureau 2)
+                                        </td>
+<td class="px-6 py-4 font-mono text-white">1.1 kWh</td>
+<td class="px-6 py-4">0.18 €</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#0bda5e]/10 text-[#0bda5e]">
+                                                Normal
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-[#556987] hover:text-white transition-colors">
+<span class="material-symbols-outlined text-xl">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-[#232f48]/50 transition-colors group">
+<td class="px-6 py-4 text-white">07 Nov 2023, 13:45</td>
+<td class="px-6 py-4 flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                                            Bornes de recharge
+                                        </td>
+<td class="px-6 py-4 font-mono text-white">12.5 kWh</td>
+<td class="px-6 py-4">2.10 €</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#135bec]/10 text-primary">
+                                                En charge
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-[#556987] hover:text-white transition-colors">
+<span class="material-symbols-outlined text-xl">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-[#232f48]/50 transition-colors group">
+<td class="px-6 py-4 text-white">07 Nov 2023, 13:30</td>
+<td class="px-6 py-4 flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                            Climatisation (Zone B)
+                                        </td>
+<td class="px-6 py-4 font-mono text-white">3.9 kWh</td>
+<td class="px-6 py-4">0.62 €</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#0bda5e]/10 text-[#0bda5e]">
+                                                Normal
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-[#556987] hover:text-white transition-colors">
+<span class="material-symbols-outlined text-xl">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 border-t border-[#232f48] flex items-center justify-between">
+<span class="text-xs text-[#92a4c9]">Affichage 1-5 sur 128 résultats</span>
+<div class="flex items-center gap-2">
+<button class="p-1 rounded text-[#92a4c9] hover:text-white hover:bg-[#232f48] disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="p-1 rounded text-[#92a4c9] hover:text-white hover:bg-[#232f48]">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer area inside scrollable content -->
+<footer class="mt-12 mb-6 text-center text-xs text-[#556987]">
+<p>© 2023 EnergyMonitor. Tous droits réservés.</p>
+</footer>
+</div>
+</main>
+</div>
+</body></html>

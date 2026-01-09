@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MonitorElec - Paramètres</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569; 
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-white overflow-hidden">
+<div class="relative flex h-screen w-full flex-row overflow-hidden">
+<!-- Side Navigation -->
+<aside class="flex h-full w-72 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111722] p-4">
+<div class="flex flex-col gap-6 h-full">
+<!-- User Profile / Branding -->
+<div class="flex items-center gap-3 px-2 py-2">
+<div class="bg-primary/20 flex items-center justify-center rounded-lg size-10">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px;">electric_bolt</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-lg font-bold leading-normal tracking-tight">MonitorElec</h1>
+<p class="text-slate-500 dark:text-[#92a4c9] text-xs font-medium uppercase tracking-wider">Admin Panel</p>
+</div>
+</div>
+<!-- Navigation Menu -->
+<nav class="flex flex-col gap-1 flex-1">
+<a class="group flex items-center gap-3 px-3 py-3 rounded-lg text-slate-600 dark:text-[#92a4c9] hover:bg-slate-100 dark:hover:bg-[#1e2736] transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 24px;">dashboard</span>
+<p class="text-sm font-medium leading-normal">Vue d'ensemble</p>
+</a>
+<a class="group flex items-center gap-3 px-3 py-3 rounded-lg text-slate-600 dark:text-[#92a4c9] hover:bg-slate-100 dark:hover:bg-[#1e2736] transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 24px;">monitor_heart</span>
+<p class="text-sm font-medium leading-normal">Temps réel</p>
+</a>
+<a class="group flex items-center gap-3 px-3 py-3 rounded-lg text-slate-600 dark:text-[#92a4c9] hover:bg-slate-100 dark:hover:bg-[#1e2736] transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 24px;">history</span>
+<p class="text-sm font-medium leading-normal">Historique</p>
+</a>
+<!-- Active Item -->
+<a class="group flex items-center gap-3 px-3 py-3 rounded-lg bg-primary text-white shadow-md shadow-primary/20" href="#">
+<span class="material-symbols-outlined" style="font-size: 24px; font-variation-settings: 'FILL' 1;">settings</span>
+<p class="text-sm font-medium leading-normal">Paramètres</p>
+</a>
+</nav>
+<!-- Footer / Logout -->
+<div class="flex flex-col gap-1 mt-auto pt-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex gap-3 items-center px-3 py-3 mb-2 rounded-lg bg-slate-50 dark:bg-[#1a2332]">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 ring-2 ring-primary/20" data-alt="User profile picture of the system administrator" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAHSExTP70PiG9SU4S6yRwcy2vHZIkaIqaLd-aO8S9EAVsdoGX2e7Jt-X6PqVBLCjofACnJ977VcVK83BdAvEk2TKSDycYWbn8pFzvZuKxaFejeYrunx4wIEYkrr6dApim7r3MbAUsGbwgGO5bERmbQJympO7JspcZ9SfUg7zREk521u6zDoV6gfrVn9HAckQPtkSLkOgn2l6acoSQ065hIrP2MRm0dVD-uaXz1q8GXSnWlUGHCchippZUNeX1ecRAXv7cigKbf4dzP");'>
+</div>
+<div class="flex flex-col overflow-hidden">
+<h1 class="text-slate-900 dark:text-white text-sm font-semibold truncate">Alexandre Dubois</h1>
+<p class="text-slate-500 dark:text-[#92a4c9] text-xs truncate">Admin Système</p>
+</div>
+</div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 24px;">logout</span>
+<p class="text-sm font-medium leading-normal">Déconnexion</p>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-y-auto bg-background-light dark:bg-background-dark relative">
+<div class="w-full max-w-[1200px] mx-auto p-6 md:p-10 flex flex-col gap-8">
+<!-- Breadcrumbs -->
+<div class="flex flex-wrap gap-2 items-center">
+<a class="text-slate-500 dark:text-[#92a4c9] text-sm font-medium hover:text-primary transition-colors" href="#">Accueil</a>
+<span class="text-slate-400 dark:text-[#526079] text-sm">/</span>
+<span class="text-slate-900 dark:text-white text-sm font-medium">Paramètres</span>
+</div>
+<!-- Page Heading -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="flex flex-col gap-2">
+<h1 class="text-slate-900 dark:text-white text-3xl md:text-4xl font-black leading-tight tracking-tight">Paramètres</h1>
+<p class="text-slate-500 dark:text-[#92a4c9] text-base font-normal">Gérez vos préférences de profil, système et affichage.</p>
+</div>
+<button class="flex items-center gap-2 bg-primary hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined" style="font-size: 20px;">save</span>
+                        Enregistrer tout
+                    </button>
+</div>
+<!-- Tabs -->
+<div class="w-full border-b border-slate-200 dark:border-[#324467]">
+<div class="flex gap-8 overflow-x-auto">
+<a class="flex items-center gap-2 border-b-[3px] border-primary text-primary dark:text-white pb-3 px-1" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">person</span>
+<p class="text-sm font-bold tracking-wide">Profil</p>
+</a>
+<a class="flex items-center gap-2 border-b-[3px] border-transparent text-slate-500 dark:text-[#92a4c9] hover:text-slate-700 dark:hover:text-white pb-3 px-1 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">settings_system_daydream</span>
+<p class="text-sm font-bold tracking-wide">Système</p>
+</a>
+<a class="flex items-center gap-2 border-b-[3px] border-transparent text-slate-500 dark:text-[#92a4c9] hover:text-slate-700 dark:hover:text-white pb-3 px-1 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">hub</span>
+<p class="text-sm font-bold tracking-wide">Intégration</p>
+</a>
+<a class="flex items-center gap-2 border-b-[3px] border-transparent text-slate-500 dark:text-[#92a4c9] hover:text-slate-700 dark:hover:text-white pb-3 px-1 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-size: 20px;">tune</span>
+<p class="text-sm font-bold tracking-wide">Affichage</p>
+</a>
+</div>
+</div>
+<!-- Tab Content: Profil -->
+<div class="flex flex-col gap-8 animate-fade-in">
+<!-- Section: Personal Info -->
+<div class="flex flex-col gap-6">
+<div class="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px;">badge</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold">Informations personnelles</h2>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Avatar Column -->
+<div class="col-span-1">
+<div class="bg-white dark:bg-[#1a2332] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col items-center gap-4 text-center">
+<div class="relative group">
+<div class="size-32 rounded-full bg-cover bg-center ring-4 ring-slate-100 dark:ring-[#232f48]" data-alt="Large user avatar preview for profile settings" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCVZBYXB1xvaNrp2ikhoZ0GOqTERDVBSaAPbJdjAfqLeZ_gi5uobV3ZedI0bX9nlbrZURACD3gEF-ywEO4nFQoWOu5D5502waBblaicXQNz3vTY-SlpE_kxgEtIuQFK7Odlq1REmrhWMsNKU3spsYgtRVuFoLHvKHWdWJge5NXBSzzANBb9aCdgCdBSo7hG6ybxWHY-Np9iGp09nx-jQL2hWejqlBkPkY2v5OmAS7aiCZmhT_CRnykuczCQd3slZtBQdyb36aQZat2C");'></div>
+<button class="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full shadow-lg hover:bg-blue-600 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">edit</span>
+</button>
+</div>
+<div>
+<h3 class="text-slate-900 dark:text-white font-bold text-lg">Alexandre Dubois</h3>
+<p class="text-slate-500 dark:text-[#92a4c9] text-sm">Administrateur Système</p>
+</div>
+<div class="w-full h-px bg-slate-200 dark:bg-slate-700 my-2"></div>
+<div class="flex flex-col gap-2 w-full">
+<div class="flex justify-between text-sm">
+<span class="text-slate-500 dark:text-[#92a4c9]">Statut</span>
+<span class="text-green-500 font-medium flex items-center gap-1">
+<span class="size-2 rounded-full bg-green-500"></span> Actif
+                                            </span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500 dark:text-[#92a4c9]">Rôle</span>
+<span class="text-slate-900 dark:text-white font-medium">Super Admin</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Form Column -->
+<div class="col-span-1 lg:col-span-2 bg-white dark:bg-[#1a2332] p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+<form class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium">Prénom</label>
+<input class="w-full rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#324467] text-slate-900 dark:text-white px-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400" type="text" value="Alexandre"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium">Nom</label>
+<input class="w-full rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#324467] text-slate-900 dark:text-white px-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400" type="text" value="Dubois"/>
+</div>
+<div class="flex flex-col gap-2 md:col-span-2">
+<label class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium">Adresse Email</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400" style="font-size: 20px;">mail</span>
+<input class="w-full rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#324467] text-slate-900 dark:text-white pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400" type="email" value="alexandre.dubois@monitorelec.fr"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium">Téléphone</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400" style="font-size: 20px;">call</span>
+<input class="w-full rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#324467] text-slate-900 dark:text-white pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400" type="tel" value="+33 6 12 34 56 78"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-slate-700 dark:text-[#92a4c9] text-sm font-medium">Département</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400" style="font-size: 20px;">apartment</span>
+<input class="w-full rounded-lg bg-slate-50 dark:bg-[#111722] border border-slate-300 dark:border-[#324467] text-slate-900 dark:text-white pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400" type="text" value="Maintenance &amp; Opérations"/>
+</div>
+</div>
+<div class="md:col-span-2 pt-4 flex justify-end gap-3">
+<button class="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-colors" type="button">Annuler</button>
+<button class="px-4 py-2 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-colors shadow-lg shadow-primary/20" type="button">Sauvegarder</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+<!-- Section: Security -->
+<div class="flex flex-col gap-6">
+<div class="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px;">lock</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold">Sécurité &amp; Connexion</h2>
+</div>
+<div class="bg-white dark:bg-[#1a2332] p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+<div>
+<h3 class="text-slate-900 dark:text-white font-bold text-base">Mot de passe</h3>
+<p class="text-slate-500 dark:text-[#92a4c9] text-sm mt-1">Dernière modification il y a 3 mois.</p>
+</div>
+<button class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 font-medium text-sm transition-colors">Changer le mot de passe</button>
+</div>
+<div class="w-full h-px bg-slate-100 dark:bg-slate-700/50 my-4"></div>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div>
+<h3 class="text-slate-900 dark:text-white font-bold text-base">Authentification à deux facteurs (2FA)</h3>
+<p class="text-slate-500 dark:text-[#92a4c9] text-sm mt-1">Ajoutez une couche de sécurité supplémentaire à votre compte.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 dark:peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Section: Notifications -->
+<div class="flex flex-col gap-6 pb-10">
+<div class="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px;">notifications</span>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold">Préférences de Notification</h2>
+</div>
+<div class="bg-white dark:bg-[#1a2332] p-6 rounded-xl border border-slate-200 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white font-medium">Alertes Critiques</p>
+<p class="text-slate-500 dark:text-[#92a4c9] text-xs">Pannes et surcharges système.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white font-medium">Rapports Hebdomadaires</p>
+<p class="text-slate-500 dark:text-[#92a4c9] text-xs">Résumé de consommation par email.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white font-medium">Maintenance Système</p>
+<p class="text-slate-500 dark:text-[#92a4c9] text-xs">Notifications de mises à jour.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-white font-medium">Nouvel Appareil</p>
+<p class="text-slate-500 dark:text-[#92a4c9] text-xs">Lorsqu'un nouveau capteur est détecté.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MonitorElec - Analyse basée sur un modèle</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "card-dark": "#1A2332",
+                        "surface-dark": "#232f48",
+                        "text-secondary": "#92a4c9",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111722; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #232f48; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #324467; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden">
+<div class="relative flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<div class="hidden lg:flex w-72 flex-col border-r border-[#232f48] bg-[#111722]">
+<div class="p-6">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 bg-gradient-to-br from-blue-500 to-primary" data-alt="Abstract blue gradient logo representing energy monitoring"></div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-bold leading-normal">MonitorElec</h1>
+<p class="text-[#92a4c9] text-xs font-normal leading-normal">Admin Facility</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-2 px-3 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#232f48] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-[#92a4c9] group-hover:text-white">dashboard</span>
+<p class="text-sm font-medium leading-normal">Tableau de bord</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#232f48] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-[#92a4c9] group-hover:text-white">timeline</span>
+<p class="text-sm font-medium leading-normal">Temps réel</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/20 text-white border-l-4 border-primary" href="#">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">model_training</span>
+<p class="text-sm font-medium leading-normal">Analyse basée sur un modèle</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#232f48] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-[#92a4c9] group-hover:text-white">description</span>
+<p class="text-sm font-medium leading-normal">Rapports</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#92a4c9] hover:bg-[#232f48] hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-[#92a4c9] group-hover:text-white">settings</span>
+<p class="text-sm font-medium leading-normal">Paramètres</p>
+</a>
+</nav>
+<div class="p-4 border-t border-[#232f48]">
+<div class="flex items-center gap-3 px-2 py-2">
+<div class="size-8 rounded-full bg-slate-600 bg-cover bg-center" data-alt="Profile picture of the current user, a man with glasses" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAWKDYMG5HDJMWqVH0XIhSnHcxlR_iiiuetnu5ORP6kvclVKrAzp2B2yapIvkO9aLu5Wd2Ga1qzb4aVfU07mRoLgkpIaQmuLS_IFRE_GHpC9vTbUnyoiPCj_TriJRcQE20wJb3drM8ddnn_bqdz2VsHfXOM9VhO-qpiyIvPt1B8QYDcAAh4QWJj323zsw4SwRKp1SiAxa9eIr91v_SnIBx2f_BIZweGojzzJ4JPUQqTo3m_J63Ad9_Ap8zqZtm1oo2DNfQqRTcvyo_j");'></div>
+<div class="flex flex-col">
+<p class="text-white text-sm font-medium">Jean Dupont</p>
+<p class="text-[#92a4c9] text-xs">Ingénieur Principal</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content -->
+<div class="flex-1 flex flex-col h-full overflow-y-auto relative scroll-smooth">
+<!-- Breadcrumbs -->
+<div class="px-6 pt-6 pb-2">
+<div class="flex flex-wrap gap-2 items-center text-sm">
+<a class="text-[#92a4c9] hover:text-white transition-colors font-medium" href="#">Accueil</a>
+<span class="text-[#92a4c9] font-medium">/</span>
+<a class="text-[#92a4c9] hover:text-white transition-colors font-medium" href="#">Analyse</a>
+<span class="text-[#92a4c9] font-medium">/</span>
+<span class="text-white font-medium bg-[#232f48] px-2 py-0.5 rounded text-xs">Modèles</span>
+</div>
+</div>
+<!-- Header -->
+<div class="px-6 py-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div class="flex flex-col gap-2">
+<h1 class="text-white text-3xl md:text-4xl font-black tracking-tight">Analyse et Simulation</h1>
+<p class="text-[#92a4c9] text-base font-normal max-w-2xl">
+                        Configurez des modèles prédictifs pour analyser la consommation énergétique et détecter les anomalies en temps réel.
+                    </p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-[#232f48] hover:bg-[#2f3e5e] text-white text-sm font-bold transition-all">
+<span class="material-symbols-outlined text-[20px]">upload_file</span>
+<span>Exporter</span>
+</button>
+<button class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Nouveau Modèle</span>
+</button>
+</div>
+</div>
+<!-- Content Container -->
+<div class="px-6 py-4 flex flex-col gap-6 max-w-[1400px]">
+<!-- Filters & Configuration Row -->
+<div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+<!-- Configuration Card -->
+<div class="xl:col-span-3 bg-card-dark rounded-xl p-5 border border-[#232f48] flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h3 class="text-white text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">tune</span>
+                                Configuration du Modèle
+                            </h3>
+<span class="text-xs font-medium text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded">Actif</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<label class="flex flex-col gap-2">
+<span class="text-[#92a4c9] text-sm font-medium">Actif électrique cible</span>
+<div class="relative">
+<select class="w-full appearance-none rounded-lg bg-[#111722] border border-[#324467] text-white text-sm px-4 py-3 pr-10 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer">
+<option value="T-204">Transformateur T-204</option>
+<option value="L-01">Ligne Production 01</option>
+<option value="HVAC-Main">Système HVAC Principal</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-[#92a4c9] pointer-events-none">expand_more</span>
+</div>
+</label>
+<label class="flex flex-col gap-2">
+<span class="text-[#92a4c9] text-sm font-medium">Algorithme de prédiction</span>
+<div class="relative">
+<select class="w-full appearance-none rounded-lg bg-[#111722] border border-[#324467] text-white text-sm px-4 py-3 pr-10 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer">
+<option value="RF">Forêt d'arbres décisionnels (Random Forest)</option>
+<option value="LR">Régression Linéaire</option>
+<option value="NN">Réseau de Neurones (LSTM)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-[#92a4c9] pointer-events-none">expand_more</span>
+</div>
+</label>
+<label class="flex flex-col gap-2">
+<span class="text-[#92a4c9] text-sm font-medium">Période d'analyse</span>
+<div class="relative group cursor-pointer">
+<div class="w-full rounded-lg bg-[#111722] border border-[#324467] text-white text-sm px-4 py-3 flex items-center justify-between group-hover:border-[#4b6391] transition-colors">
+<span>Derniers 7 jours</span>
+<span class="material-symbols-outlined text-[#92a4c9]">calendar_today</span>
+</div>
+</div>
+</label>
+</div>
+</div>
+<!-- Mini Calendar (Simplified visual) -->
+<div class="xl:col-span-1 bg-card-dark rounded-xl p-5 border border-[#232f48] flex flex-col justify-between">
+<div class="flex items-center justify-between mb-4">
+<span class="text-white font-bold text-sm">Mai 2024</span>
+<div class="flex gap-1">
+<button class="p-1 hover:bg-[#232f48] rounded"><span class="material-symbols-outlined text-white text-base">chevron_left</span></button>
+<button class="p-1 hover:bg-[#232f48] rounded"><span class="material-symbols-outlined text-white text-base">chevron_right</span></button>
+</div>
+</div>
+<div class="grid grid-cols-7 text-center gap-1">
+<span class="text-[#92a4c9] text-xs py-1">L</span>
+<span class="text-[#92a4c9] text-xs py-1">M</span>
+<span class="text-[#92a4c9] text-xs py-1">M</span>
+<span class="text-[#92a4c9] text-xs py-1">J</span>
+<span class="text-[#92a4c9] text-xs py-1">V</span>
+<span class="text-[#92a4c9] text-xs py-1">S</span>
+<span class="text-[#92a4c9] text-xs py-1">D</span>
+<!-- Calendar Days -->
+<span class="text-[#4b5563] text-xs py-1">29</span>
+<span class="text-[#4b5563] text-xs py-1">30</span>
+<span class="text-white text-xs py-1 hover:bg-[#232f48] rounded cursor-pointer">1</span>
+<span class="text-white text-xs py-1 hover:bg-[#232f48] rounded cursor-pointer">2</span>
+<span class="text-white text-xs py-1 hover:bg-[#232f48] rounded cursor-pointer">3</span>
+<span class="text-white text-xs py-1 hover:bg-[#232f48] rounded cursor-pointer">4</span>
+<span class="text-white text-xs py-1 hover:bg-[#232f48] rounded cursor-pointer">5</span>
+<span class="text-white text-xs py-1 hover:bg-[#232f48] rounded cursor-pointer">6</span>
+<span class="text-white text-xs py-1 hover:bg-[#232f48] rounded cursor-pointer">7</span>
+<span class="bg-primary text-white text-xs py-1 rounded-full cursor-pointer">8</span>
+<span class="bg-[#232f48] text-white text-xs py-1 rounded cursor-pointer">9</span>
+<span class="bg-[#232f48] text-white text-xs py-1 rounded cursor-pointer">10</span>
+<span class="bg-[#232f48] text-white text-xs py-1 rounded cursor-pointer">11</span>
+<span class="bg-[#232f48] text-white text-xs py-1 rounded cursor-pointer">12</span>
+<span class="bg-[#232f48] text-white text-xs py-1 rounded cursor-pointer">13</span>
+<span class="bg-[#232f48] text-white text-xs py-1 rounded cursor-pointer">14</span>
+</div>
+</div>
+</div>
+<!-- KPI Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-card-dark rounded-xl p-5 border border-[#232f48] flex items-center gap-4">
+<div class="size-12 rounded-full bg-blue-900/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-400">check_circle</span>
+</div>
+<div>
+<p class="text-[#92a4c9] text-sm font-medium">Précision du modèle</p>
+<p class="text-white text-2xl font-bold">98.4%</p>
+<p class="text-emerald-400 text-xs font-medium flex items-center mt-1">
+<span class="material-symbols-outlined text-[14px] mr-1">trending_up</span> +0.2% vs hier
+                            </p>
+</div>
+</div>
+<div class="bg-card-dark rounded-xl p-5 border border-[#232f48] flex items-center gap-4">
+<div class="size-12 rounded-full bg-orange-900/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-orange-400">bolt</span>
+</div>
+<div>
+<p class="text-[#92a4c9] text-sm font-medium">Économie Potentielle</p>
+<p class="text-white text-2xl font-bold">1,240 kWh</p>
+<p class="text-[#92a4c9] text-xs mt-1">Est. sur 30 jours</p>
+</div>
+</div>
+<div class="bg-card-dark rounded-xl p-5 border border-[#232f48] flex items-center gap-4">
+<div class="size-12 rounded-full bg-red-900/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-red-400">warning</span>
+</div>
+<div>
+<p class="text-[#92a4c9] text-sm font-medium">Anomalies Détectées</p>
+<p class="text-white text-2xl font-bold">3</p>
+<p class="text-red-400 text-xs font-medium mt-1">Attention requise</p>
+</div>
+</div>
+</div>
+<!-- Main Analysis Chart -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<div class="xl:col-span-2 bg-card-dark rounded-xl p-6 border border-[#232f48] flex flex-col min-h-[400px]">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-white text-lg font-bold">Consommation Réelle vs Prédiction</h3>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="size-3 rounded-full bg-primary"></span>
+<span class="text-[#92a4c9] text-sm">Prédiction</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-3 rounded-full bg-[#4b5563]"></span>
+<span class="text-[#92a4c9] text-sm">Réel</span>
+</div>
+</div>
+</div>
+<!-- CSS Chart Visualization -->
+<div class="relative flex-1 w-full bg-[#111722]/50 rounded-lg p-4 flex items-end justify-between gap-1 overflow-hidden group">
+<!-- Grid Lines Background -->
+<div class="absolute inset-0 flex flex-col justify-between p-4 pointer-events-none">
+<div class="w-full h-px bg-[#232f48] border-t border-dashed border-[#324467]/30"></div>
+<div class="w-full h-px bg-[#232f48] border-t border-dashed border-[#324467]/30"></div>
+<div class="w-full h-px bg-[#232f48] border-t border-dashed border-[#324467]/30"></div>
+<div class="w-full h-px bg-[#232f48] border-t border-dashed border-[#324467]/30"></div>
+<div class="w-full h-px bg-[#232f48] border-t border-dashed border-[#324467]/30"></div>
+</div>
+<!-- SVG Curve for Prediction -->
+<svg class="absolute inset-0 w-full h-full p-4 pointer-events-none" preserveaspectratio="none">
+<!-- Prediction Line (Blue) -->
+<path d="M0,80 C50,75 100,50 150,60 C200,70 250,90 300,85 C350,80 400,40 450,45 C500,50 550,70 600,65 C650,60 700,30 750,35 C800,40 850,55 900,50 L900,200 L0,200 Z" fill="url(#gradientBlue)" opacity="0.1"></path>
+<path d="M0,80 C50,75 100,50 150,60 C200,70 250,90 300,85 C350,80 400,40 450,45 C500,50 550,70 600,65 C650,60 700,30 750,35 C800,40 850,55 900,50" fill="none" stroke="#135bec" stroke-width="3" vector-effect="non-scaling-stroke"></path>
+<!-- Real Line (Grey/White) -->
+<path d="M0,82 C50,78 100,55 150,62 C200,68 250,95 300,80 C350,82 400,45 450,40 C500,55 550,75 600,60 C650,55 700,25 750,40 C800,38 850,50 900,55" fill="none" stroke="#9ca3af" stroke-dasharray="5,5" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<defs>
+<lineargradient id="gradientBlue" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#135bec;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#135bec;stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+</svg>
+<!-- Hover Tooltip Placeholder (simulated position) -->
+<div class="absolute left-[60%] top-[30%] bg-[#232f48] border border-[#4b6391] p-3 rounded-lg shadow-xl z-10 hidden group-hover:block">
+<p class="text-xs text-[#92a4c9] mb-1">12 Mai, 14:30</p>
+<div class="flex justify-between items-center gap-4 text-sm mb-1">
+<span class="text-white">Réel:</span>
+<span class="font-bold text-white">450 kW</span>
+</div>
+<div class="flex justify-between items-center gap-4 text-sm">
+<span class="text-primary">Modèle:</span>
+<span class="font-bold text-primary">442 kW</span>
+</div>
+</div>
+</div>
+<div class="flex justify-between mt-4 text-xs text-[#92a4c9]">
+<span>00:00</span>
+<span>04:00</span>
+<span>08:00</span>
+<span>12:00</span>
+<span>16:00</span>
+<span>20:00</span>
+<span>23:59</span>
+</div>
+</div>
+<!-- Anomaly Table -->
+<div class="xl:col-span-1 bg-card-dark rounded-xl border border-[#232f48] flex flex-col overflow-hidden">
+<div class="p-5 border-b border-[#232f48] bg-[#192233]">
+<h3 class="text-white text-lg font-bold">Anomalies Récentes</h3>
+</div>
+<div class="flex-1 overflow-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-[#111722] sticky top-0 z-10">
+<tr>
+<th class="p-4 text-xs font-semibold text-[#92a4c9] uppercase tracking-wider">Heure</th>
+<th class="p-4 text-xs font-semibold text-[#92a4c9] uppercase tracking-wider">Sévérité</th>
+<th class="p-4 text-xs font-semibold text-[#92a4c9] uppercase tracking-wider">Écart</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#232f48]">
+<tr class="hover:bg-[#232f48]/50 transition-colors cursor-pointer">
+<td class="p-4">
+<p class="text-white text-sm font-medium">14:32</p>
+<p class="text-[#92a4c9] text-xs">Aujourd'hui</p>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900/40 text-red-400 border border-red-900">
+                                                Critique
+                                            </span>
+</td>
+<td class="p-4 text-white text-sm">+15%</td>
+</tr>
+<tr class="hover:bg-[#232f48]/50 transition-colors cursor-pointer">
+<td class="p-4">
+<p class="text-white text-sm font-medium">09:15</p>
+<p class="text-[#92a4c9] text-xs">Aujourd'hui</p>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-900/40 text-orange-400 border border-orange-900">
+                                                Moyen
+                                            </span>
+</td>
+<td class="p-4 text-white text-sm">+8.2%</td>
+</tr>
+<tr class="hover:bg-[#232f48]/50 transition-colors cursor-pointer">
+<td class="p-4">
+<p class="text-white text-sm font-medium">23:10</p>
+<p class="text-[#92a4c9] text-xs">Hier</p>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-900/40 text-yellow-400 border border-yellow-900">
+                                                Faible
+                                            </span>
+</td>
+<td class="p-4 text-white text-sm">-5.1%</td>
+</tr>
+<tr class="hover:bg-[#232f48]/50 transition-colors cursor-pointer">
+<td class="p-4">
+<p class="text-white text-sm font-medium">18:45</p>
+<p class="text-[#92a4c9] text-xs">11 Mai</p>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-900/40 text-yellow-400 border border-yellow-900">
+                                                Faible
+                                            </span>
+</td>
+<td class="p-4 text-white text-sm">+3.4%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-[#232f48] bg-[#192233]">
+<button class="w-full text-sm text-primary font-bold hover:text-blue-400 text-center">Voir tout le rapport</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>
