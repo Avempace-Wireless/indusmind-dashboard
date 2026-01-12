@@ -814,20 +814,11 @@ const router = createRouter({
 
 // Navigation guards
 router.beforeEach((to, from, next) => {
-  // Set document title with translation support
+  // Set document title (translation handled in components)
   if (to.meta.title) {
     const title = to.meta.title as string
-    if (title.includes('.')) {
-      // It's a translation key like 'thermal.pageTitle'
-      // Use the global i18n instance instead of useI18n()
-      const i18n = router.app?.$i18n as any
-      if (i18n && i18n.global) {
-        document.title = `${i18n.global.t(title)} | IndusMind Energy Dashboard`
-      } else {
-        document.title = `${title} | IndusMind Energy Dashboard`
-      }
-    } else {
-      // It's a plain string
+    if (!title.includes('.')) {
+      // It's a plain string, not a translation key
       document.title = `${title} | IndusMind Energy Dashboard`
     }
   } else {
