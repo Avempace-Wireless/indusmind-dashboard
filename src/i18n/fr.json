@@ -71,7 +71,6 @@
     "postalCode": "Code postal",
     "taxId": "Numéro fiscal",
     "role": "Rôle",
-    "manager": "Gestionnaire",
     "joinDate": "Date d'adhésion",
     "department": "Département",
     "energyManagement": "Gestion de l'énergie",
