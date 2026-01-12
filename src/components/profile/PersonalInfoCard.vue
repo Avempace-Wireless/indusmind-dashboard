@@ -4,37 +4,37 @@
       <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
-            Personal Information
+            {{ t('profile.personalInfo') }}
           </h4>
 
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">First Name</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">Musharof</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.firstName') }}</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">IndusMind</p>
             </div>
 
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Last Name</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">Chowdhury</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.lastName') }}</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">Manager</p>
             </div>
 
             <div>
               <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Email address
+                {{ t('profile.email') }}
               </p>
               <p class="text-sm font-medium text-gray-800 dark:text-white/90">
-                randomuser@pimjo.com
+                manager@indusmind.com
               </p>
             </div>
 
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Phone</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">+09 363 398 46</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.phone') }}</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">+1 (555) 123-4567</p>
             </div>
 
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Bio</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">Team Manager</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.bio') }}</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ t('profile.energyManagementAdmin') }}</p>
             </div>
           </div>
         </div>
@@ -55,7 +55,7 @@
               fill=""
             />
           </svg>
-          Edit
+          {{ t('common.edit') }}
         </button>
       </div>
     </div>
@@ -87,17 +87,17 @@
           </button>
           <div class="px-2 pr-14">
             <h4 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Personal Information
+              {{ t('profile.editPersonalInfo') }}
             </h4>
             <p class="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Update your details to keep your profile up-to-date.
+              {{ t('profile.editPersonalInfoDesc') }}
             </p>
           </div>
           <form class="flex flex-col">
             <div class="custom-scrollbar h-[458px] overflow-y-auto p-2">
               <div>
                 <h5 class="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                  Social Links
+                  {{ t('profile.socialMedia') }}
                 </h5>
 
                 <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
@@ -105,7 +105,7 @@
                     <label
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
-                      Facebook
+                      {{ t('profile.facebook') }}
                     </label>
                     <input
                       type="text"
@@ -118,7 +118,7 @@
                     <label
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
-                      X.com
+                      {{ t('profile.twitter') }}
                     </label>
                     <input
                       type="text"
@@ -131,7 +131,7 @@
                     <label
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
-                      Linkedin
+                      {{ t('profile.linkedin') }}
                     </label>
                     <input
                       type="text"
@@ -144,7 +144,7 @@
                     <label
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
-                      Instagram
+                      {{ t('profile.instagram') }}
                     </label>
                     <input
                       type="text"
@@ -156,7 +156,7 @@
               </div>
               <div class="mt-7">
                 <h5 class="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                  Personal Information
+                  {{ t('profile.personalInfo') }}
                 </h5>
 
                 <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
@@ -164,7 +164,7 @@
                     <label
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
-                      First Name
+                      {{ t('profile.firstName') }}
                     </label>
                     <input
                       type="text"
@@ -177,7 +177,7 @@
                     <label
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
-                      Last Name
+                      {{ t('profile.lastName') }}
                     </label>
                     <input
                       type="text"
@@ -190,7 +190,7 @@
                     <label
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
-                      Email Address
+                      {{ t('profile.email') }}
                     </label>
                     <input
                       type="text"
@@ -203,7 +203,7 @@
                     <label
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
-                      Phone
+                      {{ t('profile.phone') }}
                     </label>
                     <input
                       type="text"
@@ -216,7 +216,7 @@
                     <label
                       class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                     >
-                      Bio
+                      {{ t('profile.bio') }}
                     </label>
                     <input
                       type="text"
@@ -233,14 +233,14 @@
                 type="button"
                 class="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
               >
-                Close
+                {{ t('common.close') }}
               </button>
               <button
                 @click="saveProfile"
                 type="button"
                 class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
               >
-                Save Changes
+                {{ t('profile.save') }}
               </button>
             </div>
           </form>
@@ -252,8 +252,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Modal from './Modal.vue'
 
+const { t } = useI18n()
 const isProfileInfoModal = ref(false)
 
 const saveProfile = () => {
