@@ -46,7 +46,7 @@
   "user": {
     "manager": "Manager",
     "managerAccount": "IndusMind Manager",
-    "managerEmail": "manager@indusmind.com",
+    "managerEmail": "manager{'@'}indusmind.com",
     "profile": "My Profile",
     "settings": "Account Settings",
     "support": "Help & Support",
@@ -128,7 +128,7 @@
     "tutorials": "Video Tutorials",
     "community": "Community Forum",
     "reportIssue": "Report an Issue",
-    "email": "support@indusmind.com",
+    "email": "support{'@'}indusmind.com",
     "phone": "+1 (555) 123-4567",
     "hours": "Available 24/7",
     "searchHelp": "Search for help...",
