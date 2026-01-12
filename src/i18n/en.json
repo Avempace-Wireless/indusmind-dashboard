@@ -333,7 +333,7 @@
   },
   "puissance": {
     "pageTitle": "Electrical Consumption – Power",
-      "displayMode": "Display Mode",
+    "displayMode": "Display Mode",
       "views": {
         "overview": "Overview",
         "charts": "Charts",

@@ -333,7 +333,7 @@
   },
   "puissance": {
     "pageTitle": "Consommation électrique – Puissance",
-      "displayMode": "Mode d'affichage",
+    "displayMode": "Mode d'affichage",
       "views": {
         "overview": "Aperçu",
         "charts": "Graphiques",
