@@ -123,11 +123,11 @@ const messages = [
     content: `Hi TailAdmin Team,\nI hope you're doing well.\nI’m currently working on customizing the TailAdmin dashboard and would like to add a new section labeled “Reports.”`,
   },
   {
-    name: 'Musharof Chowdhury',
-    email: 'From - tailadmin support team',
-    avatar: '/images/support/user-2.jpg',
+    name: 'IndusMind Manager',
+    email: 'From - IndusMind support team',
+    avatar: '/images/user/owner.png',
     time: 'Mon, 3:20 PM (2 hrs ago)',
-    content: `Hi John D,\nThanks for reaching out—and great to hear you're customizing TailAdmin to fit your needs! Yes, you can definitely add custom pages like a “Reports” section, and it’s quite straightforward.`,
+    content: `Hi John D,\nThanks for reaching out—and great to hear you're customizing your energy management dashboard to fit your needs! Yes, you can definitely add custom pages like a "Reports" section, and it's quite straightforward.`,
   },
   {
     name: 'John Doe',

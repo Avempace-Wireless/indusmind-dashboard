@@ -3,30 +3,30 @@
     <div class="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
       <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">Address</h4>
+          <h4 class="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">{{ t('profile.address') }}</h4>
 
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">Country</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">United States</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.country') }}</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ t('profile.countryValue') }}</p>
             </div>
 
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">City/State</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.cityState') }}</p>
               <p class="text-sm font-medium text-gray-800 dark:text-white/90">
-                Phoenix, United States
+                {{ t('profile.cityStateValue') }}
               </p>
             </div>
 
             <div>
               <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Postal Code
+                {{ t('profile.postalCode') }}
               </p>
               <p class="text-sm font-medium text-gray-800 dark:text-white/90">ERT 2489</p>
             </div>
 
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">TAX ID</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.taxId') }}</p>
               <p class="text-sm font-medium text-gray-800 dark:text-white/90">AS4568384</p>
             </div>
           </div>
@@ -51,7 +51,7 @@
               fill=""
             />
           </svg>
-          Edit
+          {{ t('common.edit') }}
         </button>
       </div>
     </div>
@@ -83,10 +83,10 @@
           </button>
           <div class="px-2 pr-14">
             <h4 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Address
+              {{ t('profile.editAddress') }}
             </h4>
             <p class="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Update your details to keep your profile up-to-date.
+              {{ t('profile.editPersonalInfoDesc') }}
             </p>
           </div>
           <form class="flex flex-col">
@@ -162,8 +162,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Modal from './Modal.vue'
 
+const { t } = useI18n()
 const isProfileAddressModal = ref(false)
 
 const saveProfile = () => {

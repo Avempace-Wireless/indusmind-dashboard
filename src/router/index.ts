@@ -85,6 +85,34 @@ const router = createRouter({
         requiresAuth: true,
       },
     },
+    // User Pages
+    {
+      path: '/profile',
+      name: 'Profile',
+      component: () => import('../views/Pages/UserProfile.vue'),
+      meta: {
+        title: 'My Profile',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/account-settings',
+      name: 'AccountSettings',
+      component: () => import('../views/Pages/AccountSettings.vue'),
+      meta: {
+        title: 'Account Settings',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/support',
+      name: 'Support',
+      component: () => import('../views/Pages/Support.vue'),
+      meta: {
+        title: 'Help & Support',
+        requiresAuth: true,
+      },
+    },
     {
       path: '/settings',
       name: 'Settings',

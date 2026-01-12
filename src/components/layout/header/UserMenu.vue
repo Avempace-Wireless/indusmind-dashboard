@@ -1,74 +1,110 @@
 <template>
   <div class="relative" ref="dropdownRef">
     <button
-      class="flex items-center text-gray-700 dark:text-gray-400"
+      class="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
       @click.prevent="toggleDropdown"
     >
-      <span class="mr-3 overflow-hidden rounded-full h-11 w-11">
-        <img src="/images/user/owner.png" alt="User" />
-      </span>
-
-      <span class="block mr-1 font-medium text-theme-sm">Musharof</span>
-
-      <ChevronDownIcon :class="{ 'rotate-180': dropdownOpen }" />
-    </button>
-
-    <!-- Dropdown Start -->
-    <div
-      v-if="dropdownOpen"
-      class="absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
-    >
-      <div>
-        <span class="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-          Musharof Chowdhury
-        </span>
-        <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-          randomuser@pimjo.com
-        </span>
+      <div class="flex items-center justify-center h-9 w-9 rounded-full ring-2 ring-emerald-500/30 bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-xs">
+        IM
       </div>
 
-      <ul class="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
-        <li v-for="item in menuItems" :key="item.href">
-          <router-link
-            :to="item.href"
-            class="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-          >
-            <!-- SVG icon would go here -->
-            <component
-              :is="item.icon"
-              class="text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
-            />
-            {{ item.text }}
-          </router-link>
-        </li>
-      </ul>
-      <router-link
-        to="/signin"
-        @click="signOut"
-        class="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+      <div class="hidden sm:flex flex-col items-start">
+        <span class="block font-semibold text-sm text-gray-900 dark:text-white leading-none">{{ t('user.manager') }}</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('user.profile') }}</span>
+      </div>
+
+      <ChevronDownIcon :class="['w-4 h-4', { 'rotate-180': dropdownOpen }]" class="transition-transform" />
+    </button>
+
+    <!-- Dropdown Menu -->
+    <transition
+      enter-active-class="transition ease-out duration-100"
+      enter-from-class="transform opacity-0 scale-95"
+      enter-to-class="transform opacity-100 scale-100"
+      leave-active-class="transition ease-in duration-75"
+      leave-from-class="transform opacity-100 scale-100"
+      leave-to-class="transform opacity-0 scale-95"
+    >
+      <div
+        v-if="dropdownOpen"
+        class="absolute right-0 mt-2 w-72 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl"
       >
-        <LogoutIcon
-          class="text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300"
-        />
-        Sign out
-      </router-link>
-    </div>
-    <!-- Dropdown End -->
+        <!-- User Info Section -->
+        <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center justify-center h-12 w-12 rounded-full ring-2 ring-emerald-500/30 bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-sm flex-shrink-0">
+              IM
+            </div>
+            <div>
+              <p class="font-semibold text-gray-900 dark:text-white">{{ t('user.managerAccount') }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('user.managerEmail') }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu Items -->
+        <ul class="flex flex-col py-2">
+          <li v-for="item in menuItems" :key="item.id">
+            <router-link
+              :to="item.href"
+              @click="closeDropdown"
+              class="flex items-center gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors"
+            >
+              <component :is="item.icon" class="w-5 h-5" />
+              <span class="text-sm font-medium">{{ t(item.translationKey) }}</span>
+            </router-link>
+          </li>
+        </ul>
+
+        <!-- Divider -->
+        <div class="border-t border-gray-200 dark:border-gray-700"></div>
+
+        <!-- Logout -->
+        <button
+          @click="handleLogout"
+          class="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm font-medium"
+        >
+          <LogoutIcon class="w-5 h-5" />
+          <span>{{ t('user.signOut') }}</span>
+        </button>
+      </div>
+    </transition>
   </div>
 </template>
 
-<script setup>
-import { UserCircleIcon, ChevronDownIcon, LogoutIcon, SettingsIcon, InfoCircleIcon } from '@/icons'
-import { RouterLink } from 'vue-router'
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '@/stores/useAuthStore'
+import { UserCircleIcon, ChevronDownIcon, LogoutIcon, SettingsIcon, SupportIcon } from '@/icons'
+
+const { t } = useI18n()
+const router = useRouter()
+const authStore = useAuthStore()
 
 const dropdownOpen = ref(false)
-const dropdownRef = ref(null)
+const dropdownRef = ref<HTMLDivElement | null>(null)
 
 const menuItems = [
-  { href: '/profile', icon: UserCircleIcon, text: 'Edit profile' },
-  { href: '/chat', icon: SettingsIcon, text: 'Account settings' },
-  { href: '/profile', icon: InfoCircleIcon, text: 'Support' },
+  {
+    id: 'profile',
+    href: '/profile',
+    icon: UserCircleIcon,
+    translationKey: 'user.profile'
+  },
+  {
+    id: 'settings',
+    href: '/account-settings',
+    icon: SettingsIcon,
+    translationKey: 'user.settings'
+  },
+  {
+    id: 'support',
+    href: '/support',
+    icon: SupportIcon,
+    translationKey: 'user.support'
+  },
 ]
 
 const toggleDropdown = () => {
@@ -79,14 +115,18 @@ const closeDropdown = () => {
   dropdownOpen.value = false
 }
 
-const signOut = () => {
-  // Implement sign out logic here
-  console.log('Signing out...')
+const handleLogout = async () => {
   closeDropdown()
+  try {
+    authStore.logout()
+    await router.push('/login')
+  } catch (error) {
+    console.error('Logout failed:', error)
+  }
 }
 
-const handleClickOutside = (event) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target)) {
+const handleClickOutside = (event: MouseEvent) => {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
     closeDropdown()
   }
 }
