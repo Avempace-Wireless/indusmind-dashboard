@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { createI18n } from 'vue-i18n'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -146,6 +147,15 @@ const router = createRouter({
       component: () => import('../views/ComparisonView.vue'),
       meta: {
         title: 'Period Comparison',
+        requiresAuth: true,
+      },
+    },
+    {
+      path: '/thermal-management',
+      name: 'thermal-management',
+      component: () => import('../views/ThermalManagementView.vue'),
+      meta: {
+        title: 'thermal.pageTitle',
         requiresAuth: true,
       },
     },
@@ -804,8 +814,25 @@ const router = createRouter({
 
 // Navigation guards
 router.beforeEach((to, from, next) => {
-  // Update page title
-  document.title = `${to.meta.title || 'Dashboard'} | IndusMind Energy Dashboard`
+  // Set document title with translation support
+  if (to.meta.title) {
+    const title = to.meta.title as string
+    if (title.includes('.')) {
+      // It's a translation key like 'thermal.pageTitle'
+      // Use the global i18n instance instead of useI18n()
+      const i18n = router.app?.$i18n as any
+      if (i18n && i18n.global) {
+        document.title = `${i18n.global.t(title)} | IndusMind Energy Dashboard`
+      } else {
+        document.title = `${title} | IndusMind Energy Dashboard`
+      }
+    } else {
+      // It's a plain string
+      document.title = `${title} | IndusMind Energy Dashboard`
+    }
+  } else {
+    document.title = 'Dashboard | IndusMind Energy Dashboard'
+  }
 
   // Check authentication
   const token = sessionStorage.getItem('auth_token')
@@ -824,3 +851,4 @@ router.beforeEach((to, from, next) => {
 })
 
 export default router
+
