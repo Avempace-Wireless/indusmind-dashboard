@@ -225,139 +225,138 @@ const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar()
 
 const { t } = useI18n()
 
-const menuGroups = [
+const menuGroups = computed(() => [
   {
-    title: 'Monitoring',
+    title: t('sidebar.monitoring'),
     items: [
       {
         icon: GridIcon,
-        name: 'Dashboard',
+        name: t('sidebar.dashboard'),
         path: '/dashboard',
       },
-
       {
         icon: BarChartIcon,
-        name: t('puissance.pageTitle'),
+        name: t('sidebar.puissance'),
         path: '/puissance',
       },
       {
         icon: CalenderIcon,
-        name: 'History',
+        name: t('sidebar.history'),
         path: '/history',
       },
       {
         icon: BarChartIcon,
-        name: 'Comparison',
+        name: t('sidebar.comparison'),
         path: '/comparison',
       },
       {
         icon: SettingsIcon,
-        name: t('thermal.menuItem'),
+        name: t('sidebar.thermalManagement'),
         path: '/thermal-management',
       },
     ],
   },
   {
-    title: 'Analysis',
+    title: t('sidebar.analysis'),
     items: [
       {
         icon: PieChartIcon,
-        name: 'Base Load',
+        name: t('sidebar.baseLoad'),
         path: '/base-load',
       },
       {
         icon: BarChartIcon,
-        name: 'Peak Demand',
+        name: t('sidebar.peakDemand'),
         path: '/peak-demand',
       },
       {
         icon: CartIcon,
-        name: 'Electrical Consumption',
+        name: t('sidebar.electricalConsumption'),
         path: '/consumption',
       },
       {
         icon: PieChartIcon,
-        name: 'Analysis',
+        name: t('sidebar.analysisView'),
         path: '/analysis',
       },
       {
         icon: CartIcon,
-        name: 'Cost Analysis',
+        name: t('sidebar.costAnalysis'),
         path: '/cost-analysis',
       },
     ],
   },
   {
-    title: 'Reports',
+    title: t('sidebar.reports'),
     items: [
       {
         icon: PageIcon,
-        name: 'Reports',
+        name: t('sidebar.reportsView'),
         path: '/reports',
       },
     ],
   },
   {
-    title: 'Alerts',
+    title: t('sidebar.alerts'),
     items: [
       {
         icon: BellIcon,
-        name: 'Alerts',
+        name: t('sidebar.alertsView'),
         path: '/alerts',
       },
       {
         icon: TaskIcon,
-        name: 'Alert Rules',
+        name: t('sidebar.alertRules'),
         path: '/alert-config',
       },
     ],
   },
   {
-    title: 'Performance',
+    title: t('sidebar.performance'),
     items: [
       {
         icon: BarChartIcon,
-        name: 'KPI Dashboard',
+        name: t('sidebar.kpiDashboard'),
         path: '/performance',
       },
       {
         icon: CartIcon,
-        name: 'Benchmarking',
+        name: t('sidebar.benchmarking'),
         path: '/benchmarking',
       },
     ],
   },
   {
-    title: 'Inventory',
+    title: t('sidebar.inventory'),
     items: [
       {
         icon: BoxIcon,
-        name: 'Equipment',
+        name: t('sidebar.equipment'),
         path: '/equipment',
       },
       {
         icon: UserCircleIcon,
-        name: 'Sites & Locations',
+        name: t('sidebar.sitesLocations'),
         path: '/locations',
       },
     ],
   },
   {
-    title: 'Configuration',
+    title: t('sidebar.configuration'),
     items: [
       {
         icon: PageIcon,
-        name: 'Settings',
+        name: t('sidebar.settings'),
         path: '/settings',
       },
       {
         icon: UserCircleIcon,
-        name: 'User Management',
+        name: t('sidebar.userManagement'),
         path: '/users',
       },
     ],
   },
-]
+])
 
 const isActive = (path) => route.path === path
 
@@ -367,7 +366,7 @@ const toggleSubmenu = (groupIndex, itemIndex) => {
 }
 
 const isAnySubmenuRouteActive = computed(() => {
-  return menuGroups.some((group) =>
+  return menuGroups.value.some((group) =>
     group.items.some(
       (item) => item.subItems && item.subItems.some((subItem) => isActive(subItem.path)),
     ),
@@ -379,7 +378,7 @@ const isSubmenuOpen = (groupIndex, itemIndex) => {
   return (
     openSubmenu.value === key ||
     (isAnySubmenuRouteActive.value &&
-      menuGroups[groupIndex].items[itemIndex].subItems?.some((subItem) => isActive(subItem.path)))
+      menuGroups.value[groupIndex].items[itemIndex].subItems?.some((subItem) => isActive(subItem.path)))
   )
 }
 
