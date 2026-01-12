@@ -26,7 +26,7 @@
         <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
           {{ t(alert.message) }}
         </p>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <p v-if="alert.description" class="text-sm text-gray-500 dark:text-gray-400">
           {{ t(alert.description) }}
         </p>
 

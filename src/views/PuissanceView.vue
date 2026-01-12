@@ -105,7 +105,7 @@
               v-for="(kpiKey, idx) in kpiKeys"
               :key="idx"
               :title="$t(`puissance.kpi.${kpiKey}`)"
-              :value="currentMeterData.kpiValues[kpiKey as keyof typeof currentMeterData.kpiValues]"
+              :value="(currentMeterData.kpiValues as Record<string, number>)[kpiKey]"
               :unit="$t('common.unit.kw')"
               :meter-name="currentMeterData.name"
               :meter-color="currentMeterData.color"

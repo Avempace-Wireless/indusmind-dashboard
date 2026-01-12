@@ -25,6 +25,7 @@ export interface Compteur {
   today: number // kWh (cumulative today)
   yesterday: number // kWh (yesterday total)
   linkedEquipment: string[] // Equipment IDs linked to this compteur
+  translationKey?: string
 }
 
 export type CompteurMode = 'instantanée' | 'jour' | 'hier'

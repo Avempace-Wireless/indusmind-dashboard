@@ -20,7 +20,7 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       <div class="lg:col-span-2 grid grid-cols-3 gap-4">
-        <KpiCard v-for="(k, idx) in kpiList" :key="idx" :title="k.title" :meterName="meters[selectedMeter].name" :value="k.value" :color="meters[selectedMeter].color"/>
+        <KPICard v-for="(k, idx) in kpiList" :key="idx" :title="k.title" :meterName="meters[selectedMeter].name" :value="k.value" :unit="k.unit || 'kW'" :meterColor="meters[selectedMeter].color"/>
       </div>
 
       <div class="lg:col-span-1">
@@ -54,13 +54,13 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       <div class="lg:col-span-1">
-        <DataTable title="Realtime – last day" subtitle="Puissance heure par heure" :columns="hourlyColumns" :rows="hourlyTableRows" :pageSize="8" rowKey="timestamp" />
+        <DataTable title="Realtime – last day" realtimeLabel="Puissance heure par heure" :columns="hourlyColumns" :data="hourlyTableRows" :itemsPerPage="8" />
       </div>
       <div class="lg:col-span-1">
-        <DataTable title="Realtime – current month so far" subtitle="Puissance totale 24h" :columns="dailyColumns" :rows="dailyTableRows" :pageSize="8" rowKey="date" />
+        <DataTable title="Realtime – current month so far" realtimeLabel="Puissance totale 24h" :columns="dailyColumns" :data="dailyTableRows" :itemsPerPage="8" />
       </div>
       <div class="lg:col-span-1">
-        <DataTable title="Realtime – current month so far" subtitle="Puissance moyenne journalière" :columns="dailyAvgColumns" :rows="dailyAvgRows" :pageSize="8" rowKey="date" />
+        <DataTable title="Realtime – current month so far" realtimeLabel="Puissance moyenne journalière" :columns="dailyAvgColumns" :data="dailyAvgRows" :itemsPerPage="8" />
       </div>
     </div>
 
@@ -73,14 +73,14 @@
 
 <script setup lang="ts">
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import KpiCard from '@/components/puissance/KpiCard.vue'
+import KPICard from '@/components/puissance/KPICard.vue'
 import PowerBarChart from '@/components/puissance/PowerBarChart.vue'
 import DataTable from '@/components/puissance/DataTable.vue'
 import { reactive, ref, computed } from 'vue'
-import { puissanceMeters, meterList } from '@/data/puissanceMock'
+import { puissanceMeters, meterList as importedMeterList } from '@/data/puissanceMock'
 
 const meters = puissanceMeters as any
-const meterListRef = meterList
+const meterList = importedMeterList
 
 const selectedMeter = ref('compresseur')
 function selectMeter(id:string){ selectedMeter.value = id }
@@ -89,12 +89,12 @@ function selectMeter(id:string){ selectedMeter.value = id }
 const kpiList = computed(()=>{
   const k = meters[selectedMeter.value].kpis
   return [
-    { title: 'Puissance moyenne du mois dernier', value: k.avgLastMonth },
-    { title: 'Puissance moyenne ce mois-ci', value: k.avgThisMonth },
-    { title: 'Puissance moyenne hier', value: k.avgYesterday },
-    { title: "Puissance moyenne aujourd'hui", value: k.avgToday },
-    { title: 'Puissance moyenne avant-hier', value: k.avgDayBeforeYesterday },
-    { title: "Puissance instantanée (cette heure)", value: k.instantThisHour },
+    { title: 'Puissance moyenne du mois dernier', value: k.avgLastMonth, unit: 'kW' },
+    { title: 'Puissance moyenne ce mois-ci', value: k.avgThisMonth, unit: 'kW' },
+    { title: 'Puissance moyenne hier', value: k.avgYesterday, unit: 'kW' },
+    { title: "Puissance moyenne aujourd'hui", value: k.avgToday, unit: 'kW' },
+    { title: 'Puissance moyenne avant-hier', value: k.avgDayBeforeYesterday, unit: 'kW' },
+    { title: "Puissance instantanée (cette heure)", value: k.instantThisHour, unit: 'kW' },
   ]
 })
 
@@ -116,9 +116,6 @@ const dailyAvgRows = computed(()=> meters[selectedMeter.value].dailyPower.map((p
 const hourlyColumns = [{ key: 'timestamp', label: 'Timestamp' }, { key: 'power', label: 'Puissance (kW)' }]
 const dailyColumns = [{ key: 'date', label: 'Date' }, { key: 'power', label: 'Puissance journalière (kW)' }]
 const dailyAvgColumns = [{ key: 'date', label: 'Date' }, { key: 'avg', label: 'Puissance moyenne journalière (kW)' }]
-
-// expose to template
-const meterList = meterListRef
 
 // initial selection default
 selectMeter(selectedMeter.value)

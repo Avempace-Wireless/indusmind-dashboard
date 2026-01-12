@@ -14,6 +14,7 @@ interface Compteur {
   today: number // kWh
   yesterday: number // kWh
   linkedEquipment: string[]
+  translationKey?: string
 }
 
 const mockCompteurs: Compteur[] = [
