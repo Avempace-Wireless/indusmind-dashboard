@@ -71,7 +71,6 @@
     "postalCode": "Postal Code",
     "taxId": "TAX ID",
     "role": "Role",
-    "manager": "Manager",
     "joinDate": "Join Date",
     "department": "Department",
     "energyManagement": "Energy Management",
