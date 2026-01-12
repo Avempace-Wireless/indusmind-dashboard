@@ -414,5 +414,65 @@
       "selectAll": "Tout sélectionner",
       "deselectAll": "Tout désélectionner"
     }
+  },
+  "thermal": {
+    "pageTitle": "Système de Gestion et de Surveillance Thermique",
+    "subtitle": "Contrôle climatique multi-zones pour une gestion optimale des installations",
+    "menuItem": "Gestion Thermique",
+    "zone": "Zone {number}",
+    "currentTemp": "Température",
+    "maxTemp": "Temp. Max",
+    "minTemp": "Temp. Min",
+    "manual": "Manuel",
+    "auto": "Auto",
+    "powerOn": "ACTIF",
+    "powerOff": "INACTIF",    "power": {
+      "on": "MARCHE",
+      "off": "ARRÊT"
+    },    "status": {
+      "active": "Zones Actives",
+      "avgTemp": "Temp. Moyenne",
+      "operational": "Opérationnel",
+      "standby": "En attente"
+    },
+    "sections": {
+      "zoneControl": "Contrôle et Gestion des Zones",
+      "monitoring": "Surveillance et Analyse des Températures"
+    },
+    "charts": {
+      "zoneTemps": {
+        "title": "Températures des Zones",
+        "subtitle": "Temps réel - 12 dernières heures"
+      },
+      "minMax": {
+        "title": "Limites de Température Min/Max",
+        "subtitle": "Valeurs actuelles vs limites configurées par zone"
+      },
+      "exteriorTemp": {
+        "title": "Température Extérieure",
+        "subtitle": "Temps réel - 12 dernières heures"
+      },
+      "placeholder": "Emplacement de visualisation graphique",
+      "latest": "Dernier",
+      "legend": {
+        "zone1": "Température Zone 1",
+        "zone2": "Température Zone 2",
+        "zone3": "Température Zone 3",
+        "zone4": "Température Zone 4",
+        "exterior": "Température Extérieur"
+      }
+    },
+    "controls": {
+      "columns": "Colonnes par ligne",
+      "zones": "Zones",
+      "selectAll": "Tout sélectionner",
+      "clear": "Tout désélectionner",
+      "orderHint": "Glissez les cartes pour réordonner les zones",
+      "resetOrder": "Réinitialiser l'ordre",
+      "limitsOn": "Limites : ACTIVÉES",
+      "limitsOff": "Limites : DÉSACTIVÉES",
+      "resetDefaults": "Réinitialiser aux valeurs par défaut",
+      "limitsDisabled": "Les limites sont désactivées. Activez-les pour modifier les températures."
+    }
   }
 }

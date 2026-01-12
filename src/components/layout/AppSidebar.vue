@@ -213,6 +213,7 @@ import {
   BellIcon,
   BarChartIcon,
   BoxIcon,
+  SettingsIcon,
 } from '../../icons'
 import SidebarWidget from './SidebarWidget.vue'
 import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
@@ -233,11 +234,7 @@ const menuGroups = [
         name: 'Dashboard',
         path: '/dashboard',
       },
-      {
-        icon: CartIcon,
-        name: 'Electrical Consumption',
-        path: '/consumption',
-      },
+
       {
         icon: BarChartIcon,
         name: t('puissance.pageTitle'),
@@ -253,6 +250,11 @@ const menuGroups = [
         name: 'Comparison',
         path: '/comparison',
       },
+      {
+        icon: SettingsIcon,
+        name: t('thermal.menuItem'),
+        path: '/thermal-management',
+      },
     ],
   },
   {
@@ -267,6 +269,11 @@ const menuGroups = [
         icon: BarChartIcon,
         name: 'Peak Demand',
         path: '/peak-demand',
+      },
+      {
+        icon: CartIcon,
+        name: 'Electrical Consumption',
+        path: '/consumption',
       },
       {
         icon: PieChartIcon,

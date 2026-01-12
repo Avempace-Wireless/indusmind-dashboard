@@ -414,5 +414,67 @@
       "selectAll": "Select all",
       "deselectAll": "Deselect all"
     }
+  },
+  "thermal": {
+    "pageTitle": "Thermal Management & Monitoring System",
+    "subtitle": "Multi-zone climate control for optimal facility management",
+    "menuItem": "Thermal Management",
+    "zone": "Zone {number}",
+    "currentTemp": "Temperature",
+    "maxTemp": "Max Temp",
+    "minTemp": "Min Temp",
+    "manual": "Manual",
+    "auto": "Auto",
+    "powerOn": "ACTIVE",
+    "powerOff": "INACTIVE",
+    "power": {
+      "on": "ON",
+      "off": "OFF"
+    },
+    "status": {
+      "active": "Active Zones",
+      "avgTemp": "Avg. Temperature",
+      "operational": "Operational",
+      "standby": "Standby"
+    },
+    "sections": {
+      "zoneControl": "Zone Control & Management",
+      "monitoring": "Temperature Monitoring & Analytics"
+    },
+    "charts": {
+      "zoneTemps": {
+        "title": "Zone Temperatures",
+        "subtitle": "Real-time - Last 12 Hours"
+      },
+      "minMax": {
+        "title": "Min/Max Temperature Limits",
+        "subtitle": "Current values vs. configured limits per zone"
+      },
+      "exteriorTemp": {
+        "title": "Exterior Temperature",
+        "subtitle": "Real-time - Last 12 Hours"
+      },
+      "placeholder": "Chart visualization placeholder",
+      "latest": "Latest",
+      "legend": {
+        "zone1": "Temperature Zone 1",
+        "zone2": "Temperature Zone 2",
+        "zone3": "Temperature Zone 3",
+        "zone4": "Temperature Zone 4",
+        "exterior": "Temperature Exterior"
+      }
+    },
+    "controls": {
+      "columns": "Columns per row",
+      "zones": "Zones",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "orderHint": "Drag cards to reorder zones",
+      "resetOrder": "Reset order",
+      "limitsOn": "Limits: ON",
+      "limitsOff": "Limits: OFF",
+      "resetDefaults": "Reset to defaults",
+      "limitsDisabled": "Limits are disabled. Enable to edit temperatures."
+    }
   }
 }
