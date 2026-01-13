@@ -26,13 +26,7 @@
             <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
             {{ t('energyHistory.buttons.pdf') }}
           </button>
-          <button
-            @click="resetFilters"
-            class="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <span class="material-symbols-outlined text-lg">refresh</span>
-            {{ t('energyHistory.buttons.reset') }}
-          </button>
+
         </div>
       </div>
     </div>
@@ -187,6 +181,77 @@
             </button>
           </div>
 
+          <!-- Period Presets -->
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ t('energyHistory.calendar.periods.title') }}</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                @click="selectLast7Days"
+                :class="[
+                  'px-3 py-2 text-xs font-medium rounded-lg border transition-colors',
+                  activePeriodPreset === 'last7Days'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                ]"
+              >
+                {{ t('energyHistory.calendar.periods.last7Days') }}
+              </button>
+              <button
+                @click="selectLast30Days"
+                :class="[
+                  'px-3 py-2 text-xs font-medium rounded-lg border transition-colors',
+                  activePeriodPreset === 'last30Days'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                ]"
+              >
+                {{ t('energyHistory.calendar.periods.last30Days') }}
+              </button>
+              <button
+                @click="selectThisMonth"
+                :class="[
+                  'px-3 py-2 text-xs font-medium rounded-lg border transition-colors',
+                  activePeriodPreset === 'thisMonth'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                ]"
+              >
+                {{ t('energyHistory.calendar.periods.thisMonth') }}
+              </button>
+              <button
+                @click="selectLastMonth"
+                :class="[
+                  'px-3 py-2 text-xs font-medium rounded-lg border transition-colors',
+                  activePeriodPreset === 'lastMonth'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                ]"
+              >
+                {{ t('energyHistory.calendar.periods.lastMonth') }}
+              </button>
+            </div>
+          </div>
+
+           <!-- Selected Dates Range Info -->
+          <div v-if="selectedDates.length > 0" class="mb-4 mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div class="flex items-center justify-between">
+              <div class="text-xs">
+                <span class="font-semibold text-blue-900 dark:text-blue-100">
+                  {{ t('energyHistory.calendar.daysSelected', { count: selectedDates.length }) }}
+                </span>
+                <div v-if="selectedDates.length > 1" class="text-blue-700 dark:text-blue-300 mt-1">
+                  {{ selectedDates[0] }} → {{ selectedDates[selectedDates.length - 1] }}
+                </div>
+              </div>
+              <button
+                @click="goToToday"
+                class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+              >
+                {{ t('common.clear') }}
+              </button>
+            </div>
+          </div>
+
           <!-- Month Navigation -->
           <div class="flex items-center justify-between mb-4">
             <button
@@ -222,11 +287,11 @@
             <button
               v-for="(day, index) in calendarDays"
               :key="index"
-              @click="day.isCurrentMonth && day.date && toggleDate(day.date)"
-              @mousedown="day.isCurrentMonth && day.date && startDrag(day.date)"
-              @mouseover="day.isCurrentMonth && isDragging && day.date && onDragOver(day.date)"
+              @click="day.date && toggleDate(day.date)"
+              @mousedown="day.date && startDrag(day.date)"
+              @mouseover="isDragging && day.date && onDragOver(day.date)"
               @mouseup="endDrag"
-              :disabled="!day.isCurrentMonth"
+              :disabled="!day.date"
               :class="[
                 'aspect-square flex items-center justify-center text-xs rounded-md transition-all relative',
                 day.isCurrentMonth
@@ -235,7 +300,9 @@
                     : day.isToday
                     ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  : 'text-gray-300 dark:text-gray-700 cursor-not-allowed'
+                  : day.isSelected
+                  ? 'bg-blue-500 text-white font-medium'
+                  : 'text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50'
               ]"
             >
               {{ day.dateObj ? day.dateObj.getDate() : '' }}
@@ -246,36 +313,7 @@
             </button>
           </div>
 
-          <!-- Period Presets -->
-          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ t('energyHistory.calendar.periods.title') }}</p>
-            <div class="grid grid-cols-2 gap-2">
-              <button
-                @click="selectLast7Days"
-                class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                {{ t('energyHistory.calendar.periods.last7Days') }}
-              </button>
-              <button
-                @click="selectLast30Days"
-                class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                {{ t('energyHistory.calendar.periods.last30Days') }}
-              </button>
-              <button
-                @click="selectThisMonth"
-                class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                {{ t('energyHistory.calendar.periods.thisMonth') }}
-              </button>
-              <button
-                @click="selectLastMonth"
-                class="px-3 py-2 text-xs font-medium rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                {{ t('energyHistory.calendar.periods.lastMonth') }}
-              </button>
-            </div>
-          </div>
+
         </div>
 
         <!-- Characteristics Filter (Meters Selection) -->
@@ -374,6 +412,7 @@ const {
   availableMetrics,
   selectedDates,
   currentMonth,
+  activePeriodPreset,
   hourFrom,
   hourTo,
   photovoltaicEnabled,
@@ -674,8 +713,11 @@ function onDragOver(dateStr: string | null) {
   if (!isDragging.value || !dragStart.value || !dateStr) return
 
   // Get dates between start and current
-  const dates = getDatesBetween(dragStart.value, dateStr)
-  selectedDates.value = dates
+  const draggedDates = getDatesBetween(dragStart.value, dateStr)
+
+  // Merge with existing selections (preserve previous selections)
+  const existingDates = selectedDates.value.filter(d => !draggedDates.includes(d))
+  selectedDates.value = [...existingDates, ...draggedDates]
 }
 
 function endDrag() {

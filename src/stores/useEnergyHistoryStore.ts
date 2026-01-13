@@ -57,6 +57,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   const selectedDates = ref<string[]>([]) // Format: YYYY-MM-DD
   const currentMonth = ref(new Date())
+  const activePeriodPreset = ref<'last7Days' | 'last30Days' | 'thisMonth' | 'lastMonth' | null>(null)
 
   // ===========================
   // State - Time Range Filter
@@ -181,12 +182,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const leadingDays = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1 // Adjust for Monday start
     for (let i = leadingDays; i > 0; i--) {
       const date = new Date(year, month - 1, prevMonthLastDay - i + 1)
+      const dateStr = formatDate(date)
       days.push({
-        date: formatDate(date),
+        date: dateStr,
         dateObj: date,
         isCurrentMonth: false,
         isToday: false,
-        isSelected: false,
+        isSelected: selectedDates.value.includes(dateStr),
         hasData: false,
       })
     }
@@ -215,12 +217,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const remainingDays = 42 - days.length
     for (let day = 1; day <= remainingDays; day++) {
       const date = new Date(year, month + 1, day)
+      const dateStr = formatDate(date)
       days.push({
-        date: formatDate(date),
+        date: dateStr,
         dateObj: date,
         isCurrentMonth: false,
         isToday: false,
-        isSelected: false,
+        isSelected: selectedDates.value.includes(dateStr),
         hasData: false,
       })
     }
@@ -425,6 +428,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     } else {
       selectedDates.value.push(dateStr)
     }
+    // Clear preset when manually selecting dates
+    activePeriodPreset.value = null
   }
 
   function selectSingleDate(dateStr: string) {
@@ -450,6 +455,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       currentMonth.value.getMonth() - 1,
       1
     )
+    // Clear preset indicator when manually navigating
+    activePeriodPreset.value = null
   }
 
   function nextMonth() {
@@ -458,11 +465,16 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       currentMonth.value.getMonth() + 1,
       1
     )
+    // Clear preset indicator when manually navigating
+    activePeriodPreset.value = null
   }
 
   function goToToday() {
     currentMonth.value = new Date()
+    // Always select today's date
     selectSingleDate(formatDate(new Date()))
+    // Clear preset indicator
+    activePeriodPreset.value = null
   }
 
   // ===========================
@@ -477,6 +489,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       dates.push(formatDate(date))
     }
     selectedDates.value = dates
+    activePeriodPreset.value = 'last7Days'
+    // Navigate calendar to current month
+    currentMonth.value = new Date(today)
   }
 
   function selectLast30Days() {
@@ -488,6 +503,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       dates.push(formatDate(date))
     }
     selectedDates.value = dates
+    activePeriodPreset.value = 'last30Days'
+    // Navigate calendar to current month (30 days might span 2 months)
+    currentMonth.value = new Date(today)
   }
 
   function selectThisMonth() {
@@ -498,6 +516,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const lastDay = new Date(year, month + 1, 0)
     const dates = getDatesBetween(formatDate(firstDay), formatDate(lastDay))
     selectedDates.value = dates
+    activePeriodPreset.value = 'thisMonth'
+    // Navigate calendar to current month
+    currentMonth.value = new Date(today)
   }
 
   function selectLastMonth() {
@@ -508,6 +529,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const lastDay = new Date(year, month + 1, 0)
     const dates = getDatesBetween(formatDate(firstDay), formatDate(lastDay))
     selectedDates.value = dates
+    activePeriodPreset.value = 'lastMonth'
+    // Navigate calendar to LAST month (not current)
+    currentMonth.value = new Date(year, month, 1)
   }
 
   // ===========================
@@ -826,6 +850,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     availableMetrics,
     selectedDates,
     currentMonth,
+    activePeriodPreset,
     hourFrom,
     hourTo,
     loading,

@@ -6,6 +6,7 @@
     "edit": "Edit",
     "add": "Add",
     "close": "Close",
+    "clear": "Clear",
     "search": "Search",
     "filter": "Filter",
     "export": "Export",
@@ -457,6 +458,7 @@
     },
     "calendar": {
       "title": "Calendar",
+      "daysSelected": "{count} day selected | {count} days selected",
       "weekdays": {
         "mon": "Mon",
         "tue": "Tue",
@@ -516,6 +518,13 @@
       "daily": "Daily",
       "weekly": "Weekly",
       "monthly": "Monthly"
+    },
+    "characteristics": {
+      "title": "Metric characteristic",
+      "consumption": "Consumption (kWh)",
+      "energy": "Energy (kWh)",
+      "cost": "Cost (EUR)",
+      "co2": "CO2 Emissions (kg)"
     },
     "chartType": {
       "title": "Chart type",
@@ -578,7 +587,12 @@
       "active": "Active Zones",
       "avgTemp": "Avg. Temperature",
       "operational": "Operational",
-      "standby": "Standby"
+      "standby": "Standby",
+      "currentAverage": "Current average",
+      "energy": "Energy",
+      "efficiency": "Efficiency",
+      "systemStatus": "Status",
+      "allSystems": "All systems"
     },
     "sections": {
       "zoneControl": "Zone Control & Management",

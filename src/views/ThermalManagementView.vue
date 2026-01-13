@@ -38,12 +38,12 @@
               </div>
             </div>
             <div class="text-4xl font-bold">21.5°C</div>
-            <div class="text-green-100 text-sm mt-1">Current average</div>
+            <div class="text-green-100 text-sm mt-1">{{ t('thermal.status.currentAverage') }}</div>
           </div>
 
           <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-6 text-white">
             <div class="flex items-center justify-between mb-2">
-              <div class="text-amber-100 text-sm font-semibold uppercase tracking-wide">Energy</div>
+              <div class="text-amber-100 text-sm font-semibold uppercase tracking-wide">{{ t('thermal.status.energy') }}</div>
               <div class="bg-white/20 rounded-full p-2">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
@@ -51,12 +51,12 @@
               </div>
             </div>
             <div class="text-4xl font-bold">87%</div>
-            <div class="text-amber-100 text-sm mt-1">Efficiency</div>
+            <div class="text-amber-100 text-sm mt-1">{{ t('thermal.status.efficiency') }}</div>
           </div>
 
           <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
             <div class="flex items-center justify-between mb-2">
-              <div class="text-purple-100 text-sm font-semibold uppercase tracking-wide">Status</div>
+              <div class="text-purple-100 text-sm font-semibold uppercase tracking-wide">{{ t('thermal.status.systemStatus') }}</div>
               <div class="bg-white/20 rounded-full p-2">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"/>
@@ -64,7 +64,7 @@
               </div>
             </div>
             <div class="text-4xl font-bold">{{ t('thermal.power.on') }}</div>
-            <div class="text-purple-100 text-sm mt-1">All systems</div>
+            <div class="text-purple-100 text-sm mt-1">{{ t('thermal.status.allSystems') }}</div>
           </div>
         </div>
       </div>
