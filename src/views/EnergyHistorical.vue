@@ -119,25 +119,6 @@
     <div class="grid grid-cols-1 xl:grid-cols-10 gap-6">
       <!-- Left Panel: Chart Area (70%) -->
         <div class="xl:col-span-7 space-y-6">
-        <!-- Metric Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div
-            v-for="card in metricCardsData"
-            :key="card.metricId"
-            class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
-          >
-            <div class="flex items-center justify-between mb-3">
-              <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: card.metricColor }"></span>
-            </div>
-            <div class="space-y-1">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ card.metricName }}</p>
-              <h4 class="text-2xl font-bold text-gray-900 dark:text-white">
-                {{ card.primaryValue.toFixed(2) }}
-              </h4>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ card.unit }} • {{ card.primaryDate }}</p>
-            </div>
-          </div>
-        </div>
 
         <!-- View Mode Toggle (global) -->
         <div class="flex items-center justify-end">
@@ -484,7 +465,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler, LineController, BarController } from 'chart.js'
 import AdminLayout from '../components/layout/AdminLayout.vue'
 import { useEnergyHistoryStore } from '../stores/useEnergyHistoryStore'
@@ -565,8 +546,14 @@ function getMeterColor(meterName: string): string {
   return METER_COLORS[meterName] || '#3b82f6'
 }
 
-function formatCell(v: number | undefined) {
-  if (typeof v !== 'number') return '-'
+function formatCell(v: any) {
+  // Handle if v is an object with a value property
+  if (v && typeof v === 'object' && 'value' in v) {
+    v = v.value
+  }
+
+  if (typeof v !== 'number' || isNaN(v)) return '-'
+
   const dp = selectedMetric.value.decimalPlaces
   return v.toFixed(dp)
 }
@@ -657,7 +644,15 @@ const currentCategory = computed(() => {
 const currentMeterElements = computed(() => {
   const firstMeter = selectedMetersFromStore.value[0]
   if (firstMeter && (firstMeter as any).elements) {
-    return (firstMeter as any).elements
+    const elements = (firstMeter as any).elements
+    // Extract element IDs or names (handle both string[] and MeterElement[])
+    if (Array.isArray(elements) && elements.length > 0) {
+      if (typeof elements[0] === 'string') {
+        return elements // Already strings (element IDs/names)
+      } else if (typeof elements[0] === 'object' && elements[0].id) {
+        return elements.map((el: any) => el.id) // Extract IDs from MeterElement objects
+      }
+    }
   }
   return []
 })
@@ -665,10 +660,11 @@ const currentMeterElements = computed(() => {
 // Category Helper Functions
 function getCategoryColor(category: string): string {
   const colors: Record<string, string> = {
-    'TGBT': '#3b82f6',
-    'Compresseurs': '#10b981',
-    'Clim': '#f59e0b',
-    'Éclairage': '#8b5cf6'
+    'TGBT': '#ef4444',           // Red
+    'Compresseurs': '#22c55e',    // Green
+    'Clim': '#3b82f6',            // Blue
+    'Éclairage': '#f59e0b',       // Amber
+    'Eclairage': '#f59e0b'        // Amber (alternative spelling)
   }
   return colors[category] || '#6b7280'
 }
@@ -756,14 +752,17 @@ watch(
  */
 watch(
   () => selectedCompteurs.value,
-  (newCompteurs) => {
+  async (newCompteurs) => {
     if (newCompteurs.length > 0) {
+      // Wait for next tick to ensure computed values have updated
+      await nextTick()
       // Update activeCompteurIds to match new selection
       activeCompteurIds.value = newCompteurs.map(c => c.id)
       // Refresh data to load new meter data
-      refreshData()
+      await refreshData()
     }
-  }
+  },
+  { immediate: true }
 )
 
 // ===========================
@@ -1053,20 +1052,11 @@ onMounted(() => {
     selectedCategory.value = metersStore.selectedMeters[0]?.category || null
   }
 
-  // CRITICAL: Initialize activeCompteurIds with all selected compteurs
-  // This ensures visibleCompteurs is not empty and charts have data
-  if (activeCompteurIds.value.length === 0 && selectedCompteurs.value.length > 0) {
-    activeCompteurIds.value = selectedCompteurs.value.map(c => c.id)
-  }
-
   // Initialize with today's date
   goToToday()
 
   // Initialize chart
   initChart()
-
-  // Load initial data
-  refreshData()
 })
 
 onBeforeUnmount(() => {

@@ -265,7 +265,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         const dayData = dateStr ? getMetricDataForDate(dateStr, metric.type, compteur.id) : null
         if (dayData) {
           const filteredData = filterDataByHourRange(dayData.hourlyData)
-          const color = getMeterColor(compteur.name, idx)
+          const color = getMeterColor(compteur.id, idx)
           datasets.push({
             label: `${compteur.name}`,
             data: filteredData.map(d => d.value),
@@ -293,7 +293,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
           const total = dayData ? calculateFilteredTotal(dayData.hourlyData) : 0
           dataPoints.push(total)
         })
-        const color = getMeterColor(compteur.name, idx)
+        const color = getMeterColor(compteur.id, idx)
         datasets.push({
           label: `${compteur.name}`,
           data: dataPoints,
@@ -337,7 +337,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         metricId: compteur.id,
         metricName: compteur.name,
         metricIcon: 'bolt',
-        metricColor: getMeterColor(compteur.name, idx),
+        metricColor: getMeterColor(compteur.id, idx),
         unit: metric.unit,
         primaryValue: displayValue,
         primaryDate: dateLabel,
@@ -694,27 +694,27 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
 
-  // Meter-specific color mapping (dashboard theme)
-  const METER_COLORS: Record<string, string> = {
-    'TGBT': '#ef4444',        // red-500
-    'Compresseurs': '#10b981', // green-500
-    'Clim': '#3b82f6',        // blue-500
-    'Cooling': '#3b82f6',     // blue-500 (alias)
-    'Éclairage': '#eab308',   // yellow-500
-    'Eclairage': '#eab308',   // yellow-500 (alias)
-    'Lighting': '#eab308',    // yellow-500 (alias)
-  }
+  // ===========================
+  // Chart Data Generation
+  // ===========================
+  /**
+   * Get meter color from centralized store
+   * Ensures consistent colors across all views
+   */
+  function getMeterColor(meterId: string, fallbackIndex: number = 0): string {
+    const meter = metersStore.getMeterById(meterId)
+    if (meter) {
+      return metersStore.getMeterColor(meterId)
+    }
 
-  // Fallback palette for additional meters
-  const FALLBACK_PALETTE = [
-    '#8b5cf6', // violet-500
-    '#06b6d4', // cyan-500
-    '#f59e0b', // amber-500
-    '#22c55e', // emerald-500
-  ]
-
-  function getMeterColor(meterName: string, index: number): string {
-    return METER_COLORS[meterName] || FALLBACK_PALETTE[index % FALLBACK_PALETTE.length]
+    // Fallback palette for unknown meters
+    const FALLBACK_PALETTE = [
+      '#8b5cf6', // violet-500
+      '#06b6d4', // cyan-500
+      '#f59e0b', // amber-500
+      '#22c55e', // emerald-500
+    ]
+    return FALLBACK_PALETTE[fallbackIndex % FALLBACK_PALETTE.length]
   }
 
   function adjustColorBrightness(hex: string, amount: number): string {
@@ -776,6 +776,37 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   }
 
   function generateMockDailyData(dateStr: string, metricType: MetricType, compteurId: string): DailyMetricData {
+    // ✅ TRY TO GET DATA FROM CENTRALIZED SOURCE FIRST
+    const meterData = metersStore.getFullMeterData(compteurId)
+
+    if (meterData && metricType === 'consumption') {
+      // Use centralized hourly data for consumption metric
+      const hourlyData: HourlyDataPoint[] = meterData.timeSeries.hourly.map((dataPoint, index) => ({
+        hour: index,
+        value: dataPoint.value,
+        quality: dataPoint.quality || 'good'
+      }))
+
+      const totalValue = hourlyData.reduce((sum, d) => sum + d.value, 0)
+      const averageValue = totalValue / hourlyData.length
+      const peakData = hourlyData.reduce((max, d) => d.value > max.value ? d : max)
+      const minData = hourlyData.reduce((min, d) => d.value < min.value ? d : min)
+
+      return {
+        date: dateStr,
+        metricId: `${compteurId}-${metricType}`,
+        metricType,
+        hourlyData,
+        totalValue,
+        averageValue,
+        peakValue: peakData.value,
+        peakHour: peakData.hour,
+        minValue: minData.value,
+        minHour: minData.hour,
+      }
+    }
+
+    // ✅ FALLBACK: Generate mock data for other metrics
     const hourlyData: HourlyDataPoint[] = []
 
     for (let hour = 0; hour < 24; hour++) {

@@ -53,9 +53,6 @@
             <div>
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                 {{ t(`comparison.chartType.${chartType}`) }} - {{ t(`comparison.mode.${comparisonMode}`) }}
-                <span v-if="selectedCharacteristic" class="text-sm text-gray-500 ml-2">
-                  ({{ t(`comparison.characteristics.${selectedCharacteristic}`) }})
-                </span>
               </h3>
               <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {{ selectedMeters.length }} {{ t('comparison.kpi.items') }}
@@ -427,28 +424,6 @@
         </div>
 
         <!-- Characteristics Selection -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ t('comparison.characteristics.title') }}</h3>
-
-          <div class="space-y-2 max-h-48 overflow-y-auto">
-            <label
-              v-for="characteristic in ['consumption', 'energy', 'cost', 'co2']"
-              :key="characteristic"
-              class="flex items-center gap-2 cursor-pointer p-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
-              <input
-                type="radio"
-                :value="characteristic"
-                v-model="selectedCharacteristic"
-                class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-              />
-              <span class="text-xs text-gray-700 dark:text-gray-300 capitalize">
-                {{ t(`comparison.characteristics.${characteristic}`) }}
-              </span>
-            </label>
-          </div>
-        </div>
-
         <!-- Aggregation Level Selector -->
         <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ t('comparison.aggregation.title') }}</h3>
@@ -575,9 +550,6 @@ const {
 
 // Custom period selection state
 const showCustomCalendar = ref(false)
-
-// Selected characteristic (consumption, energy, cost, co2)
-const selectedCharacteristic = ref<'consumption' | 'energy' | 'cost' | 'co2'>('consumption')
 
 // Pagination state for Detailed Comparison table
 const currentTablePage = ref(1)

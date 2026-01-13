@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { METERS_DATA, type Meter, type MeterElement, getAllCategories } from '../data/metersData'
 
 /**
  * Meter Metadata Interface
@@ -18,6 +19,7 @@ export interface MeterMetadata {
   linkedEquipment: string[]
   translationKey?: string
   lastReadTime?: Date
+  elements?: string[] // Element IDs (e.g., ['L1', 'L2', 'L3'])
 }
 
 /**
@@ -39,87 +41,24 @@ export const useMetersStore = defineStore('meters', () => {
 
   /**
    * All available meters in the system
-   * Fetched once from API or config, cached in memory
+   * Loaded from centralized data source
    */
-  const allMeters = ref<MeterMetadata[]>([
-    {
-      id: 'compteur-1',
-      name: 'TGBT',
-      category: 'TGBT',
-      subtitle: 'PM2200-TGBT-Indusmind',
-      unit: 'kWh',
-      site: 'Main',
-      color: 'red',
-      icon: 'electric_bolt',
-      status: 'online',
-      linkedEquipment: ['eq-1', 'eq-2', 'eq-3']
-    },
-    {
-      id: 'compteur-2',
-      name: 'Compresseurs',
-      category: 'Compresseurs',
-      subtitle: 'Compresseurs industriels',
-      unit: 'kWh',
-      site: 'Main',
-      color: 'green',
-      icon: 'compress',
-      status: 'online',
-      linkedEquipment: ['eq-4', 'eq-5'],
-      translationKey: 'equipment.compressorsIndustrial'
-    },
-    {
-      id: 'compteur-3',
-      name: 'Clim',
-      category: 'Clim',
-      subtitle: 'Climatisation générale',
-      unit: 'kWh',
-      site: 'Main',
-      color: 'blue',
-      icon: 'ac_unit',
-      status: 'online',
-      linkedEquipment: ['eq-6', 'eq-7'],
-      translationKey: 'equipment.climGeneral'
-    },
-    {
-      id: 'compteur-4',
-      name: 'Éclairage',
-      category: 'Éclairage',
-      subtitle: 'Éclairage général',
-      unit: 'kWh',
-      site: 'Main',
-      color: 'yellow',
-      icon: 'lightbulb',
-      status: 'online',
-      linkedEquipment: ['eq-8'],
-      translationKey: 'equipment.lightingGeneral'
-    },
-    {
-      id: 'compteur-5',
-      name: 'Compresseur Zone 2',
-      category: 'Compresseurs',
-      subtitle: 'Compresseur secondaire',
-      unit: 'kWh',
-      site: 'Zone 2',
-      color: 'green',
-      icon: 'compress',
-      status: 'online',
-      linkedEquipment: ['eq-9'],
-      translationKey: 'equipment.compressorSecondary'
-    },
-    {
-      id: 'compteur-6',
-      name: 'Clim Bureau',
-      category: 'Clim',
-      subtitle: 'Climatisation bureaux',
-      unit: 'kWh',
-      site: 'Office',
-      color: 'blue',
-      icon: 'ac_unit',
-      status: 'online',
-      linkedEquipment: ['eq-10', 'eq-11'],
-      translationKey: 'equipment.climOffices'
-    }
-  ])
+  const allMeters = ref<MeterMetadata[]>(
+    METERS_DATA.map(meter => ({
+      id: meter.id,
+      name: meter.name,
+      category: meter.category,
+      subtitle: meter.subtitle,
+      unit: meter.unit,
+      site: meter.site,
+      color: meter.color,
+      icon: meter.icon,
+      status: meter.status,
+      linkedEquipment: meter.linkedEquipment,
+      translationKey: meter.translationKey,
+      elements: meter.elements?.map(el => el.id) as any // Extract element IDs only
+    }))
+  )
 
   /**
    * Currently selected meter IDs
@@ -273,9 +212,9 @@ export const useMetersStore = defineStore('meters', () => {
     // Map color names to hex values
     const colorMap: Record<string, string> = {
       red: '#ef4444',
-      green: '#10b981',
+      green: '#22c55e',
       blue: '#3b82f6',
-      yellow: '#eab308',
+      yellow: '#f59e0b',
     }
 
     return colorMap[meter.color] || meter.color
@@ -321,6 +260,43 @@ export const useMetersStore = defineStore('meters', () => {
     )
   )
 
+  /**
+   * Get meters by category
+   */
+  const metersByCategory = computed(() => {
+    const grouped: Record<string, MeterMetadata[]> = {}
+    allMeters.value.forEach(meter => {
+      if (!grouped[meter.category]) {
+        grouped[meter.category] = []
+      }
+      grouped[meter.category].push(meter)
+    })
+    return grouped
+  })
+
+  /**
+   * Get full meter data (including time series and KPIs) for a meter
+   */
+  function getFullMeterData(meterId: string): Meter | undefined {
+    return METERS_DATA.find(m => m.id === meterId)
+  }
+
+  /**
+   * Get element data from a specific meter
+   */
+  function getElementData(meterId: string, elementId: string): MeterElement | undefined {
+    const meter = getFullMeterData(meterId)
+    if (!meter?.elements) return undefined
+    return meter.elements.find(el => el.id === elementId)
+  }
+
+  /**
+   * Get categories list
+   */
+  function getCategories() {
+    return getAllCategories()
+  }
+
   return {
     // State
     allMeters,
@@ -335,11 +311,15 @@ export const useMetersStore = defineStore('meters', () => {
     restoreSelection,
     persistSelection,
     clearPersisted,
+    getFullMeterData,
+    getElementData,
+    getCategories,
 
     // Getters (computed)
     selectedMeters,
     meterStats,
     selectedMeterColors,
+    metersByCategory,
 
     // Methods (functions)
     getMeterById,

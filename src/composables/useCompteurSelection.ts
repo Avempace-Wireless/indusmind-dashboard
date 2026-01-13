@@ -97,12 +97,10 @@ export function useCompteurSelection() {
   )
 
   /**
-   * Select default 4 compteurs (first 4 available)
+   * Select all available compteurs by default
    */
   function selectDefaultCompteurs() {
-    const compteurs = dashboardStore.compteurs || []
-    const defaultIds = compteurs.slice(0, 4).map((c) => c.id)
-    metersStore.setSelectedMeters(defaultIds)
+    metersStore.selectAllMeters()
   }
 
   /**
@@ -295,6 +293,11 @@ export function useCompteurSelection() {
    * Initialize composable on first use
    */
   function initialize() {
+    // Ensure all meters are selected if none are currently selected
+    if (selectedMeterIds.value.length === 0) {
+      metersStore.selectAllMeters()
+    }
+
     // Ensure widget modes are initialized for current selection
     selectedMeterIds.value.forEach((id) => {
       if (!widgetModes.value[id]) {
