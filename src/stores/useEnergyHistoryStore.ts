@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import type {
   MetricType,
   MetricDefinition,
@@ -10,6 +11,7 @@ import type {
 } from '../types/metrics'
 import { DEFAULT_METRICS as METRICS_CONFIG } from '../types/metrics'
 import { useDashboardStore } from './useDashboardStore'
+import { useMetersStore } from './useMetersStore'
 import i18n from '../i18n'
 
 /**
@@ -21,10 +23,14 @@ import i18n from '../i18n'
  * - Time range filtering (hour-based)
  * - Calendar state and navigation
  * - Data fetching and caching
- * - Integration with dashboard meter selection
+ * - Integration with centralized meter selection
  */
 export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   const dashboardStore = useDashboardStore()
+
+  // ✅ USE CENTRALIZED METER STORE
+  const metersStore = useMetersStore()
+  const { selectedMeterIds } = storeToRefs(metersStore)
 
   // ===========================
   // State - Metric Configuration
@@ -119,10 +125,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   // Computed - Selected Compteurs
   // ===========================
+  /**
+   * ✅ USE CENTRALIZED METER STORE
+   * Get selected compteurs from centralized store
+   * Returns only the meters that are currently selected globally
+   */
   const selectedCompteurs = computed(() => {
-    // Filter to explicitly requested compteurs: TGBT, Compresseurs, Clim, Éclairage/Lighting
-    const wanted = new Set(['TGBT', 'Compresseurs', 'Clim', 'Éclairage', 'Eclairage', 'Lighting'])
-    return dashboardStore.compteurs.filter(c => wanted.has(c.name))
+    return dashboardStore.compteurs.filter(c => selectedMeterIds.value.includes(c.id))
   })
 
   // User-selected active meters within selectedCompteurs

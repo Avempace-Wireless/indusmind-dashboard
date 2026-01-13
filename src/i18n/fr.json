@@ -16,8 +16,9 @@
     "success": "Succès",
     "warning": "Avertissement",
     "info": "Information",
-    "justNow": "À l'instant",
-    "unit": {
+    "justNow": "À l'instant",    "meter": "compteur",
+    "meters": "compteurs",
+    "allMeters": "Tous les compteurs",    "unit": {
       "kw": "kW",
       "celsius": "°C",
       "volt": "V",
@@ -304,6 +305,12 @@
     "lighting": "Éclairage",
     "lightingGeneral": "Éclairage général"
   },
+  "categories": {
+    "tgbt": "TGBT",
+    "compressors": "Compresseurs",
+    "cooling": "Clim",
+    "lighting": "Éclairage"
+  },
   "alerts": {
     "noAlerts": "Aucune alerte",
     "critical": "Critique",
@@ -335,6 +342,8 @@
   "puissance": {
     "pageTitle": "Consommation électrique – Puissance",
     "displayMode": "Mode d'affichage",
+    "selectElement": "Sélectionner un élément",
+    "displaying": "Affichage",
       "views": {
         "overview": "Aperçu",
         "charts": "Graphiques",
@@ -425,8 +434,13 @@
     "viewMode": {
       "chart": "Graphique",
       "table": "Tableau"
-    },
-    "chart": {
+    },    "emptyState": {
+      "noMeters": "Aucun compteur sélectionné",
+      "noDates": "Aucune date sélectionnée",
+      "noMetrics": "Aucune métrique activée",
+      "noData": "Aucune donnée disponible",
+      "hint": "Sélectionnez des compteurs, des dates et activez des métriques pour voir les données"
+    },    "chart": {
       "title": "Analyse {resolution} par compteur",
       "subtitle": {
         "noData": "Sélectionnez des dates pour afficher les données",

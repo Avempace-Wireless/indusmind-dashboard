@@ -12,88 +12,122 @@
         </p>
       </div>
 
-      <!-- Controls Card -->
-      <div class="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-xl shadow-md p-6 border border-gray-200 dark:border-slate-700">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <!-- Meter Tabs -->
-          <div class="flex-1">
-            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-              {{ $t('compteur.selector.title') }}
+      <!-- Controls Section - Two Separate Cards on Same Line -->
+      <div class="flex flex-row gap-4">
+        <!-- Select Meters Card -->
+        <div class="flex-[2] bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600">
+          <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
+            {{ $t('compteur.selector.title') }}
+          </h3>
+
+          <!-- Category Cards with Icons Below -->
+          <div class="grid grid-cols-4 gap-2 mb-4">
+            <button
+              v-for="category in meterCategories"
+              :key="category"
+              @click="selectedCategory = selectedCategory === category ? null : category"
+              :class="[
+                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
+                selectedCategory === category
+                  ? 'text-white shadow-lg border-transparent'
+                  : 'bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+              ]"
+              :style="selectedCategory === category ? {
+                background: `linear-gradient(135deg, ${getCategoryColor(category)} 0%, ${adjustBrightness(getCategoryColor(category), -15)} 100%)`
+              } : {}"
+              :title="$t('common.filter') + ': ' + category"
+            >
+              <!-- Category Icon -->
+              <span class="material-symbols-outlined text-xl">{{ getCategoryIcon(category) }}</span>
+              <!-- Category Label -->
+              <span class="text-xs font-medium text-center leading-tight">{{ $t(getCategoryTranslationKey(category)) }}</span>
+            </button>
+          </div>
+
+          <!-- Elements Selection (if meter has multiple elements) -->
+          <div v-if="currentMeterData.elements && currentMeterData.elements.length > 1">
+            <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
+              {{ $t('puissance.selectElement') }}
             </p>
-            <div class="flex gap-2 overflow-x-auto pb-2">
+            <div class="flex gap-1.5 flex-wrap">
               <button
-                v-for="meter in meters"
-                :key="meter.id"
-                @click="selectedMeter = meter.id"
+                v-for="element in currentMeterData.elements"
+                :key="element"
+                @click="selectedElement = element"
                 :class="[
-                  'px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition-all duration-200 flex items-center gap-2 text-sm border-2',
-                  selectedMeter === meter.id
-                    ? 'text-white shadow-lg border-transparent'
-                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-slate-700 hover:border-gray-400 dark:hover:border-slate-600'
+                  'px-3 py-1.5 rounded-md font-medium text-xs transition-all duration-200',
+                  selectedElement === element
+                    ? 'text-white shadow-md border-2 border-transparent'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
                 ]"
-                :style="{
-                  backgroundColor: selectedMeter === meter.id ? meter.color : undefined,
-                }"
+                :style="selectedElement === element ? {
+                  background: `linear-gradient(135deg, ${currentMeterData.color} 0%, ${adjustBrightness(currentMeterData.color, -15)} 100%)`
+                } : {}"
               >
-                <span class="material-symbols-outlined text-lg">{{ meter.icon }}</span>
-                {{ meter.name }}
+                {{ element }}
               </button>
             </div>
           </div>
+        </div>
 
-          <!-- View Toggle -->
-          <div>
-            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-              {{ $t('puissance.displayMode') }}
-            </p>
-            <div class="flex gap-2 bg-white dark:bg-slate-800 rounded-lg p-1 border border-gray-200 dark:border-slate-700">
-              <button
-                @click="viewMode = 'overview'"
-                :class="[
-                  'px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 flex items-center gap-2',
-                  viewMode === 'overview'
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                ]"
-              >
-                <span class="material-symbols-outlined text-lg">dashboard</span>
-                {{ $t('puissance.views.overview') }}
-              </button>
-              <button
-                @click="viewMode = 'charts'"
-                :class="[
-                  'px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 flex items-center gap-2',
-                  viewMode === 'charts'
-                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                ]"
-              >
-                <span class="material-symbols-outlined text-lg">bar_chart</span>
-                {{ $t('puissance.views.charts') }}
-              </button>
-              <button
-                @click="viewMode = 'tables'"
-                :class="[
-                  'px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 flex items-center gap-2',
-                  viewMode === 'tables'
-                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                ]"
-              >
-                <span class="material-symbols-outlined text-lg">table_chart</span>
-                {{ $t('puissance.views.tables') }}
-              </button>
-            </div>
+        <!-- Display Mode Card -->
+        <div class="flex-[1] bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600">
+          <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
+            {{ $t('puissance.displayMode') }}
+          </p>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              @click="viewMode = 'overview'"
+              :class="[
+                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
+                viewMode === 'overview'
+                  ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md border-transparent'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xl">dashboard</span>
+              <span class="text-xs font-medium text-center leading-tight">{{ $t('puissance.views.overview') }}</span>
+            </button>
+            <button
+              @click="viewMode = 'charts'"
+              :class="[
+                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
+                viewMode === 'charts'
+                  ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md border-transparent'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xl">bar_chart</span>
+              <span class="text-xs font-medium text-center leading-tight">{{ $t('puissance.views.charts') }}</span>
+            </button>
+            <button
+              @click="viewMode = 'tables'"
+              :class="[
+                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
+                viewMode === 'tables'
+                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md border-transparent'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xl">table_chart</span>
+              <span class="text-xs font-medium text-center leading-tight">{{ $t('puissance.views.tables') }}</span>
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Overview View: 2-Column Layout (Widgets Left, Charts Right) -->
-    <div v-if="viewMode === 'overview'" class="space-y-8 animate-fadeIn">
+    <!-- Loading State -->
+    <div v-if="!isMeterDataReady" class="flex items-center justify-center py-12">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        <p class="mt-4 text-slate-600 dark:text-slate-400">Loading meter data...</p>
+      </div>
+    </div>    <!-- Overview View: 2-Column Layout (Widgets Left, Charts Right) -->
+    <div v-if="isMeterDataReady && viewMode === 'overview'" class="space-y-8 animate-fadeIn">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left Column: KPI Cards (1 col) -->
-        <div class="lg:col-span-1 space-y-4">
+        <div v-if="displayElements.kpis" class="lg:col-span-1 space-y-4">
             <div class="flex items-center gap-3 mb-4">
             <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.metrics') }}</h2>
@@ -102,7 +136,7 @@
           <!-- KPI Cards in Column -->
           <div class="space-y-3">
             <KPICard
-              v-for="(kpiKey, idx) in kpiKeys"
+              v-for="(kpiKey, idx) in visibleKpiKeys"
               :key="idx"
               :title="$t(`puissance.kpi.${kpiKey}`)"
               :value="(currentMeterData.kpiValues as Record<string, number>)[kpiKey]"
@@ -114,7 +148,7 @@
         </div>
 
         <!-- Right Column: Charts (2 cols) -->
-        <div class="lg:col-span-2 space-y-6">
+        <div v-if="displayElements.charts" :class="[displayElements.kpis ? 'lg:col-span-2' : 'lg:col-span-3', 'space-y-6']">
           <!-- Monthly Chart -->
           <div>
             <div class="flex items-center justify-between mb-4">
@@ -190,7 +224,7 @@
     </div>
 
     <!-- Charts View: Full Width Charts -->
-    <div v-else-if="viewMode === 'charts'" class="space-y-8 animate-fadeIn">
+    <div v-else-if="isMeterDataReady && viewMode === 'charts'" class="space-y-8 animate-fadeIn">
       <!-- Monthly Chart -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -264,7 +298,7 @@
     </div>
 
     <!-- Tables View: Full Width Tables -->
-    <div v-else-if="viewMode === 'tables'" class="space-y-8 animate-fadeIn">
+    <div v-else-if="isMeterDataReady && viewMode === 'tables'" class="space-y-8 animate-fadeIn">
       <!-- Hourly Table -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -378,7 +412,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import KPICard from '@/components/puissance/KPICard.vue'
@@ -387,10 +422,15 @@ import DataTable from '@/components/puissance/DataTable.vue'
 import ChartDetailModal from '@/components/puissance/ChartDetailModal.vue'
 import TableDetailModal from '@/components/puissance/TableDetailModal.vue'
 import { allMeters } from '@/data/puissanceData'
+import { useMetersStore } from '@/stores/useMetersStore'
 
 const { t } = useI18n()
 
-// Selected meter
+// ✅ USE CENTRALIZED METER STORE
+const metersStore = useMetersStore()
+const { selectedMeterIds } = storeToRefs(metersStore)
+
+// Selected meter (single-meter view, but from the centralized selected list)
 const selectedMeter = ref('tgbt')
 
 // View mode toggle
@@ -417,16 +457,112 @@ const tableModalData = ref({
   columns: [] as any[],
 })
 
-// All available meters
-const meters = computed(() => [
-  { id: 'tgbt', name: t('puissance.meters.tgbt'), color: '#ef4444', icon: 'bolt' },
-  { id: 'compressor', name: t('puissance.meters.compressor'), color: '#22c55e', icon: 'bolt' },
-  { id: 'cooling', name: t('puissance.meters.cooling'), color: '#3b82f6', icon: 'bolt' },
-  { id: 'lighting', name: t('puissance.meters.lighting'), color: '#eab308', icon: 'bolt' },
-])
+// ✅ ALL AVAILABLE METERS FROM CENTRALIZED STORE
+const meters = computed(() => metersStore.allMeters.map(meter => ({
+  id: meter.id,
+  name: meter.name,
+  color: meter.color,
+  icon: meter.icon,
+  category: meter.category
+})))
 
-// Current meter data
-const currentMeterData = computed(() => allMeters[selectedMeter.value])
+// Meter categories for filtering - Only display main 4 categories
+const mainCategories: ('TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage')[] = ['TGBT', 'Compresseurs', 'Clim', 'Éclairage']
+const meterCategories = computed(() => {
+  const availableCategories = new Set(meters.value.map(m => m.category))
+  // Return only main categories that exist in data
+  return mainCategories.filter((cat) => availableCategories.has(cat))
+})
+
+// Filter meters by selected category
+const filteredMeters = computed(() => {
+  if (!selectedCategory.value) {
+    return meters.value
+  }
+  return meters.value.filter(m => m.category === selectedCategory.value)
+})
+
+// Category filter state - defaults to first available category
+const selectedCategory = ref<string | null>('TGBT')
+
+// Selected element state (for meters with multiple elements)
+const selectedElement = ref<string | null>(null)
+
+/**
+ * Watch category changes and auto-select first meter
+ */
+watch(
+  () => selectedCategory.value,
+  (newCategory) => {
+    // When category changes, auto-select the first available meter
+    const filtered = filteredMeters.value
+    if (filtered.length > 0) {
+      selectedMeter.value = filtered[0].id
+    }
+  }
+)
+
+// Display elements selection
+const displayElements = ref({
+  kpis: true,
+  charts: true,
+  summary: true
+})
+
+// Visible KPI keys based on filter
+const visibleKpiKeys = computed(() => {
+  if (!displayElements.value.kpis) return []
+  return kpiKeys
+})
+
+/**
+ * Map category name to static data key
+ * Handles ID mismatch between centralized store and static puissanceData
+ */
+function getCategoryDataKey(category: string): string {
+  const mapping: Record<string, string> = {
+    'TGBT': 'tgbt',
+    'Compresseurs': 'compressor',
+    'Compresseur': 'compressor',
+    'Clim': 'cooling',
+    'Climatisation': 'cooling',
+    'Éclairage': 'lighting',
+    'Eclairage': 'lighting',
+  }
+  return mapping[category] || 'tgbt'
+}
+
+/**
+ * Current meter data - safely resolves meter by category
+ * Guards against undefined by:
+ * 1. Finding the selected meter from store
+ * 2. Mapping its category to static data key
+ * 3. Returning valid meter data or fallback to TGBT
+ */
+const currentMeterData = computed(() => {
+  // Find the currently selected meter from the store
+  const selectedMeterObj = metersStore.allMeters.find(m => m.id === selectedMeter.value)
+
+  // If no meter found, default to first available meter or TGBT
+  if (!selectedMeterObj) {
+    return allMeters.tgbt
+  }
+
+  // Map the meter's category to the static data key
+  const dataKey = getCategoryDataKey(selectedMeterObj.category)
+
+  // Return the corresponding meter data, fallback to TGBT if key not found
+  return allMeters[dataKey] || allMeters.tgbt
+})
+
+/**
+ * Safe check if currentMeterData is loaded and valid
+ */
+const isMeterDataReady = computed(() => {
+  return currentMeterData.value &&
+         currentMeterData.value.kpiValues !== undefined &&
+         currentMeterData.value.monthlyData !== undefined
+})
 
 // KPI keys in order
 const kpiKeys = [
@@ -437,6 +573,90 @@ const kpiKeys = [
   'avgPowerBeforeYesterday',
   'instantaneousPower',
 ]
+
+/**
+ * Get color for category badge
+ */
+function getCategoryColor(category: string): string {
+  const colors: Record<string, string> = {
+    'TGBT': '#ef4444',           // Red
+    'Compresseurs': '#22c55e',    // Green
+    'Clim': '#3b82f6',            // Blue
+    'Éclairage': '#f59e0b',       // Warm amber (more professional)
+    'Eclairage': '#f59e0b',       // Warm amber (alternative spelling)
+  }
+  return colors[category] || '#6b7280' // Gray fallback
+}
+
+/**
+ * Get icon for category
+ */
+function getCategoryIcon(category: string): string {
+  const icons: Record<string, string> = {
+    'TGBT': 'bolt',              // Electrical/main power
+    'Compresseurs': 'air',        // Air compressor
+    'Clim': 'ac_unit',            // Air conditioning
+    'Éclairage': 'light_mode',    // Lighting
+    'Eclairage': 'light_mode',    // Lighting (alternative spelling)
+  }
+  return icons[category] || 'electric_meter'
+}
+
+/**
+ * Get translation key for category
+ */
+function getCategoryTranslationKey(category: string): string {
+  const keys: Record<string, string> = {
+    'TGBT': 'categories.tgbt',
+    'Compresseurs': 'categories.compressors',
+    'Clim': 'categories.cooling',
+    'Éclairage': 'categories.lighting',
+    'Eclairage': 'categories.lighting'
+  }
+  return keys[category] || category
+}
+
+/**
+ * Adjust hex color brightness
+ */
+function adjustBrightness(color: string, amount: number): string {
+  const usePound = color[0] === '#'
+  const col = usePound ? color.slice(1) : color
+  const num = parseInt(col, 16)
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount))
+  const g = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) + amount))
+  const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount))
+  return (usePound ? '#' : '') + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)
+}
+
+/**
+ * Watch for meter changes and auto-select element
+ * TGBT-Specific Behavior:
+ * - If meter has only 1 element → auto-display (no selection needed)
+ * - If meter has multiple elements → auto-select first element
+ * - If meter has no elements → clear element selection
+ */
+watch(
+  () => currentMeterData.value,
+  (newMeterData) => {
+    if (!newMeterData) {
+      selectedElement.value = null
+      return
+    }
+
+    // If meter has elements
+    if (newMeterData.elements && newMeterData.elements.length > 0) {
+      // Auto-select first element if none selected or current selection is invalid
+      if (!selectedElement.value || !newMeterData.elements.includes(selectedElement.value)) {
+        selectedElement.value = newMeterData.elements[0]
+      }
+    } else {
+      // No elements - clear selection
+      selectedElement.value = null
+    }
+  },
+  { immediate: true }
+)
 
 const showChartModal = (chartType: 'monthly' | 'daily' | 'hourly') => {
   let title = ''

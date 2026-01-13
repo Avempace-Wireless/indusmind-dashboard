@@ -8,6 +8,7 @@ export interface MeterData {
   name: string
   color: string
   icon: string
+  elements?: string[] // Optional array of sub-elements for meters with multiple components
   kpiValues: {
     avgPowerLastMonth: number
     avgPowerThisMonth: number
@@ -179,6 +180,7 @@ export const compressorMeter: MeterData = {
   name: 'Compresseur',
   color: '#22c55e', // Green
   icon: 'bolt',
+  elements: ['Compressor 1', 'Compressor 2', 'Compressor 3'], // Multiple compressor units
   kpiValues: {
     avgPowerLastMonth: 85.2,
     avgPowerThisMonth: 92.1,
@@ -207,6 +209,7 @@ export const coolingMeter: MeterData = {
   name: 'Climatisation',
   color: '#3b82f6', // Blue
   icon: 'bolt',
+  elements: ['Zone A', 'Zone B'], // Different HVAC zones
   kpiValues: {
     avgPowerLastMonth: 65.3,
     avgPowerThisMonth: 72.5,

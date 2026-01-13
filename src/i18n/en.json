@@ -17,6 +17,9 @@
     "warning": "Warning",
     "info": "Information",
     "justNow": "Just now",
+    "meter": "meter",
+    "meters": "meters",
+    "allMeters": "All Meters",
     "unit": {
       "kw": "kW",
       "celsius": "°C",
@@ -304,6 +307,12 @@
     "lighting": "Lighting",
     "lightingGeneral": "General Lighting"
   },
+  "categories": {
+    "tgbt": "Main Electrical Panel",
+    "compressors": "Compressors",
+    "cooling": "Cooling",
+    "lighting": "Lighting"
+  },
   "alerts": {
     "noAlerts": "No alerts",
     "critical": "Critical",
@@ -335,6 +344,8 @@
   "puissance": {
     "pageTitle": "Electrical Consumption – Power",
     "displayMode": "Display Mode",
+    "selectElement": "Select Element",
+    "displaying": "Displaying",
       "views": {
         "overview": "Overview",
         "charts": "Charts",
@@ -425,6 +436,13 @@
     "viewMode": {
       "chart": "Chart",
       "table": "Table"
+    },
+    "emptyState": {
+      "noMeters": "No meters selected",
+      "noDates": "No dates selected",
+      "noMetrics": "No metrics enabled",
+      "noData": "No data available",
+      "hint": "Select meters, dates, and enable metrics to view data"
     },
     "chart": {
       "title": "{resolution} Analysis by Meter",

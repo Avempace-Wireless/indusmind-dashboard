@@ -1,9 +1,13 @@
 /**
  * useCompteurSelection Composable
- * Manages compteur (meter) selection, aggregation, and persistence
+ * Manages compteur (meter) selection and per-widget modes
+ *
+ * REFACTORED: Now uses centralized useMetersStore for selection
+ * ✅ Meter selection synced across all views (Dashboard, Power, History, Comparison)
+ * ✅ Selection persisted to localStorage via useMetersStore
+ * ✅ Single source of truth for available meters
  *
  * Handles:
- * - User's selected compteur IDs (via localStorage)
  * - Per-widget mode switching (Instantanée/Jour/Hier)
  * - Aggregation calculations (sum of selected compteurs)
  * - Equipment filtering by selected compteurs
@@ -11,6 +15,8 @@
 
 import { ref, computed, watch } from 'vue'
 import type { Ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/stores/useDashboardStore'
 import { useEquipmentStore } from '@/stores/useEquipmentStore'
 
@@ -36,22 +42,21 @@ interface WidgetModes {
 
 /**
  * Composable for managing compteur selection and aggregation
+ * NOW USES CENTRALIZED useMetersStore
  *
  * @returns {Object} Selection state, computations, and handlers
  */
 export function useCompteurSelection() {
+  // ✅ USE CENTRALIZED STORE
+  const metersStore = useMetersStore()
+  const { selectedMeterIds, allMeters, selectedMeters } = storeToRefs(metersStore)
+
   const dashboardStore = useDashboardStore()
   const equipmentStore = useEquipmentStore()
 
   // ============================================================================
   // STATE
   // ============================================================================
-
-  /**
-   * Selected compteur IDs (persisted to localStorage)
-   * Default: First 4 available compteurs
-   */
-  const selectedCompteurIds: Ref<string[]> = ref([])
 
   /**
    * Per-widget mode switching
@@ -66,87 +71,68 @@ export function useCompteurSelection() {
   const showCompteurSelector: Ref<boolean> = ref(false)
 
   // ============================================================================
-  // INITIALIZATION & PERSISTENCE
+  // COMPUTED PROPERTIES (using centralized store)
   // ============================================================================
 
   /**
-   * Load persisted compteur selection from localStorage
-   * Fallback: First 4 available compteurs if no saved selection
+   * ✅ GET SELECTED METER IDs FROM CENTRALIZED STORE
+   * This is now a direct reference, no local state needed
    */
-  function loadPersistedSelection() {
-    try {
-      const stored = localStorage.getItem('dashboard_selected_compteurs')
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          selectedCompteurIds.value = parsed
-        } else {
-          selectDefaultCompteurs()
-        }
-      } else {
-        selectDefaultCompteurs()
-      }
-    } catch (error) {
-      console.error('Failed to load compteur selection from localStorage:', error)
-      selectDefaultCompteurs()
-    }
+  const selectedCompteurIds = computed(() => selectedMeterIds.value)
 
-    // Initialize widget modes for selected compteurs
-    selectedCompteurIds.value.forEach((id) => {
-      if (!widgetModes.value[id]) {
-        widgetModes.value[id] = 'instantanée'
-      }
-    })
-  }
+  /**
+   * ✅ GET ALL AVAILABLE METERS FROM CENTRALIZED STORE
+   * Maps them to Compteur interface for backwards compatibility
+   */
+  const availableCompteurs = computed<Compteur[]>(() =>
+    dashboardStore.compteurs
+  )
+
+  /**
+   * ✅ GET SELECTED COMPTEURS (filtered from all available)
+   * Synced from centralized store, updates across all views
+   */
+  const selectedCompteurs = computed<Compteur[]>(() =>
+    availableCompteurs.value.filter(c => selectedMeterIds.value.includes(c.id))
+  )
 
   /**
    * Select default 4 compteurs (first 4 available)
    */
   function selectDefaultCompteurs() {
-    const availableCompteurs = dashboardStore.compteurs || []
-    selectedCompteurIds.value = availableCompteurs.slice(0, 4).map((c) => c.id)
+    const compteurs = dashboardStore.compteurs || []
+    const defaultIds = compteurs.slice(0, 4).map((c) => c.id)
+    metersStore.setSelectedMeters(defaultIds)
   }
 
   /**
    * Persist compteur selection to localStorage
+   *
+   * NOTE: Now delegated to useMetersStore.persistSelection()
+   * This function kept for backwards compatibility
    */
   function persistSelection() {
-    try {
-      localStorage.setItem('dashboard_selected_compteurs', JSON.stringify(selectedCompteurIds.value))
-    } catch (error) {
-      console.error('Failed to persist compteur selection to localStorage:', error)
-    }
+    metersStore.persistSelection()
   }
 
-  // ============================================================================
-  // SELECTION MANAGEMENT
-  // ============================================================================
-
   /**
-   * Add a compteur to selection
+   * Add a compteur to selection (via centralized store)
    */
   function addCompteur(compteurId: string) {
-    if (!selectedCompteurIds.value.includes(compteurId)) {
-      selectedCompteurIds.value.push(compteurId)
-      // Initialize mode for new compteur
-      if (!widgetModes.value[compteurId]) {
-        widgetModes.value[compteurId] = 'instantanée'
-      }
-      persistSelection()
+    metersStore.toggleMeter(compteurId)
+    // Initialize mode for new compteur
+    if (!widgetModes.value[compteurId]) {
+      widgetModes.value[compteurId] = 'instantanée'
     }
   }
 
   /**
-   * Remove a compteur from selection
+   * Remove a compteur from selection (via centralized store)
    */
   function removeCompteur(compteurId: string) {
-    const index = selectedCompteurIds.value.indexOf(compteurId)
-    if (index > -1) {
-      selectedCompteurIds.value.splice(index, 1)
-      // Clean up widget mode for removed compteur
-      delete widgetModes.value[compteurId]
-      persistSelection()
-    }
+    metersStore.toggleMeter(compteurId)
+    // Clean up widget mode for removed compteur
+    delete widgetModes.value[compteurId]
   }
 
   /**
@@ -175,24 +161,35 @@ export function useCompteurSelection() {
     }
   }
 
-  // ============================================================================
-  // COMPUTED PROPERTIES
-  // ============================================================================
-
   /**
-   * Selected compteur objects (full objects, not just IDs)
+   * Load persisted compteur selection from localStorage
+   *
+   * NOTE: This is now handled by useMetersStore.restoreSelection()
+   * Called on app startup in main.ts
+   * Kept for backwards compatibility if called directly
    */
-  const selectedCompteurs = computed(() => {
-    const compteurs = dashboardStore.compteurs || []
-    return compteurs.filter((c) => selectedCompteurIds.value.includes(c.id))
-  })
+  function loadPersistedSelection() {
+    // useMetersStore now handles this in restoreSelection()
+    // This function kept for backwards compatibility
+    try {
+      const stored = localStorage.getItem('dashboard_selected_compteurs')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          metersStore.setSelectedMeters(parsed)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load compteur selection from localStorage:', error)
+    }
 
-  /**
-   * All available compteurs (for selector modal)
-   */
-  const availableCompteurs = computed(() => {
-    return dashboardStore.compteurs || []
-  })
+    // Initialize widget modes for selected compteurs
+    selectedMeterIds.value.forEach((id) => {
+      if (!widgetModes.value[id]) {
+        widgetModes.value[id] = 'instantanée'
+      }
+    })
+  }
 
   /**
    * Aggregated instantaneous power (sum of 'instantanée' mode values)
@@ -275,21 +272,35 @@ export function useCompteurSelection() {
   })
 
   // ============================================================================
-  // WATCHERS & SIDE EFFECTS
+  // WATCHERS & INITIALIZATION
   // ============================================================================
 
   /**
-   * Watch for changes to selected IDs and persist to localStorage
+   * Watch for changes in selected meter IDs and initialize widget modes
    */
-  watch(selectedCompteurIds, () => {
-    persistSelection()
-  }, { deep: true })
+  watch(
+    selectedMeterIds,
+    (newIds) => {
+      // Ensure widget modes are initialized for new selections
+      newIds.forEach((id) => {
+        if (!widgetModes.value[id]) {
+          widgetModes.value[id] = 'instantanée'
+        }
+      })
+    },
+    { deep: true }
+  )
 
   /**
-   * Initialize on mount
+   * Initialize composable on first use
    */
   function initialize() {
-    loadPersistedSelection()
+    // Ensure widget modes are initialized for current selection
+    selectedMeterIds.value.forEach((id) => {
+      if (!widgetModes.value[id]) {
+        widgetModes.value[id] = 'instantanée'
+      }
+    })
   }
 
   // ============================================================================
