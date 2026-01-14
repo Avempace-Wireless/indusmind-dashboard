@@ -484,7 +484,7 @@ export const useComparisonStore = defineStore('comparison', () => {
   }
 
   function resetFilters() {
-    selectedMeterIds.value = []
+    metersStore.clearSelection()
     selectedPeriods.value = []
     comparisonMode.value = 'byMeters'
     aggregationLevel.value = 'daily'
