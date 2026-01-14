@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import type {
   MetricType,
   MetricDefinition,
@@ -10,6 +11,7 @@ import type {
 } from '../types/metrics'
 import { DEFAULT_METRICS as METRICS_CONFIG } from '../types/metrics'
 import { useDashboardStore } from './useDashboardStore'
+import { useMetersStore } from './useMetersStore'
 import i18n from '../i18n'
 
 /**
@@ -21,10 +23,14 @@ import i18n from '../i18n'
  * - Time range filtering (hour-based)
  * - Calendar state and navigation
  * - Data fetching and caching
- * - Integration with dashboard meter selection
+ * - Integration with centralized meter selection
  */
 export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   const dashboardStore = useDashboardStore()
+
+  // ✅ USE CENTRALIZED METER STORE
+  const metersStore = useMetersStore()
+  const { selectedMeterIds } = storeToRefs(metersStore)
 
   // ===========================
   // State - Metric Configuration
@@ -57,6 +63,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   const selectedDates = ref<string[]>([]) // Format: YYYY-MM-DD
   const currentMonth = ref(new Date())
+  const activePeriodPreset = ref<'last7Days' | 'last30Days' | 'thisMonth' | 'lastMonth' | null>(null)
 
   // ===========================
   // State - Time Range Filter
@@ -118,10 +125,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   // Computed - Selected Compteurs
   // ===========================
+  /**
+   * ✅ USE CENTRALIZED METER STORE
+   * Get selected compteurs from centralized store
+   * Returns only the meters that are currently selected globally
+   */
   const selectedCompteurs = computed(() => {
-    // Filter to explicitly requested compteurs: TGBT, Compresseurs, Clim, Éclairage/Lighting
-    const wanted = new Set(['TGBT', 'Compresseurs', 'Clim', 'Éclairage', 'Eclairage', 'Lighting'])
-    return dashboardStore.compteurs.filter(c => wanted.has(c.name))
+    return dashboardStore.compteurs.filter(c => selectedMeterIds.value.includes(c.id))
   })
 
   // User-selected active meters within selectedCompteurs
@@ -181,12 +191,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const leadingDays = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1 // Adjust for Monday start
     for (let i = leadingDays; i > 0; i--) {
       const date = new Date(year, month - 1, prevMonthLastDay - i + 1)
+      const dateStr = formatDate(date)
       days.push({
-        date: formatDate(date),
+        date: dateStr,
         dateObj: date,
         isCurrentMonth: false,
         isToday: false,
-        isSelected: false,
+        isSelected: selectedDates.value.includes(dateStr),
         hasData: false,
       })
     }
@@ -215,12 +226,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const remainingDays = 42 - days.length
     for (let day = 1; day <= remainingDays; day++) {
       const date = new Date(year, month + 1, day)
+      const dateStr = formatDate(date)
       days.push({
-        date: formatDate(date),
+        date: dateStr,
         dateObj: date,
         isCurrentMonth: false,
         isToday: false,
-        isSelected: false,
+        isSelected: selectedDates.value.includes(dateStr),
         hasData: false,
       })
     }
@@ -253,7 +265,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         const dayData = dateStr ? getMetricDataForDate(dateStr, metric.type, compteur.id) : null
         if (dayData) {
           const filteredData = filterDataByHourRange(dayData.hourlyData)
-          const color = getMeterColor(compteur.name, idx)
+          const color = getMeterColor(compteur.id, idx)
           datasets.push({
             label: `${compteur.name}`,
             data: filteredData.map(d => d.value),
@@ -281,7 +293,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
           const total = dayData ? calculateFilteredTotal(dayData.hourlyData) : 0
           dataPoints.push(total)
         })
-        const color = getMeterColor(compteur.name, idx)
+        const color = getMeterColor(compteur.id, idx)
         datasets.push({
           label: `${compteur.name}`,
           data: dataPoints,
@@ -325,7 +337,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         metricId: compteur.id,
         metricName: compteur.name,
         metricIcon: 'bolt',
-        metricColor: getMeterColor(compteur.name, idx),
+        metricColor: getMeterColor(compteur.id, idx),
         unit: metric.unit,
         primaryValue: displayValue,
         primaryDate: dateLabel,
@@ -425,6 +437,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     } else {
       selectedDates.value.push(dateStr)
     }
+    // Clear preset when manually selecting dates
+    activePeriodPreset.value = null
   }
 
   function selectSingleDate(dateStr: string) {
@@ -450,6 +464,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       currentMonth.value.getMonth() - 1,
       1
     )
+    // Clear preset indicator when manually navigating
+    activePeriodPreset.value = null
   }
 
   function nextMonth() {
@@ -458,11 +474,16 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       currentMonth.value.getMonth() + 1,
       1
     )
+    // Clear preset indicator when manually navigating
+    activePeriodPreset.value = null
   }
 
   function goToToday() {
     currentMonth.value = new Date()
+    // Always select today's date
     selectSingleDate(formatDate(new Date()))
+    // Clear preset indicator
+    activePeriodPreset.value = null
   }
 
   // ===========================
@@ -477,6 +498,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       dates.push(formatDate(date))
     }
     selectedDates.value = dates
+    activePeriodPreset.value = 'last7Days'
+    // Navigate calendar to current month
+    currentMonth.value = new Date(today)
   }
 
   function selectLast30Days() {
@@ -488,6 +512,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       dates.push(formatDate(date))
     }
     selectedDates.value = dates
+    activePeriodPreset.value = 'last30Days'
+    // Navigate calendar to current month (30 days might span 2 months)
+    currentMonth.value = new Date(today)
   }
 
   function selectThisMonth() {
@@ -498,6 +525,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const lastDay = new Date(year, month + 1, 0)
     const dates = getDatesBetween(formatDate(firstDay), formatDate(lastDay))
     selectedDates.value = dates
+    activePeriodPreset.value = 'thisMonth'
+    // Navigate calendar to current month
+    currentMonth.value = new Date(today)
   }
 
   function selectLastMonth() {
@@ -508,6 +538,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const lastDay = new Date(year, month + 1, 0)
     const dates = getDatesBetween(formatDate(firstDay), formatDate(lastDay))
     selectedDates.value = dates
+    activePeriodPreset.value = 'lastMonth'
+    // Navigate calendar to LAST month (not current)
+    currentMonth.value = new Date(year, month, 1)
   }
 
   // ===========================
@@ -661,27 +694,27 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
 
-  // Meter-specific color mapping (dashboard theme)
-  const METER_COLORS: Record<string, string> = {
-    'TGBT': '#ef4444',        // red-500
-    'Compresseurs': '#10b981', // green-500
-    'Clim': '#3b82f6',        // blue-500
-    'Cooling': '#3b82f6',     // blue-500 (alias)
-    'Éclairage': '#eab308',   // yellow-500
-    'Eclairage': '#eab308',   // yellow-500 (alias)
-    'Lighting': '#eab308',    // yellow-500 (alias)
-  }
+  // ===========================
+  // Chart Data Generation
+  // ===========================
+  /**
+   * Get meter color from centralized store
+   * Ensures consistent colors across all views
+   */
+  function getMeterColor(meterId: string, fallbackIndex: number = 0): string {
+    const meter = metersStore.getMeterById(meterId)
+    if (meter) {
+      return metersStore.getMeterColor(meterId)
+    }
 
-  // Fallback palette for additional meters
-  const FALLBACK_PALETTE = [
-    '#8b5cf6', // violet-500
-    '#06b6d4', // cyan-500
-    '#f59e0b', // amber-500
-    '#22c55e', // emerald-500
-  ]
-
-  function getMeterColor(meterName: string, index: number): string {
-    return METER_COLORS[meterName] || FALLBACK_PALETTE[index % FALLBACK_PALETTE.length]
+    // Fallback palette for unknown meters
+    const FALLBACK_PALETTE = [
+      '#8b5cf6', // violet-500
+      '#06b6d4', // cyan-500
+      '#f59e0b', // amber-500
+      '#22c55e', // emerald-500
+    ]
+    return FALLBACK_PALETTE[fallbackIndex % FALLBACK_PALETTE.length]
   }
 
   function adjustColorBrightness(hex: string, amount: number): string {
@@ -743,6 +776,37 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   }
 
   function generateMockDailyData(dateStr: string, metricType: MetricType, compteurId: string): DailyMetricData {
+    // ✅ TRY TO GET DATA FROM CENTRALIZED SOURCE FIRST
+    const meterData = metersStore.getFullMeterData(compteurId)
+
+    if (meterData && metricType === 'consumption') {
+      // Use centralized hourly data for consumption metric
+      const hourlyData: HourlyDataPoint[] = meterData.timeSeries.hourly.map((dataPoint, index) => ({
+        hour: index,
+        value: dataPoint.value,
+        quality: dataPoint.quality || 'good'
+      }))
+
+      const totalValue = hourlyData.reduce((sum, d) => sum + d.value, 0)
+      const averageValue = totalValue / hourlyData.length
+      const peakData = hourlyData.reduce((max, d) => d.value > max.value ? d : max)
+      const minData = hourlyData.reduce((min, d) => d.value < min.value ? d : min)
+
+      return {
+        date: dateStr,
+        metricId: `${compteurId}-${metricType}`,
+        metricType,
+        hourlyData,
+        totalValue,
+        averageValue,
+        peakValue: peakData.value,
+        peakHour: peakData.hour,
+        minValue: minData.value,
+        minHour: minData.hour,
+      }
+    }
+
+    // ✅ FALLBACK: Generate mock data for other metrics
     const hourlyData: HourlyDataPoint[] = []
 
     for (let hour = 0; hour < 24; hour++) {
@@ -826,6 +890,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     availableMetrics,
     selectedDates,
     currentMonth,
+    activePeriodPreset,
     hourFrom,
     hourTo,
     loading,

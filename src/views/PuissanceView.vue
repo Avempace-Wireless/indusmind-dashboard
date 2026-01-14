@@ -12,100 +12,134 @@
         </p>
       </div>
 
-      <!-- Controls Card -->
-      <div class="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-xl shadow-md p-6 border border-gray-200 dark:border-slate-700">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <!-- Meter Tabs -->
-          <div class="flex-1">
-            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-              {{ $t('compteur.selector.title') }}
+      <!-- Controls Section - Two Separate Cards on Same Line -->
+      <div class="flex flex-row gap-4">
+        <!-- Select Meters Card -->
+        <div class="flex-[2] bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600">
+          <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
+            {{ $t('compteur.selector.title') }}
+          </h3>
+
+          <!-- Category Cards with Icons Below -->
+          <div class="grid grid-cols-4 gap-2 mb-4">
+            <button
+              v-for="category in meterCategories"
+              :key="category"
+              @click="selectedCategory = selectedCategory === category ? null : category"
+              :class="[
+                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
+                selectedCategory === category
+                  ? 'text-white shadow-lg border-transparent'
+                  : 'bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+              ]"
+              :style="selectedCategory === category ? {
+                background: `linear-gradient(135deg, ${getCategoryColor(category)} 0%, ${adjustBrightness(getCategoryColor(category), -15)} 100%)`
+              } : {}"
+              :title="$t('common.filter') + ': ' + category"
+            >
+              <!-- Category Icon -->
+              <span class="material-symbols-outlined text-xl">{{ getCategoryIcon(category) }}</span>
+              <!-- Category Label -->
+              <span class="text-xs font-medium text-center leading-tight">{{ $t(getCategoryTranslationKey(category)) }}</span>
+            </button>
+          </div>
+
+          <!-- Elements Selection (if meter has multiple elements) -->
+          <div v-if="currentMeterData?.elements && currentMeterData.elements.length > 1">
+            <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
+              {{ $t('puissance.selectElement') }}
             </p>
-            <div class="flex gap-2 overflow-x-auto pb-2">
+            <div class="flex gap-1.5 flex-wrap">
               <button
-                v-for="meter in meters"
-                :key="meter.id"
-                @click="selectedMeter = meter.id"
+                v-for="element in (currentMeterData?.elements || [])"
+                :key="element"
+                @click="selectedElement = element"
                 :class="[
-                  'px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition-all duration-200 flex items-center gap-2 text-sm border-2',
-                  selectedMeter === meter.id
-                    ? 'text-white shadow-lg border-transparent'
-                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-slate-700 hover:border-gray-400 dark:hover:border-slate-600'
+                  'px-3 py-1.5 rounded-md font-medium text-xs transition-all duration-200',
+                  selectedElement === element
+                    ? 'text-white shadow-md border-2 border-transparent'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
                 ]"
-                :style="{
-                  backgroundColor: selectedMeter === meter.id ? meter.color : undefined,
-                }"
+                :style="selectedElement === element ? {
+                  background: `linear-gradient(135deg, ${currentMeterData?.color || '#000'} 0%, ${adjustBrightness(currentMeterData?.color || '#000', -15)} 100%)`
+                } : {}"
               >
-                <span class="material-symbols-outlined text-lg">{{ meter.icon }}</span>
-                {{ meter.name }}
+                {{ element }}
               </button>
             </div>
           </div>
+        </div>
 
-          <!-- View Toggle -->
-          <div>
-            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
-              {{ $t('puissance.displayMode') }}
-            </p>
-            <div class="flex gap-2 bg-white dark:bg-slate-800 rounded-lg p-1 border border-gray-200 dark:border-slate-700">
-              <button
-                @click="viewMode = 'overview'"
-                :class="[
-                  'px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 flex items-center gap-2',
-                  viewMode === 'overview'
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                ]"
-              >
-                <span class="material-symbols-outlined text-lg">dashboard</span>
-                {{ $t('puissance.views.overview') }}
-              </button>
-              <button
-                @click="viewMode = 'charts'"
-                :class="[
-                  'px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 flex items-center gap-2',
-                  viewMode === 'charts'
-                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                ]"
-              >
-                <span class="material-symbols-outlined text-lg">bar_chart</span>
-                {{ $t('puissance.views.charts') }}
-              </button>
-              <button
-                @click="viewMode = 'tables'"
-                :class="[
-                  'px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 flex items-center gap-2',
-                  viewMode === 'tables'
-                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
-                ]"
-              >
-                <span class="material-symbols-outlined text-lg">table_chart</span>
-                {{ $t('puissance.views.tables') }}
-              </button>
-            </div>
+        <!-- Display Mode Card -->
+        <div class="flex-[1] bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600">
+          <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
+            {{ $t('puissance.displayMode') }}
+          </p>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              @click="viewMode = 'overview'"
+              :class="[
+                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
+                viewMode === 'overview'
+                  ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md border-transparent'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xl">dashboard</span>
+              <span class="text-xs font-medium text-center leading-tight">{{ $t('puissance.views.overview') }}</span>
+            </button>
+            <button
+              @click="viewMode = 'charts'"
+              :class="[
+                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
+                viewMode === 'charts'
+                  ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md border-transparent'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xl">bar_chart</span>
+              <span class="text-xs font-medium text-center leading-tight">{{ $t('puissance.views.charts') }}</span>
+            </button>
+            <button
+              @click="viewMode = 'tables'"
+              :class="[
+                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
+                viewMode === 'tables'
+                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md border-transparent'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
+              ]"
+            >
+              <span class="material-symbols-outlined text-xl">table_chart</span>
+              <span class="text-xs font-medium text-center leading-tight">{{ $t('puissance.views.tables') }}</span>
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Overview View: 2-Column Layout (Widgets Left, Charts Right) -->
-    <div v-if="viewMode === 'overview'" class="space-y-8 animate-fadeIn">
+    <!-- Loading State -->
+    <div v-if="!isMeterDataReady" class="flex items-center justify-center py-12">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+        <p class="mt-4 text-slate-600 dark:text-slate-400">Loading meter data...</p>
+      </div>
+    </div>    <!-- Overview View: 2-Column Layout (Widgets Left, Charts Right) -->
+    <div v-if="isMeterDataReady && currentMeterData && viewMode === 'overview'" class="space-y-8 animate-fadeIn">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left Column: KPI Cards (1 col) -->
-        <div class="lg:col-span-1 space-y-4">
+        <div v-if="displayElements.kpis" class="lg:col-span-1 space-y-4">
             <div class="flex items-center gap-3 mb-4">
             <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.metrics') }}</h2>
           </div>
 
           <!-- KPI Cards in Column -->
-          <div class="space-y-3">
+          <div v-if="currentMeterData" class="space-y-3">
             <KPICard
-              v-for="(kpiKey, idx) in kpiKeys"
+              v-for="(kpiKey, idx) in visibleKpiKeys"
               :key="idx"
               :title="$t(`puissance.kpi.${kpiKey}`)"
-              :value="(currentMeterData.kpiValues as Record<string, number>)[kpiKey]"
+              :value="(currentMeterData.kpiValues as unknown as Record<string, number>)[kpiKey]"
               :unit="$t('common.unit.kw')"
               :meter-name="currentMeterData.name"
               :meter-color="currentMeterData.color"
@@ -114,7 +148,7 @@
         </div>
 
         <!-- Right Column: Charts (2 cols) -->
-        <div class="lg:col-span-2 space-y-6">
+        <div v-if="displayElements.charts" :class="[displayElements.kpis ? 'lg:col-span-2' : 'lg:col-span-3', 'space-y-6']">
           <!-- Monthly Chart -->
           <div>
             <div class="flex items-center justify-between mb-4">
@@ -190,7 +224,7 @@
     </div>
 
     <!-- Charts View: Full Width Charts -->
-    <div v-else-if="viewMode === 'charts'" class="space-y-8 animate-fadeIn">
+    <div v-else-if="isMeterDataReady && currentMeterData && viewMode === 'charts'" class="space-y-8 animate-fadeIn">
       <!-- Monthly Chart -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -264,7 +298,7 @@
     </div>
 
     <!-- Tables View: Full Width Tables -->
-    <div v-else-if="viewMode === 'tables'" class="space-y-8 animate-fadeIn">
+    <div v-else-if="isMeterDataReady && currentMeterData && viewMode === 'tables'" class="space-y-8 animate-fadeIn">
       <!-- Hourly Table -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -348,6 +382,7 @@
 
     <!-- Chart Detail Modal -->
     <ChartDetailModal
+      v-if="currentMeterData"
       :is-open="chartModalOpen"
       :chart-title="chartModalData.title"
       :chart-subtitle="chartModalData.subtitle"
@@ -365,6 +400,7 @@
 
     <!-- Table Detail Modal -->
     <TableDetailModal
+      v-if="currentMeterData"
       :is-open="tableModalOpen"
       :table-title="tableModalData.title"
       :meter-name="currentMeterData.name"
@@ -378,7 +414,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import KPICard from '@/components/puissance/KPICard.vue'
@@ -386,11 +423,34 @@ import BarChart from '@/components/puissance/BarChart.vue'
 import DataTable from '@/components/puissance/DataTable.vue'
 import ChartDetailModal from '@/components/puissance/ChartDetailModal.vue'
 import TableDetailModal from '@/components/puissance/TableDetailModal.vue'
-import { allMeters } from '@/data/puissanceData'
+import { useMetersStore } from '@/stores/useMetersStore'
+import type { Meter, KPIValues } from '@/data/metersData'
 
 const { t } = useI18n()
 
-// Selected meter
+// ✅ USE CENTRALIZED METER STORE
+const metersStore = useMetersStore()
+const { selectedMeterIds } = storeToRefs(metersStore)
+
+// ===========================
+// Type for Transformed Data
+// ===========================
+interface TransformedMeterData {
+  name: string
+  color: string
+  icon: string
+  category: 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'
+  elements: string[]
+  kpiValues: KPIValues
+  hourlyData: { labels: string[]; values: number[] }
+  dailyData: { labels: string[]; values: number[] }
+  monthlyData: { labels: string[]; values: number[] }
+  hourlyTableData: Array<{ time: string; power: number; efficiency: number; status: string }>
+  dailyTableData: Array<{ date: string; total: number; average: number }>
+  dailyAverageData: Array<{ month: string; average: number; days: number }>
+}
+
+// Selected meter (single-meter view, but from the centralized selected list)
 const selectedMeter = ref('tgbt')
 
 // View mode toggle
@@ -417,16 +477,190 @@ const tableModalData = ref({
   columns: [] as any[],
 })
 
-// All available meters
-const meters = computed(() => [
-  { id: 'tgbt', name: t('puissance.meters.tgbt'), color: '#ef4444', icon: 'bolt' },
-  { id: 'compressor', name: t('puissance.meters.compressor'), color: '#22c55e', icon: 'bolt' },
-  { id: 'cooling', name: t('puissance.meters.cooling'), color: '#3b82f6', icon: 'bolt' },
-  { id: 'lighting', name: t('puissance.meters.lighting'), color: '#eab308', icon: 'bolt' },
-])
+// ✅ ALL AVAILABLE METERS FROM CENTRALIZED STORE
+const meters = computed(() => metersStore.allMeters.map(meter => ({
+  id: meter.id,
+  name: meter.name,
+  color: meter.color,
+  icon: meter.icon,
+  category: meter.category
+})))
 
-// Current meter data
-const currentMeterData = computed(() => allMeters[selectedMeter.value])
+// Meter categories for filtering - Only display main 4 categories
+const mainCategories: ('TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage')[] = ['TGBT', 'Compresseurs', 'Clim', 'Éclairage']
+const meterCategories = computed(() => {
+  const availableCategories = new Set(meters.value.map(m => m.category))
+  // Return only main categories that exist in data
+  return mainCategories.filter((cat) => availableCategories.has(cat))
+})
+
+// Filter meters by selected category
+const filteredMeters = computed(() => {
+  if (!selectedCategory.value) {
+    return meters.value
+  }
+  return meters.value.filter(m => m.category === selectedCategory.value)
+})
+
+// Category filter state - defaults to first available category
+const selectedCategory = ref<string | null>('TGBT')
+
+// Selected element state (for meters with multiple elements)
+const selectedElement = ref<string | null>(null)
+
+/**
+ * Watch category changes and auto-select first meter
+ */
+watch(
+  () => selectedCategory.value,
+  (newCategory) => {
+    // When category changes, auto-select the first available meter
+    const filtered = filteredMeters.value
+    if (filtered.length > 0) {
+      selectedMeter.value = filtered[0].id
+    }
+  }
+)
+
+// Display elements selection
+const displayElements = ref({
+  kpis: true,
+  charts: true,
+  summary: true
+})
+
+// Visible KPI keys based on filter
+const visibleKpiKeys = computed(() => {
+  if (!displayElements.value.kpis) return []
+  return kpiKeys
+})
+
+/**
+ * Current meter data - using centralized metersData.ts
+ * Returns full meter data with time series and KPIs
+ * If element is selected, returns element-specific data
+ */
+const currentMeterData = computed<TransformedMeterData | null>(() => {
+  // Find the currently selected meter from the store
+  const selectedMeterObj = metersStore.allMeters.find(m => m.id === selectedMeter.value)
+
+  // If no meter found, default to first available meter
+  if (!selectedMeterObj) {
+    const firstMeter = metersStore.allMeters[0]
+    if (!firstMeter) return null
+    selectedMeter.value = firstMeter.id
+    return transformMeterData(firstMeter.id)
+  }
+
+  return transformMeterData(selectedMeterObj.id)
+})
+
+/**
+ * Transform meter data from centralized format to view format
+ */
+function transformMeterData(meterId: string): TransformedMeterData | null {
+  const selectedMeterObj = metersStore.allMeters.find(m => m.id === meterId)
+  if (!selectedMeterObj) return null
+
+  // Get full meter data from centralized source
+  const fullData = metersStore.getFullMeterData(meterId)
+  if (!fullData) return null
+
+  // Calculate average power from metrics for table status
+  const avgPower = fullData.metrics.power
+
+  // If element selected, return element-specific data
+  if (selectedElement.value && fullData.elements && fullData.elements.length > 0) {
+    const elementData = metersStore.getElementData(meterId, selectedElement.value)
+    if (elementData) {
+      const elementAvgPower = elementData.metrics.power
+      // Transform element data to match expected format
+      return {
+        name: `${fullData.name} - ${elementData.name}`,
+        color: metersStore.getMeterColor(meterId),
+        icon: selectedMeterObj.icon,
+        category: fullData.category,
+        elements: fullData.elements.map(el => el.id),
+        kpiValues: elementData.kpis,
+        hourlyData: {
+          labels: elementData.timeSeries.hourly.map(d => d.timestamp),
+          values: elementData.timeSeries.hourly.map(d => d.value)
+        },
+        dailyData: {
+          labels: elementData.timeSeries.daily.map(d => d.timestamp),
+          values: elementData.timeSeries.daily.map(d => d.value)
+        },
+        monthlyData: {
+          labels: elementData.timeSeries.monthly.map(d => d.timestamp),
+          values: elementData.timeSeries.monthly.map(d => d.value)
+        },
+        hourlyTableData: elementData.timeSeries.hourly.map((d, i) => ({
+          time: d.timestamp,
+          power: d.value,
+          efficiency: Math.round(85 + Math.random() * 10),
+          status: d.value > elementAvgPower ? 'high' : 'normal'
+        })),
+        dailyTableData: elementData.timeSeries.daily.map(d => ({
+          date: d.timestamp,
+          total: d.value * 24,
+          average: d.value
+        })),
+        dailyAverageData: elementData.timeSeries.monthly.map(d => ({
+          month: d.timestamp,
+          average: d.value,
+          days: 30
+        }))
+      }
+    }
+  }
+
+  // Return aggregated meter data
+  return {
+    name: fullData.name,
+    color: metersStore.getMeterColor(meterId),
+    icon: selectedMeterObj.icon,
+    category: fullData.category,
+    elements: fullData.elements?.map(el => el.id) || [],
+    kpiValues: fullData.kpis,
+    hourlyData: {
+      labels: fullData.timeSeries.hourly.map(d => d.timestamp),
+      values: fullData.timeSeries.hourly.map(d => d.value)
+    },
+    dailyData: {
+      labels: fullData.timeSeries.daily.map(d => d.timestamp),
+      values: fullData.timeSeries.daily.map(d => d.value)
+    },
+    monthlyData: {
+      labels: fullData.timeSeries.monthly.map(d => d.timestamp),
+      values: fullData.timeSeries.monthly.map(d => d.value)
+    },
+    hourlyTableData: fullData.timeSeries.hourly.map((d, i) => ({
+      time: d.timestamp,
+      power: d.value,
+      efficiency: Math.round(85 + Math.random() * 10),
+      status: d.value > avgPower ? 'high' : 'normal'
+    })),
+    dailyTableData: fullData.timeSeries.daily.map(d => ({
+      date: d.timestamp,
+      total: d.value * 24,
+      average: d.value
+    })),
+    dailyAverageData: fullData.timeSeries.monthly.map(d => ({
+      month: d.timestamp,
+      average: d.value,
+      days: 30
+    }))
+  }
+}
+
+/**
+ * Safe check if currentMeterData is loaded and valid
+ */
+const isMeterDataReady = computed(() => {
+  return currentMeterData.value &&
+         currentMeterData.value.kpiValues !== undefined &&
+         currentMeterData.value.monthlyData !== undefined
+})
 
 // KPI keys in order
 const kpiKeys = [
@@ -438,7 +672,93 @@ const kpiKeys = [
   'instantaneousPower',
 ]
 
+/**
+ * Get color for category badge
+ */
+function getCategoryColor(category: string): string {
+  const colors: Record<string, string> = {
+    'TGBT': '#ef4444',           // Red
+    'Compresseurs': '#22c55e',    // Green
+    'Clim': '#3b82f6',            // Blue
+    'Éclairage': '#f59e0b',       // Amber
+    'Eclairage': '#f59e0b'        // Amber (alternative spelling)
+  }
+  return colors[category] || '#6b7280' // Gray fallback
+}
+
+/**
+ * Get icon for category
+ */
+function getCategoryIcon(category: string): string {
+  const icons: Record<string, string> = {
+    'TGBT': 'bolt',              // Electrical/main power
+    'Compresseurs': 'air',        // Air compressor
+    'Clim': 'ac_unit',            // Air conditioning
+    'Éclairage': 'light_mode',    // Lighting
+    'Eclairage': 'light_mode',    // Lighting (alternative spelling)
+  }
+  return icons[category] || 'electric_meter'
+}
+
+/**
+ * Get translation key for category
+ */
+function getCategoryTranslationKey(category: string): string {
+  const keys: Record<string, string> = {
+    'TGBT': 'categories.tgbt',
+    'Compresseurs': 'categories.compressors',
+    'Clim': 'categories.cooling',
+    'Éclairage': 'categories.lighting',
+    'Eclairage': 'categories.lighting'
+  }
+  return keys[category] || category
+}
+
+/**
+ * Adjust hex color brightness
+ */
+function adjustBrightness(color: string, amount: number): string {
+  const usePound = color[0] === '#'
+  const col = usePound ? color.slice(1) : color
+  const num = parseInt(col, 16)
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount))
+  const g = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) + amount))
+  const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount))
+  return (usePound ? '#' : '') + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)
+}
+
+/**
+ * Watch for meter changes and auto-select element
+ * TGBT-Specific Behavior:
+ * - If meter has only 1 element → auto-display (no selection needed)
+ * - If meter has multiple elements → auto-select first element
+ * - If meter has no elements → clear element selection
+ */
+watch(
+  () => currentMeterData.value,
+  (newMeterData) => {
+    if (!newMeterData) {
+      selectedElement.value = null
+      return
+    }
+
+    // If meter has elements
+    if (newMeterData.elements && newMeterData.elements.length > 0) {
+      // Auto-select first element if none selected or current selection is invalid
+      if (!selectedElement.value || !newMeterData.elements.includes(selectedElement.value)) {
+        selectedElement.value = newMeterData.elements[0]
+      }
+    } else {
+      // No elements - clear selection
+      selectedElement.value = null
+    }
+  },
+  { immediate: true }
+)
+
 const showChartModal = (chartType: 'monthly' | 'daily' | 'hourly') => {
+  if (!currentMeterData.value) return
+
   let title = ''
   let subtitle = ''
   let data: number[] = []
@@ -480,6 +800,8 @@ const showChartModal = (chartType: 'monthly' | 'daily' | 'hourly') => {
 }
 
 const showTableModal = (tableType: 'hourly' | 'daily' | 'monthly') => {
+  if (!currentMeterData.value) return
+
   let title = ''
   const columns = [
     { key: 'timestamp', label: t('puissance.tables.columns.timestamp'), format: 'default' as const },

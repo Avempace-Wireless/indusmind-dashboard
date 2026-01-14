@@ -15,6 +15,37 @@
         </button>
       </div>
 
+      <!-- Select Meters Card -->
+      <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600">
+        <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
+          {{ $t('compteur.selector.title') }}
+        </h3>
+
+        <!-- Category Cards with Icons Below -->
+        <div class="grid grid-cols-4 gap-2">
+          <button
+            v-for="category in meterCategories"
+            :key="category"
+            @click="selectedCategory = selectedCategory === category ? null : category"
+            :class="[
+              'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
+              selectedCategory === category
+                ? 'text-white shadow-lg border-transparent'
+                : 'bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+            ]"
+            :style="selectedCategory === category ? {
+              background: `linear-gradient(135deg, ${getCategoryColor(category)} 0%, ${adjustBrightness(getCategoryColor(category), -15)} 100%)`
+            } : {}"
+            :title="$t('common.filter') + ': ' + category"
+          >
+            <!-- Category Icon -->
+            <span class="material-symbols-outlined text-xl">{{ getCategoryIcon(category) }}</span>
+            <!-- Category Label -->
+            <span class="text-xs font-medium text-center leading-tight">{{ $t(getCategoryTranslationKey(category)) }}</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Time Range Selector -->
       <div class="bg-white dark:bg-[#1c2534] rounded-xl p-6 border border-gray-200 dark:border-[#2a3649]">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -61,22 +92,22 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-[#1c2534] rounded-xl p-6 border border-gray-200 dark:border-[#2a3649]">
           <p class="text-sm text-gray-600 dark:text-gray-400">Total Consumption</p>
-          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">45.8 kWh</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ categoryStats.total }} kWh</p>
           <p class="text-xs text-green-600 dark:text-green-400 mt-1">↓ 5.2% vs previous</p>
         </div>
         <div class="bg-white dark:bg-[#1c2534] rounded-xl p-6 border border-gray-200 dark:border-[#2a3649]">
           <p class="text-sm text-gray-600 dark:text-gray-400">Peak Consumption</p>
-          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">5.2 kW</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ categoryStats.peak }} kW</p>
           <p class="text-xs text-red-600 dark:text-red-400 mt-1">↑ 2.1% vs previous</p>
         </div>
         <div class="bg-white dark:bg-[#1c2534] rounded-xl p-6 border border-gray-200 dark:border-[#2a3649]">
           <p class="text-sm text-gray-600 dark:text-gray-400">Average Power</p>
-          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">1.9 kW</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ categoryStats.avg }} kW</p>
           <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">No change</p>
         </div>
         <div class="bg-white dark:bg-[#1c2534] rounded-xl p-6 border border-gray-200 dark:border-[#2a3649]">
           <p class="text-sm text-gray-600 dark:text-gray-400">Estimated Cost</p>
-          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">$5.49</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">${{ categoryStats.cost }}</p>
           <p class="text-xs text-green-600 dark:text-green-400 mt-1">↓ 4.8% savings</p>
         </div>
       </div>
@@ -155,8 +186,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import { useMetersStore } from '@/stores/useMetersStore'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+const metersStore = useMetersStore()
 
 interface HistoricalRecord {
   date: string
@@ -171,6 +207,7 @@ const dateFrom = ref('')
 const dateTo = ref('')
 const compareWithPrevious = ref(false)
 const selectedGranularity = ref('Hourly')
+const selectedCategory = ref<string | null>('TGBT')
 const granularities = ['Hourly', 'Daily', 'Weekly', 'Monthly']
 
 const datePresets = [
@@ -178,6 +215,86 @@ const datePresets = [
   { label: '30D', days: 30 },
   { label: '3M', days: 90 }
 ]
+
+// Get unique meter categories
+const meterCategories = computed(() => {
+  const categories = Array.from(new Set(metersStore.allMeters.map(m => m.category)))
+  // Order: TGBT, Compresseurs, Clim, Éclairage
+  const order = ['TGBT', 'Compresseurs', 'Clim', 'Éclairage']
+  return categories.sort((a, b) => order.indexOf(a) - order.indexOf(b)).slice(0, 4)
+})
+
+// Filter meters by selected category
+const filteredMeters = computed(() => {
+  if (!selectedCategory.value) return metersStore.allMeters
+  return metersStore.allMeters.filter(m => m.category === selectedCategory.value)
+})
+
+// Category-based statistics
+const categoryStats = computed(() => {
+  const stats: Record<string, { total: number; peak: number; avg: number; cost: number }> = {
+    'TGBT': { total: 125.8, peak: 15.2, avg: 5.2, cost: 15.10 },
+    'Compresseurs': { total: 85.4, peak: 8.5, avg: 3.6, cost: 10.25 },
+    'Clim': { total: 65.2, peak: 6.8, avg: 2.7, cost: 7.83 },
+    'Éclairage': { total: 45.8, peak: 5.2, avg: 1.9, cost: 5.49 }
+  }
+  return stats[selectedCategory.value || 'TGBT'] || stats['TGBT']
+})
+
+/**
+ * Get color for category
+ */
+function getCategoryColor(category: string): string {
+  const colors: Record<string, string> = {
+    'TGBT': '#ef4444',
+    'Compresseurs': '#22c55e',
+    'Clim': '#3b82f6',
+    'Éclairage': '#f59e0b',
+    'Eclairage': '#f59e0b',
+  }
+  return colors[category] || '#6b7280'
+}
+
+/**
+ * Get icon for category
+ */
+function getCategoryIcon(category: string): string {
+  const icons: Record<string, string> = {
+    'TGBT': 'bolt',
+    'Compresseurs': 'air',
+    'Clim': 'ac_unit',
+    'Éclairage': 'light_mode',
+    'Eclairage': 'light_mode',
+  }
+  return icons[category] || 'electric_meter'
+}
+
+/**
+ * Get translation key for category
+ */
+function getCategoryTranslationKey(category: string): string {
+  const keys: Record<string, string> = {
+    'TGBT': 'categories.tgbt',
+    'Compresseurs': 'categories.compressors',
+    'Clim': 'categories.cooling',
+    'Éclairage': 'categories.lighting',
+    'Eclairage': 'categories.lighting'
+  }
+  return keys[category] || category
+}
+
+/**
+ * Adjust hex color brightness
+ */
+function adjustBrightness(color: string, amount: number): string {
+  const usePound = color[0] === '#'
+  const col = usePound ? color.slice(1) : color
+  const num = parseInt(col, 16)
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount))
+  const g = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) + amount))
+  const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount))
+  return (usePound ? '#' : '') + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)
+}
 
 const historicalData: HistoricalRecord[] = [
   { date: '2026-01-06', time: '14:00', power: '2.45', voltage: '230', temperature: '38', status: 'Normal' },
@@ -196,7 +313,7 @@ function applyPreset(preset: any) {
   const today = new Date()
   const from = new Date(today)
   from.setDate(from.getDate() - preset.days)
-  
+
   dateFrom.value = from.toISOString().split('T')[0]
   dateTo.value = today.toISOString().split('T')[0]
 }

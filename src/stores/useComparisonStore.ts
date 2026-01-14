@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useDashboardStore } from './useDashboardStore'
+import { useMetersStore } from './useMetersStore'
 import i18n from '../i18n'
 import type { MetricType } from '../types/metrics'
 
@@ -21,7 +23,7 @@ export interface ViewOptions {
  *
  * Manages:
  * - Comparison modes (by meters, by periods, matrix)
- * - Multi-meter selection
+ * - Multi-meter selection (via centralized useMetersStore)
  * - Multi-period selection
  * - Aggregation levels
  * - Chart types and view options
@@ -30,15 +32,16 @@ export interface ViewOptions {
 export const useComparisonStore = defineStore('comparison', () => {
   const dashboardStore = useDashboardStore()
 
+  // ✅ USE CENTRALIZED METER STORE
+  const metersStore = useMetersStore()
+  const { selectedMeterIds: centralizedSelectedMeterIds } = storeToRefs(metersStore)
+
   // ===========================
   // State
   // ===========================
 
   // Comparison mode
   const comparisonMode = ref<ComparisonMode>('byMeters')
-
-  // Selected meters (IDs)
-  const selectedMeterIds = ref<string[]>([])
 
   // Selected periods (date strings or period identifiers)
   const selectedPeriods = ref<string[]>([])
@@ -79,11 +82,18 @@ export const useComparisonStore = defineStore('comparison', () => {
     )
   })
 
+  /**
+   * ✅ PROXY TO CENTRALIZED METER STORE
+   * Exports selectedMeterIds for backwards compatibility
+   */
+  const selectedMeterIds = computed(() => centralizedSelectedMeterIds.value)
+
   const selectedMeters = computed(() => {
-    if (selectedMeterIds.value.length === 0) {
+    // ✅ USE CENTRALIZED METER STORE IDs
+    if (centralizedSelectedMeterIds.value.length === 0) {
       return availableMeters.value
     }
-    return availableMeters.value.filter(m => selectedMeterIds.value.includes(m.id))
+    return availableMeters.value.filter(m => centralizedSelectedMeterIds.value.includes(m.id))
   })
 
   const calendarDays = computed(() => {
@@ -360,28 +370,32 @@ export const useComparisonStore = defineStore('comparison', () => {
   // Actions - Selection
   // ===========================
 
+  /**
+   * ✅ TOGGLE METER USING CENTRALIZED STORE
+   */
   function toggleMeter(meterId: string) {
-    const index = selectedMeterIds.value.indexOf(meterId)
-    if (index === -1) {
-      selectedMeterIds.value.push(meterId)
-    } else {
-      selectedMeterIds.value.splice(index, 1)
-    }
+    metersStore.toggleMeter(meterId)
   }
 
+  /**
+   * ✅ SELECT ALL METERS USING CENTRALIZED STORE
+   */
   function selectAllMeters() {
-    selectedMeterIds.value = availableMeters.value.map(m => m.id)
+    metersStore.selectAllMeters()
   }
 
+  /**
+   * ✅ DESELECT ALL METERS USING CENTRALIZED STORE
+   */
   function deselectAllMeters() {
-    selectedMeterIds.value = []
+    metersStore.clearSelection()
   }
 
   function setComparisonMode(mode: ComparisonMode) {
     comparisonMode.value = mode
 
     // Initialize data for the new mode if needed
-    if (selectedMeterIds.value.length === 0) {
+    if (centralizedSelectedMeterIds.value.length === 0) {
       selectAllMeters()
     }
 
@@ -470,7 +484,7 @@ export const useComparisonStore = defineStore('comparison', () => {
   }
 
   function resetFilters() {
-    selectedMeterIds.value = []
+    metersStore.clearSelection()
     selectedPeriods.value = []
     comparisonMode.value = 'byMeters'
     aggregationLevel.value = 'daily'

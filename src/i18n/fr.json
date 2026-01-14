@@ -6,6 +6,7 @@
     "edit": "Modifier",
     "add": "Ajouter",
     "close": "Fermer",
+    "clear": "Effacer",
     "search": "Rechercher",
     "filter": "Filtrer",
     "export": "Exporter",
@@ -15,8 +16,9 @@
     "success": "Succès",
     "warning": "Avertissement",
     "info": "Information",
-    "justNow": "À l'instant",
-    "unit": {
+    "justNow": "À l'instant",    "meter": "compteur",
+    "meters": "compteurs",
+    "allMeters": "Tous les compteurs",    "unit": {
       "kw": "kW",
       "celsius": "°C",
       "volt": "V",
@@ -303,6 +305,12 @@
     "lighting": "Éclairage",
     "lightingGeneral": "Éclairage général"
   },
+  "categories": {
+    "tgbt": "TGBT",
+    "compressors": "Compresseurs",
+    "cooling": "Clim",
+    "lighting": "Éclairage"
+  },
   "alerts": {
     "noAlerts": "Aucune alerte",
     "critical": "Critique",
@@ -334,6 +342,8 @@
   "puissance": {
     "pageTitle": "Consommation électrique – Puissance",
     "displayMode": "Mode d'affichage",
+    "selectElement": "Sélectionner un élément",
+    "displaying": "Affichage",
       "views": {
         "overview": "Aperçu",
         "charts": "Graphiques",
@@ -424,8 +434,13 @@
     "viewMode": {
       "chart": "Graphique",
       "table": "Tableau"
-    },
-    "chart": {
+    },    "emptyState": {
+      "noMeters": "Aucun compteur sélectionné",
+      "noDates": "Aucune date sélectionnée",
+      "noMetrics": "Aucune métrique activée",
+      "noData": "Aucune donnée disponible",
+      "hint": "Sélectionnez des compteurs, des dates et activez des métriques pour voir les données"
+    },    "chart": {
       "title": "Analyse {resolution} par compteur",
       "subtitle": {
         "noData": "Sélectionnez des dates pour afficher les données",
@@ -457,6 +472,7 @@
     },
     "calendar": {
       "title": "Calendrier",
+      "daysSelected": "{count} jour sélectionné | {count} jours sélectionnés",
       "weekdays": {
         "mon": "Lun",
         "tue": "Mar",
@@ -517,6 +533,13 @@
       "weekly": "Hebdomadaire",
       "monthly": "Mensuel"
     },
+    "characteristics": {
+      "title": "Caractéristique métrique",
+      "consumption": "Consommation (kWh)",
+      "energy": "Énergie (kWh)",
+      "cost": "Coût (EUR)",
+      "co2": "Émissions CO2 (kg)"
+    },
     "chartType": {
       "title": "Type de graphique",
       "bar": "Barres",
@@ -576,7 +599,12 @@
       "active": "Zones Actives",
       "avgTemp": "Temp. Moyenne",
       "operational": "Opérationnel",
-      "standby": "En attente"
+      "standby": "En attente",
+      "currentAverage": "Moyenne actuelle",
+      "energy": "Énergie",
+      "efficiency": "Rendement",
+      "systemStatus": "État",
+      "allSystems": "Tous les systèmes"
     },
     "sections": {
       "zoneControl": "Contrôle et Gestion des Zones",

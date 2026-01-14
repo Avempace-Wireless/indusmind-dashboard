@@ -174,6 +174,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import UnifiedChart from '@/components/dashboard/UnifiedChart.vue'
@@ -183,32 +184,36 @@ import CompteurWidget from '@/components/dashboard/CompteurWidget.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
+import { useMetersStore } from '@/stores/useMetersStore'
 
 // ============================================================================
-// COMPOSABLES
+// COMPOSABLES & STORES
 // ============================================================================
 
 const { t } = useI18n()
+
+// ✅ USE CENTRALIZED METER STORE
+const metersStore = useMetersStore()
+const { selectedMeterIds: selectedCompteurIds } = storeToRefs(metersStore)
 
 const currentTime = ref(new Date())
 const chartMode = ref<'energy' | 'temperature'>('energy')
 const chartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('today')
 
+// ✅ HANDLE MODAL VISIBILITY WITH LOCAL STATE
+const showCompteurSelector = ref(false)
+
 const { dashboardStore, equipmentStore, alertsStore, initializeRealtimeData, stopRealtimeData } =
   useRealtimeData()
 
 const {
-  selectedCompteurIds,
   widgetModes,
-  showCompteurSelector,
   selectedCompteurs,
   availableCompteurs: allCompteurs,
   aggregatedInstantaneous,
   filteredEquipment,
   selectionStatusText: compteurSelectionStatus,
   setCompteurMode,
-  addCompteur,
-  removeCompteur,
   initialize: initializeCompteurSelection,
 } = useCompteurSelection()
 
@@ -391,22 +396,12 @@ onUnmounted(() => {
 
 /**
  * Handle compteur selection from modal
+ * ✅ NOW USES CENTRALIZED METER STORE
  */
 function handleCompteurSelection(selectedIds: string[]) {
-  // Clear existing selections
-  selectedCompteurIds.value.forEach((id) => {
-    if (!selectedIds.includes(id)) {
-      removeCompteur(id)
-    }
-  })
-
-  // Add new selections
-  selectedIds.forEach((id) => {
-    if (!selectedCompteurIds.value.includes(id)) {
-      addCompteur(id)
-    }
-  })
-
+  // Simply delegate to the centralized store
+  // This automatically syncs to all views and saves to localStorage
+  metersStore.setSelectedMeters(selectedIds)
   showCompteurSelector.value = false
 }
 

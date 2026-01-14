@@ -19,13 +19,6 @@
             <span class="material-symbols-outlined text-lg">file_download</span>
             {{ t('comparison.buttons.export') }}
           </button>
-          <button
-            @click="resetFilters"
-            class="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <span class="material-symbols-outlined text-lg">refresh</span>
-            {{ t('comparison.buttons.reset') }}
-          </button>
         </div>
       </div>
     </div>
@@ -426,16 +419,14 @@
               <button v-if="selectedDates.length > 0" @click="clearDates" class="text-blue-600 dark:text-blue-400 hover:underline">
                 Clear
               </button>
+            </div>
           </div>
-        </div>
         </div>
 
-        <!-- Aggregation Level -->
+        <!-- Characteristics Selection -->
+        <!-- Aggregation Level Selector -->
         <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('comparison.aggregation.title') }}</h3>
-            <span class="text-xs text-gray-400" title="How data is grouped: H=Hourly, D=Daily, W=Weekly, M=Monthly">?</span>
-          </div>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ t('comparison.aggregation.title') }}</h3>
 
           <div class="grid grid-cols-4 gap-1.5">
             <button
