@@ -143,14 +143,34 @@ export const useMetersStore = defineStore('meters', () => {
           // If we have valid IDs and some were filtered out, clean up localStorage
           if (validIds.length > 0 && validIds.length < restored.length) {
             console.warn('Cleaning up invalid meter IDs from localStorage:', restored.filter(id => !validIds.includes(id)))
-            selectedMeterIds.value = validIds
+            // If less than 8 valid IDs remain, fill with additional meters
+            if (validIds.length < 8) {
+              const additionalIds = allMeters.value
+                .filter(m => !validIds.includes(m.id))
+                .slice(0, 8 - validIds.length)
+                .map(m => m.id)
+              selectedMeterIds.value = [...validIds, ...additionalIds]
+            } else {
+              selectedMeterIds.value = validIds
+            }
             persistSelection() // Save cleaned list
             return
           }
 
-          // If all IDs are valid, use them
-          if (validIds.length > 0) {
+          // If all IDs are valid and we have at least 8, use them
+          if (validIds.length >= 8) {
             selectedMeterIds.value = validIds
+            return
+          }
+
+          // If we have some valid IDs but less than 8, add more
+          if (validIds.length > 0 && validIds.length < 8) {
+            const additionalIds = allMeters.value
+              .filter(m => !validIds.includes(m.id))
+              .slice(0, 8 - validIds.length)
+              .map(m => m.id)
+            selectedMeterIds.value = [...validIds, ...additionalIds]
+            persistSelection()
             return
           }
         }
@@ -225,23 +245,36 @@ export const useMetersStore = defineStore('meters', () => {
   /**
    * Get color for a specific meter
    * Used in charts across all views for consistent coloring
+   * Each meter gets a unique color from the palette based on its ID
    *
    * @param meterId - Meter ID
    * @returns Hex color or fallback gray
    */
   function getMeterColor(meterId: string): string {
-    const meter = getMeterById(meterId)
-    if (!meter) return '#999999'
+    // Unique color palette - each meter gets a different color
+    const colorPalette = [
+      '#ef4444', // red-500
+      '#f97316', // orange-500
+      '#eab308', // yellow-500
+      '#22c55e', // green-500
+      '#10b981', // emerald-500
+      '#14b8a6', // teal-500
+      '#06b6d4', // cyan-500
+      '#3b82f6', // blue-500
+      '#6366f1', // indigo-500
+      '#8b5cf6', // violet-500
+      '#d946ef', // fuchsia-500
+      '#ec4899', // pink-500
+    ]
 
-    // Map color names to hex values
-    const colorMap: Record<string, string> = {
-      red: '#ef4444',
-      green: '#22c55e',
-      blue: '#3b82f6',
-      yellow: '#f59e0b',
-    }
+    if (!meterId || allMeters.value.length === 0) return '#999999'
 
-    return colorMap[meter.color] || meter.color
+    // Find meter index to assign consistent color
+    const meterIndex = allMeters.value.findIndex(m => m.id === meterId)
+    if (meterIndex === -1) return '#999999'
+
+    // Assign color based on index modulo palette length for cycling
+    return colorPalette[meterIndex % colorPalette.length]
   }
 
   /**

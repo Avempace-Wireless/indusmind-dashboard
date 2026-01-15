@@ -96,13 +96,19 @@ import MeterSelector from '@/components/common/MeterSelector.vue'
 import KPICard from '@/components/puissance/KPICard.vue'
 import PowerBarChart from '@/components/puissance/PowerBarChart.vue'
 import DataTable from '@/components/puissance/DataTable.vue'
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { puissanceMeters, meterList as importedMeterList } from '@/data/puissanceMock'
 
 const meters = puissanceMeters as any
 const meterList = importedMeterList
 const metersStore = useMetersStore()
+
+// Initialize default meter selection on mount
+onMounted(() => {
+  // Restore selection from localStorage or set default (first 8 meters)
+  metersStore.restoreSelection()
+})
 
 // UI State
 const showMeterSelector = ref(false)

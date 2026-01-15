@@ -19,53 +19,59 @@
             <span class="material-symbols-outlined text-base">tune</span>
             {{ t('dashboard.manageMeters') }}
           </button>
-          <button
-            @click="exportToCSV"
-            class="flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <span class="material-symbols-outlined text-lg">file_download</span>
-            {{ t('energyHistory.buttons.csv') }}
-          </button>
-          <button
-            @click="exportToPDF"
-            class="flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
-            {{ t('energyHistory.buttons.pdf') }}
-          </button>
-
         </div>
       </div>
     </div>
 
-    <!-- Select Meters Card -->
-    <div class="mb-6 bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600">
-      <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
-        Select Meter to Analyze
-      </h3>
-
-      <!-- Primary Meter Selection -->
-      <button
-        @click="showCompteurSelector = true"
-        class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium flex items-center gap-2 transition"
-      >
-        <span class="material-symbols-outlined">tune</span>
-        {{ primaryMeter ? primaryMeter.name : 'Select Meter' }}
-      </button>
-
-      <!-- Optional: Show Comparison Meters -->
-      <div v-if="comparisonMeters.length > 0" class="mt-4">
-        <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">Comparison Meters:</p>
-        <div class="flex flex-wrap gap-2">
-          <div
-            v-for="meter in comparisonMeters"
-            :key="meter.id"
-            class="px-3 py-1 rounded-full text-xs font-medium text-white"
-            :style="{ backgroundColor: meter.color || '#3b82f6' }"
+    <!-- Controls Section - Compact Meter Selection -->
+    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-4 border-2 border-slate-300 dark:border-slate-600 mb-4">
+      <div v-if="selectedMeterIds.length > 0" class="space-y-3">
+        <!-- Header: Title + Manage Button -->
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+            {{ t('compteur.selector.title') }}
+          </h3>
+          <button
+            @click="showCompteurSelector = true"
+            class="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-xs rounded-lg flex items-center gap-1 transition whitespace-nowrap"
           >
-            {{ meter.name }}
-          </div>
+            <span class="material-symbols-outlined text-sm">tune</span>
+            {{ t('dashboard.manageMeters') }}
+          </button>
         </div>
+
+        <!-- All Meters Pills - Grid Layout -->
+        <div v-if="selectedMeterIds.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          <button
+            v-for="meterId in selectedMeterIds"
+            :key="meterId"
+            @click="toggleCompteurActive(meterId)"
+            :class="[
+              'px-4 py-2.5 mr-2 rounded-lg text-xs font-medium transition-all duration-200 border-2 flex items-center justify-center gap-2 relative overflow-hidden',
+              activeCompteurIds.includes(meterId) || activeCompteurIds.length === 0
+                ? 'text-white shadow-lg scale-105 border-transparent'
+                : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800/50'
+            ]"
+            :style="(activeCompteurIds.includes(meterId) || activeCompteurIds.length === 0) ? { backgroundColor: metersStore.getMeterColor(meterId) } : {}"
+          >
+            <!-- Background gradient for non-active -->
+            <div
+              v-if="!activeCompteurIds.includes(meterId) && activeCompteurIds.length > 0"
+              class="absolute inset-0 opacity-0 group-hover:opacity-5 transition"
+              :style="{ backgroundColor: metersStore.getMeterColor(meterId) }"
+            />
+
+            <!-- Content -->
+            <span v-if="activeCompteurIds.includes(meterId) || activeCompteurIds.length === 0" class="material-symbols-outlined text-sm flex-shrink-0">check_circle</span>
+            <span class="truncate relative z-10">{{ getMeterName(meterId) }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else class="text-center py-6 text-gray-500 dark:text-gray-400">
+        <span class="material-symbols-outlined text-3xl mb-2 block opacity-50">inbox</span>
+        <p class="text-sm">{{ t('dashboard.noMetersSelected.description') }}</p>
       </div>
     </div>
 
@@ -78,41 +84,32 @@
       @close="showCompteurSelector = false"
     />
 
-    <!-- Selected Meters Display -->
-    <div v-if="selectedMetersFromStore.length > 0" class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <span class="material-symbols-outlined text-2xl" :style="{ color: getCategoryColor(currentCategory || 'TGBT') }">
-            {{ getCategoryIcon(currentCategory || 'TGBT') }}
-          </span>
-          <div>
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">
-              {{ currentCategory ? $t(getCategoryTranslationKey(currentCategory)) : $t('common.allMeters') }}
-            </p>
-            <p class="text-xs text-gray-600 dark:text-gray-400">
-              {{ selectedMetersFromStore.length }} {{ selectedMetersFromStore.length === 1 ? $t('common.meter') : $t('common.meters') }}
-              <span v-if="selectedElement" class="ml-2">• {{ $t('puissance.element') }}: <span class="font-medium">{{ selectedElement }}</span></span>
-            </p>
-          </div>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="px-3 py-1 rounded-full text-xs font-medium" :style="{
-            backgroundColor: getCategoryColor(currentCategory || 'TGBT') + '20',
-            color: getCategoryColor(currentCategory || 'TGBT')
-          }">
-            {{ selectedMetersFromStore.map(m => m.name).join(', ') }}
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Main Content Grid: 70% Chart Area, 30% Controls -->
     <div class="grid grid-cols-1 xl:grid-cols-10 gap-6">
       <!-- Left Panel: Chart Area (70%) -->
         <div class="xl:col-span-7 space-y-6">
 
-        <!-- View Mode Toggle (global) -->
-        <div class="flex items-center justify-end">
+        <!-- View Mode Toggle & Export Buttons -->
+        <div class="flex items-center justify-between gap-3">
+          <!-- Export Buttons (left) -->
+          <div class="flex gap-2">
+            <button
+              @click="exportToCSV"
+              class="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <span class="material-symbols-outlined text-sm">file_download</span>
+              {{ t('energyHistory.buttons.csv') }}
+            </button>
+            <button
+              @click="exportToPDF"
+              class="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+              {{ t('energyHistory.buttons.pdf') }}
+            </button>
+          </div>
+
+          <!-- View Mode Toggle (right) -->
           <div class="flex items-center rounded-md border border-gray-300 dark:border-gray-600 overflow-hidden">
             <button @click="viewMode = 'chart'" :class="['px-3 py-1.5 text-xs', viewMode === 'chart' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300']">{{ t('energyHistory.viewMode.chart') }}</button>
             <button @click="viewMode = 'table'" :class="['px-3 py-1.5 text-xs', viewMode === 'table' ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300']">{{ t('energyHistory.viewMode.table') }}</button>
@@ -229,6 +226,7 @@
           </div>
         </div>
       </div>
+
 
       <!-- Right Panel: Controls (30%) -->
       <div class="xl:col-span-3 space-y-6">
@@ -379,33 +377,7 @@
 
         </div>
 
-        <!-- Characteristics Filter (Meters Selection) -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('energyHistory.characteristics.title') }}</h3>
-            <button @click="enableAllCompteurs" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">{{ t('energyHistory.buttons.selectAll') }}</button>
-          </div>
-          <div class="space-y-3">
-            <label
-              v-for="compteur in selectedCompteurs"
-              :key="compteur.id"
-              class="flex items-center gap-3 cursor-pointer group"
-            >
-              <input
-                type="checkbox"
-                :checked="activeCompteurIds.includes(compteur.id) || activeCompteurIds.length === 0"
-                @change="toggleCompteurActive(compteur.id)"
-                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:bg-gray-700 dark:border-gray-600"
-              />
-              <span class="flex items-center gap-2 flex-1">
-                <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: getMeterColor(compteur.name) }"></span>
-                <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
-                  {{ compteur.name }}
-                </span>
-              </span>
-            </label>
-          </div>
-        </div>
+
       </div>
     </div>
   </AdminLayout>
@@ -713,6 +685,12 @@ function adjustBrightness(color: string, amount: number): string {
   const g = Math.max(0, Math.min(255, parseInt(hex.substring(2, 4), 16) + amount))
   const b = Math.max(0, Math.min(255, parseInt(hex.substring(4, 6), 16) + amount))
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}
+
+// Helper function to get meter name by ID (same as PuissanceView)
+function getMeterName(meterId: string): string {
+  const meter = allCompteurs.value.find(c => c.id === meterId)
+  return meter?.name || 'Unknown'
 }
 
 // ===========================
@@ -1066,15 +1044,20 @@ onMounted(() => {
   // Initialize compteur selection (syncs with DashboardView and PuissanceView)
   initializeCompteurSelection()
 
-  // Select all available meters
-  metersStore.selectAllMeters()
+  // Note: restoreSelection() sets default to first 8 meters (or all if fewer available)
+  // No need to call selectAllMeters() - use restoreSelection for consistency across views
   selectedCategory.value = null // No specific category filter
 
   // Initialize with today's date
   goToToday()
 
+  // Refresh data to populate charts
+  refreshData()
+
   // Initialize chart
-  initChart()
+  nextTick(() => {
+    initChart()
+  })
 })
 
 onBeforeUnmount(() => {

@@ -501,6 +501,45 @@ export const METERS_DATA: Meter[] = [
     }
   },
 
+  // TGBT Secondaire - Secondary Main Panel
+  {
+    id: '5',
+    name: 'PM2200 - TGBT Secondaire',
+    category: 'TGBT',
+    subtitle: 'TGBT Secondaire',
+    type: 'Secondary Electrical Panel',
+    unit: 'kWh',
+    site: 'Secondary',
+    color: 'yellow',
+    icon: 'electric_bolt',
+    status: 'online',
+    linkedEquipment: ['eq-12'],
+    translationKey: 'equipment.tgbtSecondary',
+    metrics: {
+      consumption: 3039.6,
+      power: 126.6,
+      cost: 364.7,
+      co2: 607.9
+    },
+    timeSeries: {
+      hourly: generateHourlyData(126, 20),
+      daily: generateDailyData(3020, 280),
+      monthly: generateMonthlyData(3020, 280)
+    },
+    kpis: {
+      current: 126.6,
+      peak: 149.2,
+      average: 122.2,
+      total: 3039.6,
+      avgPowerLastMonth: 122.2,
+      avgPowerThisMonth: 126.6,
+      avgPowerYesterday: 124.1,
+      avgPowerToday: 126.6,
+      avgPowerBeforeYesterday: 121.0,
+      instantaneousPower: 126.6
+    }
+  },
+
   // Éclairage - Lighting System (single unit, no elements)
   {
     id: '9',
@@ -617,6 +656,45 @@ export const METERS_DATA: Meter[] = [
       avgPowerToday: 41.1,
       avgPowerBeforeYesterday: 39.2,
       instantaneousPower: 41.1
+    }
+  },
+
+  // Production Line - Main Production Equipment
+  {
+    id: '12',
+    name: 'Ligne Production',
+    category: 'TGBT',
+    subtitle: 'Ligne Production',
+    type: 'Production Equipment',
+    unit: 'kWh',
+    site: 'Production',
+    color: 'red',
+    icon: 'factory',
+    status: 'online',
+    linkedEquipment: ['eq-13', 'eq-14'],
+    translationKey: 'equipment.productionLine',
+    metrics: {
+      consumption: 5240.8,
+      power: 218.4,
+      cost: 628.9,
+      co2: 1048.2
+    },
+    timeSeries: {
+      hourly: generateHourlyData(218, 35),
+      daily: generateDailyData(5200, 500),
+      monthly: generateMonthlyData(5200, 500)
+    },
+    kpis: {
+      current: 218.4,
+      peak: 256.8,
+      average: 210.5,
+      total: 5240.8,
+      avgPowerLastMonth: 210.5,
+      avgPowerThisMonth: 218.4,
+      avgPowerYesterday: 214.2,
+      avgPowerToday: 218.4,
+      avgPowerBeforeYesterday: 208.9,
+      instantaneousPower: 218.4
     }
   }
 ]
