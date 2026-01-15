@@ -33,12 +33,18 @@
           <div v-for="(menuGroup, groupIndex) in menuGroups" :key="groupIndex">
             <h2
               :class="[
-                'mb-4 text-xs uppercase flex leading-[20px] text-gray-400',
+                'mb-4 text-xs uppercase flex items-center leading-[20px] gap-2',
+                menuGroup.comingSoon ? 'opacity-50 cursor-not-allowed text-gray-400 dark:text-gray-600' : 'text-gray-400',
                 !isExpanded && !isHovered ? 'lg:justify-center' : 'justify-start',
               ]"
             >
               <template v-if="isExpanded || isHovered || isMobileOpen">
-                {{ menuGroup.title }}
+                <span>{{ menuGroup.title }}</span>
+                <span
+                  v-if="menuGroup.comingSoon"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-300 ml-auto"
+                  >{{ t('sidebar.comingSoon') }}</span
+                >
               </template>
               <MoreDots v-else />
             </h2>
@@ -138,11 +144,6 @@
                     class="menu-item-text flex items-center gap-2"
                   >
                     {{ item.name }}
-                    <span
-                      v-if="item.comingSoon"
-                      class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-300"
-                      >{{ t('sidebar.comingSoon') }}</span
-                    >
                   </span>
                 </div>
                 <transition
@@ -279,7 +280,8 @@ const menuGroups = computed(() => [
     ],
   },
   {
-    title: t('sidebar.analysis') + ' & ' + t('sidebar.reports'),
+    title: t('sidebar.analysis'),
+    comingSoon: true,
     items: [
  /*      {
         icon: BarChartIcon,
@@ -293,40 +295,42 @@ const menuGroups = computed(() => [
         name: t('sidebar.electricalConsumption'),
         path: '/consumption',
         disabled: true,
-        comingSoon: true,
       },
       {
         icon: PieChartIcon,
         name: t('sidebar.baseLoad'),
         path: '/base-load',
         disabled: true,
-        comingSoon: true,
       },
       {
         icon: CartIcon,
         name: t('sidebar.costAnalysis'),
         path: '/cost-analysis',
         disabled: true,
-        comingSoon: true,
       },
+    ],
+  },
+  {
+    title: t('sidebar.reports'),
+    comingSoon: true,
+    items: [
        {
         icon: PageIcon,
         name: t('sidebar.reportsView'),
         path: '/reports',
         disabled: true,
-        comingSoon: true,
       },
     ],
   },
   {
     title: t('sidebar.equipment'),
+    comingSoon: true,
     items: [
       {
         icon: BoxIcon,
         name: t('sidebar.equipment'),
         path: '/equipment',
         disabled: true,
-        comingSoon: true,
       },
 
 /*       {
@@ -352,20 +356,19 @@ const menuGroups = computed(() => [
   }, */
   {
     title: t('sidebar.alerts'),
+    comingSoon: true,
     items: [
       {
         icon: BellIcon,
         name: t('sidebar.alertsView'),
         path: '/alerts',
         disabled: true,
-        comingSoon: true,
       },
       {
         icon: TaskIcon,
         name: t('sidebar.alertRules'),
         path: '/alert-config',
         disabled: true,
-        comingSoon: true,
       },
     ],
   },
