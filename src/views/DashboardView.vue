@@ -1,15 +1,6 @@
 <template>
   <AdminLayout>
     <div class="w-full flex flex-col gap-6">
-      <!-- Compteur Selector Modal -->
-      <CompteurSelector
-        :is-open="showCompteurSelector"
-        :all-compteurs="allCompteurs"
-        :selected-ids="selectedCompteurIds"
-        @apply="handleCompteurSelection"
-        @close="showCompteurSelector = false"
-      />
-
       <!-- Breadcrumbs & Header -->
       <div class="flex flex-col gap-6">
         <nav class="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400">
@@ -20,35 +11,40 @@
           <span class="text-blue-600 dark:text-blue-400">{{ $t('navigation.realtime') }}</span>
         </nav>
 
-        <!-- Page title with status -->
-        <div class="flex flex-wrap justify-between items-end gap-4 border-b border-slate-200 dark:border-border-dark pb-6">
-          <div class="flex flex-col gap-2">
+        <!-- Page title with status and Manage Meters button -->
+        <div class="border-b border-slate-200 dark:border-border-dark pb-6">
+          <div class="flex justify-between items-center gap-4 mb-2">
             <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">{{ $t('dashboard.title') }}</h1>
-            <div class="flex items-center gap-3">
-              <span :class="[
-                'flex h-2.5 w-2.5 rounded-full animate-pulse',
-                isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
-              ]"></span>
-              <p class="text-slate-600 dark:text-slate-400 text-sm font-mono">
-                {{ isConnected ? $t('dashboard.status.connected') : $t('dashboard.status.disconnected') }}{{ $t('dashboard.status.lastUpdate') }} {{ lastUpdateTime }}
-              </p>
-            </div>
+            <button
+              @click="showCompteurSelector = true"
+              class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
+            >
+              <span class="material-symbols-outlined text-base">tune</span>
+              {{ $t('dashboard.manageMeters') }}
+            </button>
+          </div>
+          <div class="flex items-center gap-3">
+            <span :class="[
+              'flex h-2.5 w-2.5 rounded-full animate-pulse',
+              isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
+            ]"></span>
+            <p class="text-slate-600 dark:text-slate-400 text-sm font-mono">
+              {{ isConnected ? $t('dashboard.status.connected') : $t('dashboard.status.disconnected') }}{{ $t('dashboard.status.lastUpdate') }} {{ lastUpdateTime }}
+            </p>
           </div>
         </div>
       </div>
 
-      <!-- Compteur Selector Control -->
-      <div class="flex justify-end">
-        <button
-          @click="showCompteurSelector = true"
-          class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors whitespace-nowrap"
-        >
-          <span class="material-symbols-outlined text-base">tune</span>
-          {{ $t('dashboard.manageMeters') }}
-        </button>
-      </div>
+      <!-- CompteurSelector Modal -->
+      <CompteurSelector
+        :is-open="showCompteurSelector"
+        :all-compteurs="allCompteurs"
+        :selected-ids="selectedCompteurIds"
+        @apply="handleCompteurSelection"
+        @close="showCompteurSelector = false"
+      />
 
-      <!-- Compteur Widgets Grid (Dynamic, responsive) -->
+      <!-- Meter Widgets Grid (Dynamic, responsive) -->
       <div :class="[
         'grid gap-6',
         gridLayoutClass
@@ -69,9 +65,10 @@
         </div>
 
         <CompteurWidget
-          v-for="compteur in selectedCompteurs"
+          v-for="(compteur, index) in selectedCompteurs"
           :key="compteur.id"
           :compteur="compteur"
+          :color-index="index"
           :current-mode="widgetModes[compteur.id]"
           @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
         />
@@ -126,7 +123,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-              <!-- Energy Compteurs -->
+              <!-- Energy Meters -->
               <tr v-for="compteur in selectedCompteurs" :key="compteur.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ compteur.name }}</td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('dashboard.equipment.columns.energy') }}</td>
@@ -167,21 +164,20 @@
           </table>
         </div>
       </div>
-      />
     </div>
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import UnifiedChart from '@/components/dashboard/UnifiedChart.vue'
 import PhaseBalance from '@/components/dashboard/PhaseBalance.vue'
 import EventsWidget from '@/components/dashboard/EventsWidget.vue'
 import CompteurWidget from '@/components/dashboard/CompteurWidget.vue'
-import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
 import { useMetersStore } from '@/stores/useMetersStore'
@@ -192,10 +188,6 @@ import { useMetersStore } from '@/stores/useMetersStore'
 
 const { t } = useI18n()
 
-// ✅ USE CENTRALIZED METER STORE
-const metersStore = useMetersStore()
-const { selectedMeterIds: selectedCompteurIds } = storeToRefs(metersStore)
-
 const currentTime = ref(new Date())
 const chartMode = ref<'energy' | 'temperature'>('energy')
 const chartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('today')
@@ -203,12 +195,16 @@ const chartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('today')
 // ✅ HANDLE MODAL VISIBILITY WITH LOCAL STATE
 const showCompteurSelector = ref(false)
 
+// Get metersStore for syncing selections
+const metersStore = useMetersStore()
+
 const { dashboardStore, equipmentStore, alertsStore, initializeRealtimeData, stopRealtimeData } =
   useRealtimeData()
 
 const {
   widgetModes,
   selectedCompteurs,
+  selectedCompteurIds,
   availableCompteurs: allCompteurs,
   aggregatedInstantaneous,
   filteredEquipment,
@@ -344,7 +340,7 @@ const phaseBalanceData = computed(() => {
 })
 
 /**
- * Responsive grid layout based on selected compteur count
+ * Responsive grid layout based on selected meter count
  */
 const gridLayoutClass = computed(() => {
   const count = selectedCompteurs.value.length
@@ -364,8 +360,26 @@ const gridLayoutClass = computed(() => {
 let timeInterval: number | null = null
 
 onMounted(async () => {
-  // Initialize compteur selection
+  // Initialize compteur selection (for legacy widgets)
   initializeCompteurSelection()
+
+  // Load compteurs from PM2200 devices API
+  try {
+    await dashboardStore.loadCompteurs()
+    console.log('Loaded compteurs:', dashboardStore.compteurs.length)
+    console.log('Compteur IDs:', dashboardStore.compteurs.map(c => c.id))
+  } catch (error) {
+    console.error('Failed to load compteurs:', error)
+  }
+
+  // Validate and clean up invalid localStorage selection
+  if (dashboardStore.compteurs.length > 0) {
+    // Restore from localStorage and clean up any invalid IDs
+    metersStore.restoreSelection()
+    const savedSelection = localStorage.getItem('meters:selected')
+    console.log('Saved selection from localStorage:', savedSelection)
+    console.log('Current selection after restore:', metersStore.selectedMeterIds)
+  }
 
   // Start real-time data updates
   try {
@@ -374,10 +388,10 @@ onMounted(async () => {
     console.error('Failed to initialize real-time data:', error)
   }
 
-  // Update display time every second
-  timeInterval = window.setInterval(() => {
-    currentTime.value = new Date()
-  }, 1000)
+  // Static display - no automatic updates
+  // timeInterval = window.setInterval(() => {
+  //   currentTime.value = new Date()
+  // }, 10000)
 })
 
 onUnmounted(() => {
@@ -396,11 +410,10 @@ onUnmounted(() => {
 
 /**
  * Handle compteur selection from modal
- * ✅ NOW USES CENTRALIZED METER STORE
+ * Syncs selections to the centralized metersStore
  */
 function handleCompteurSelection(selectedIds: string[]) {
-  // Simply delegate to the centralized store
-  // This automatically syncs to all views and saves to localStorage
+  // Update the metersStore with the selected IDs
   metersStore.setSelectedMeters(selectedIds)
   showCompteurSelector.value = false
 }

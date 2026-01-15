@@ -2,93 +2,98 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { DashboardMetrics, EnergyReading } from '../types'
 import { realtimeAPI } from '../services/api'
+import { getAllCompteursFromPM2200, type Compteur } from '../services/deviceAPI'
 
-// Mock compteur data (to be replaced with API)
-interface Compteur {
-  id: string
-  name: string
-  category: 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'
-  subtitle: string
-  color: 'red' | 'green' | 'blue' | 'yellow'
-  instantaneous: number // kW
-  today: number // kWh
-  yesterday: number // kWh
-  linkedEquipment: string[]
-  translationKey?: string
-}
-
+// Mock compteur data (fallback) - matches PM2200 devices from deviceAPI
 const mockCompteurs: Compteur[] = [
   {
-    id: 'compteur-1',
-    name: 'TGBT',
-    category: 'TGBT',
-    subtitle: 'PM2200-TGBT-Indusmind',
+    id: '8',
+    name: 'PM2200 - TGBT Principal',
+    category: 'PM2200',
+    subtitle: 'TGBT Principal',
     color: 'red',
     instantaneous: 6479.5,
     today: 6366,
-    yesterday: 0,
-    linkedEquipment: ['eq-1', 'eq-2', 'eq-3']
+    yesterday: 5890,
+    linkedEquipment: []
   },
   {
-    id: 'compteur-2',
-    name: 'Compresseurs',
-    category: 'Compresseurs',
-    subtitle: 'Compresseurs industriels',
-    color: 'green',
-    instantaneous: 4605,
-    today: 4085.2,
-    yesterday: 0,
-    linkedEquipment: ['eq-4', 'eq-5'],
-    translationKey: 'equipment.compressorsIndustrial'
-  },
-  {
-    id: 'compteur-3',
-    name: 'Clim',
-    category: 'Clim',
-    subtitle: 'Climatisation générale',
+    id: '3',
+    name: 'PM2200 - Climatisation Hall',
+    category: 'PM2200',
+    subtitle: 'Climatisation Hall',
     color: 'blue',
     instantaneous: 3785.5,
     today: 2134.5,
-    yesterday: 0,
-    linkedEquipment: ['eq-6', 'eq-7'],
-    translationKey: 'equipment.climGeneral'
+    yesterday: 2050,
+    linkedEquipment: []
   },
   {
-    id: 'compteur-4',
-    name: 'Éclairage',
-    category: 'Éclairage',
-    subtitle: 'Éclairage général',
+    id: '4',
+    name: 'PM2200 - Compresseur Zone A',
+    category: 'PM2200',
+    subtitle: 'Compresseur Zone A',
+    color: 'green',
+    instantaneous: 4605,
+    today: 4085.2,
+    yesterday: 3950,
+    linkedEquipment: []
+  },
+  {
+    id: '5',
+    name: 'PM2200 - TGBT Secondaire',
+    category: 'PM2200',
+    subtitle: 'TGBT Secondaire',
     color: 'yellow',
     instantaneous: 3387.8,
     today: 3039.6,
-    yesterday: 0,
-    linkedEquipment: ['eq-8'],
-    translationKey: 'equipment.lightingGeneral'
+    yesterday: 2980,
+    linkedEquipment: []
   },
   {
-    id: 'compteur-5',
-    name: 'Compresseur Zone 2',
-    category: 'Compresseurs',
-    subtitle: 'Compresseur secondaire',
+    id: '9',
+    name: 'PM2200 - Éclairage Général',
+    category: 'PM2200',
+    subtitle: 'Éclairage Général',
+    color: 'yellow',
+    instantaneous: 2150.3,
+    today: 1890.5,
+    yesterday: 1820,
+    linkedEquipment: []
+  },
+  {
+    id: '10',
+    name: 'PM2200 - Compresseur Zone B',
+    category: 'PM2200',
+    subtitle: 'Compresseur Zone B',
     color: 'green',
-    instantaneous: 2156.3,
-    today: 1876.4,
-    yesterday: 0,
-    linkedEquipment: ['eq-9'],
-    translationKey: 'equipment.compressorSecondary'
+    instantaneous: 3920.1,
+    today: 3450.8,
+    yesterday: 3380,
+    linkedEquipment: []
   },
   {
-    id: 'compteur-6',
-    name: 'Clim Bureau',
-    category: 'Clim',
-    subtitle: 'Climatisation bureaux',
+    id: '11',
+    name: 'PM2200 - CVC Bureaux',
+    category: 'PM2200',
+    subtitle: 'CVC Bureaux',
     color: 'blue',
-    instantaneous: 1245.7,
-    today: 987.3,
-    yesterday: 0,
-    linkedEquipment: ['eq-10', 'eq-11'],
-    translationKey: 'equipment.climOffices'
+    instantaneous: 2890.5,
+    today: 2560.2,
+    yesterday: 2490,
+    linkedEquipment: []
   },
+  {
+    id: '12',
+    name: 'PM2200 - Ligne Production',
+    category: 'PM2200',
+    subtitle: 'Ligne Production',
+    color: 'red',
+    instantaneous: 5240.8,
+    today: 4980.5,
+    yesterday: 4850,
+    linkedEquipment: []
+  }
 ]
 
 export const useDashboardStore = defineStore('dashboard', () => {
@@ -281,6 +286,25 @@ export const useDashboardStore = defineStore('dashboard', () => {
     error.value = null
   }
 
+  /**
+   * Load compteurs from PM2200 devices API
+   */
+  const loadCompteurs = async () => {
+    try {
+      const apiCompteurs = await getAllCompteursFromPM2200()
+      if (apiCompteurs.length > 0) {
+        compteurs.value = apiCompteurs
+      } else {
+        // Fallback to mock data if API returns empty
+        compteurs.value = mockCompteurs
+      }
+    } catch (error) {
+      console.error('Failed to load compteurs from API:', error)
+      // Use mock data on error
+      compteurs.value = mockCompteurs
+    }
+  }
+
   return {
     // State
     metrics,
@@ -303,6 +327,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     addReading,
     setConnected,
     loadInitialMetrics,
+    loadCompteurs,
     initializeRealtimeUpdates,
     stopRealtimeUpdates,
     retryConnection,

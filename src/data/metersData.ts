@@ -150,7 +150,7 @@ export const CATEGORIES = ['TGBT', 'Compresseurs', 'Clim', 'Éclairage'] as cons
 export const METERS_DATA: Meter[] = [
   // TGBT - Main Electrical Panel (with L1, L2, L3 elements)
   {
-    id: 'compteur-1',
+    id: '8',
     name: 'TGBT',
     category: 'TGBT',
     subtitle: 'PM2200-TGBT-Indusmind',
@@ -279,7 +279,7 @@ export const METERS_DATA: Meter[] = [
 
   // Compresseurs - Industrial Compressors (with Unit 1, 2, 3 elements)
   {
-    id: 'compteur-2',
+    id: '4',
     name: 'Compresseurs',
     category: 'Compresseurs',
     subtitle: 'Compresseurs industriels',
@@ -405,7 +405,7 @@ export const METERS_DATA: Meter[] = [
 
   // Clim - Cooling System (with Zone A, B elements)
   {
-    id: 'compteur-3',
+    id: '3',
     name: 'Clim',
     category: 'Clim',
     subtitle: 'Climatisation générale',
@@ -503,7 +503,7 @@ export const METERS_DATA: Meter[] = [
 
   // Éclairage - Lighting System (single unit, no elements)
   {
-    id: 'compteur-4',
+    id: '9',
     name: 'Éclairage',
     category: 'Éclairage',
     subtitle: 'Éclairage général',
@@ -542,7 +542,7 @@ export const METERS_DATA: Meter[] = [
 
   // Compresseur Zone 2 - Secondary Compressor
   {
-    id: 'compteur-5',
+    id: '10',
     name: 'Compresseur Zone 2',
     category: 'Compresseurs',
     subtitle: 'Compresseur secondaire',
@@ -582,7 +582,7 @@ export const METERS_DATA: Meter[] = [
 
   // Clim Bureau - Office Cooling
   {
-    id: 'compteur-6',
+    id: '11',
     name: 'Clim Bureau',
     category: 'Clim',
     subtitle: 'Climatisation bureaux',

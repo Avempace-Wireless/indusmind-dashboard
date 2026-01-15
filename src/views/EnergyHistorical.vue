@@ -13,6 +13,13 @@
         </div>
         <div class="flex gap-3">
           <button
+            @click="showCompteurSelector = true"
+            class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
+          >
+            <span class="material-symbols-outlined text-base">tune</span>
+            {{ t('dashboard.manageMeters') }}
+          </button>
+          <button
             @click="exportToCSV"
             class="flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
@@ -34,58 +41,42 @@
     <!-- Select Meters Card -->
     <div class="mb-6 bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600">
       <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
-        {{ $t('compteur.selector.title') }}
+        Select Meter to Analyze
       </h3>
 
-      <!-- Category Cards with Icons Below -->
-      <div class="grid grid-cols-4 gap-2">
-        <button
-          v-for="category in meterCategories"
-          :key="category"
-          @click="selectedCategory = selectedCategory === category ? null : category"
-          :class="[
-            'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
-            selectedCategory === category
-              ? 'text-white shadow-lg border-transparent'
-              : 'bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
-          ]"
-          :style="selectedCategory === category ? {
-            background: `linear-gradient(135deg, ${getCategoryColor(category)} 0%, ${adjustBrightness(getCategoryColor(category), -15)} 100%)`
-          } : {}"
-          :title="$t('common.filter') + ': ' + category"
-        >
-          <!-- Category Icon -->
-          <span class="material-symbols-outlined text-xl">{{ getCategoryIcon(category) }}</span>
-          <!-- Category Label -->
-          <span class="text-xs font-medium text-center leading-tight">{{ $t(getCategoryTranslationKey(category)) }}</span>
-        </button>
-      </div>
+      <!-- Primary Meter Selection -->
+      <button
+        @click="showCompteurSelector = true"
+        class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium flex items-center gap-2 transition"
+      >
+        <span class="material-symbols-outlined">tune</span>
+        {{ primaryMeter ? primaryMeter.name : 'Select Meter' }}
+      </button>
 
-      <!-- Elements Selection (if meter has multiple elements) -->
-      <div v-if="currentMeterElements && currentMeterElements.length > 1" class="mt-4">
-        <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-          {{ $t('puissance.selectElement') }}
-        </p>
-        <div class="flex gap-1.5 flex-wrap">
-          <button
-            v-for="element in currentMeterElements"
-            :key="element"
-            @click="selectedElement = element"
-            :class="[
-              'px-3 py-1.5 rounded-md font-medium text-xs transition-all duration-200',
-              selectedElement === element
-                ? 'text-white shadow-md border-2 border-transparent'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
-            ]"
-            :style="selectedElement === element ? {
-              background: `linear-gradient(135deg, ${getCategoryColor(selectedCategory || 'TGBT')} 0%, ${adjustBrightness(getCategoryColor(selectedCategory || 'TGBT'), -15)} 100%)`
-            } : {}"
+      <!-- Optional: Show Comparison Meters -->
+      <div v-if="comparisonMeters.length > 0" class="mt-4">
+        <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">Comparison Meters:</p>
+        <div class="flex flex-wrap gap-2">
+          <div
+            v-for="meter in comparisonMeters"
+            :key="meter.id"
+            class="px-3 py-1 rounded-full text-xs font-medium text-white"
+            :style="{ backgroundColor: meter.color || '#3b82f6' }"
           >
-            {{ element }}
-          </button>
+            {{ meter.name }}
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- CompteurSelector Modal -->
+    <CompteurSelector
+      :is-open="showCompteurSelector"
+      :all-compteurs="allCompteurs"
+      :selected-ids="selectedMeterIds"
+      @apply="handleCompteurSelection"
+      @close="showCompteurSelector = false"
+    />
 
     <!-- Selected Meters Display -->
     <div v-if="selectedMetersFromStore.length > 0" class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
@@ -468,8 +459,11 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler, LineController, BarController } from 'chart.js'
 import AdminLayout from '../components/layout/AdminLayout.vue'
+import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { useEnergyHistoryStore } from '../stores/useEnergyHistoryStore'
 import { useMetersStore } from '../stores/useMetersStore'
+import { useDashboardStore } from '@/stores/useDashboardStore'
+import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
@@ -482,6 +476,30 @@ Chart.register(LineController, BarController, CategoryScale, LinearScale, PointE
 const { t, locale } = useI18n()
 const store = useEnergyHistoryStore()
 const metersStore = useMetersStore()
+const dashboardStore = useDashboardStore()
+const { selectedMeterIds } = storeToRefs(metersStore)
+
+// Use the same composable as DashboardView and PuissanceView for consistency
+const {
+  availableCompteurs: allCompteurs,
+  initialize: initializeCompteurSelection,
+} = useCompteurSelection()
+
+// UI State for Meter Selection
+const showCompteurSelector = ref(false)
+
+// Handle meter selection from modal
+function handleCompteurSelection(selectedIds: string[]) {
+  metersStore.setSelectedMeters(selectedIds)
+  showCompteurSelector.value = false
+}
+
+// Primary meter selection
+const primaryMeter = computed(() => metersStore.selectedMeters[0] || null)
+
+// Comparison meters (remaining selections after primary)
+const comparisonMeters = computed(() => metersStore.selectedMeters.slice(1))
+
 const {
   availableMetrics,
   selectedDates,
@@ -1042,15 +1060,15 @@ function removeDate(dateStr: string) {
 // Lifecycle Hooks
 // ===========================
 onMounted(() => {
-  // Select ALL meters by default instead of just TGBT
-  if (metersStore.selectedMeters.length === 0) {
-    // Select all available meters
-    metersStore.selectAllMeters()
-    selectedCategory.value = null // No specific category filter
-  } else {
-    // Sync category with existing selection
-    selectedCategory.value = metersStore.selectedMeters[0]?.category || null
-  }
+  // Restore and clean up any invalid meter IDs from localStorage
+  metersStore.restoreSelection()
+
+  // Initialize compteur selection (syncs with DashboardView and PuissanceView)
+  initializeCompteurSelection()
+
+  // Select all available meters
+  metersStore.selectAllMeters()
+  selectedCategory.value = null // No specific category filter
 
   // Initialize with today's date
   goToToday()

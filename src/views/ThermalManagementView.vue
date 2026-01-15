@@ -4,14 +4,31 @@
     <div class="mb-8">
       <div class="flex flex-col gap-6">
         <!-- Title Section -->
-        <div>
-          <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
-            {{ t('thermal.pageTitle') }}
-          </h1>
-          <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">
-            {{ t('thermal.subtitle') }}
-          </p>
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
+              {{ t('thermal.pageTitle') }}
+            </h1>
+            <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">
+              {{ t('thermal.subtitle') }}
+            </p>
+          </div>
+          <!-- Manage Sensors Button -->
+          <button
+            @click="showSensorSelector = true"
+            class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium flex items-center gap-2 transition"
+          >
+            <span class="material-symbols-outlined">settings</span>
+            Manage Sensors
+          </button>
         </div>
+
+        <!-- Sensor Selector Modal -->
+        <SensorSelector
+          :is-open="showSensorSelector"
+          @apply="handleSensorSelection"
+          @close="showSensorSelector = false"
+        />
 
         <!-- Status Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -511,13 +528,27 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useSensorsStore } from '@/stores/useSensorsStore'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js'
 import { Line as LineChart, Bar as BarChart } from 'vue-chartjs'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import SensorSelector from '@/components/common/SensorSelector.vue'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 
 const { t } = useI18n()
+const sensorsStore = useSensorsStore()
+
+// UI State
+const showSensorSelector = ref(false)
+
+// Selected sensors
+const selectedSensors = computed(() => sensorsStore.selectedSensors)
+
+function handleSensorSelection(sensorIds: string[]) {
+  sensorsStore.setSelectedSensors(sensorIds)
+  showSensorSelector.value = false
+}
 
 interface Zone {
   id: number

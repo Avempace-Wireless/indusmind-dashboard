@@ -3,128 +3,162 @@
     <!-- Header Section -->
     <div class="mb-8">
       <!-- Title & Description -->
-      <div class="mb-6">
-        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          {{ $t('puissance.pageTitle') }}
-        </h1>
-        <p class="text-gray-600 dark:text-gray-400">
-          Real-time power monitoring and analysis for selected equipment meters
-        </p>
+      <div class="mb-6 flex justify-between items-center gap-4">
+        <div>
+          <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            {{ $t('puissance.pageTitle') }}
+          </h1>
+          <p class="text-gray-600 dark:text-gray-400">
+            {{ $t('puissance.pageDescription') }}
+          </p>
+        </div>
+        <button
+          @click="showCompteurSelector = true"
+          class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
+        >
+          <span class="material-symbols-outlined text-base">tune</span>
+          {{ $t('dashboard.manageMeters') }}
+        </button>
       </div>
 
-      <!-- Controls Section - Two Separate Cards on Same Line -->
-      <div class="flex flex-row gap-4">
-        <!-- Select Meters Card -->
-        <div class="flex-[2] bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600">
-          <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
-            {{ $t('compteur.selector.title') }}
-          </h3>
+      <!-- CompteurSelector Modal -->
+      <CompteurSelector
+        :is-open="showCompteurSelector"
+        :all-compteurs="allCompteurs"
+        :selected-ids="selectedMeterIdsArray"
+        @apply="handleCompteurSelection"
+        @close="showCompteurSelector = false"
+      />
 
-          <!-- Category Cards with Icons Below -->
-          <div class="grid grid-cols-4 gap-2 mb-4">
+      <!-- Controls Section - Compact Meter Selection -->
+      <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-4 border-2 border-slate-300 dark:border-slate-600 mb-4">
+        <div v-if="selectedMeterIds.length > 0 && currentMeterId" class="space-y-3">
+          <!-- Header: Title + Manage Button -->
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+              {{ $t('compteur.selector.title') }}
+            </h3>
             <button
-              v-for="category in meterCategories"
-              :key="category"
-              @click="selectedCategory = selectedCategory === category ? null : category"
-              :class="[
-                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
-                selectedCategory === category
-                  ? 'text-white shadow-lg border-transparent'
-                  : 'bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
-              ]"
-              :style="selectedCategory === category ? {
-                background: `linear-gradient(135deg, ${getCategoryColor(category)} 0%, ${adjustBrightness(getCategoryColor(category), -15)} 100%)`
-              } : {}"
-              :title="$t('common.filter') + ': ' + category"
+              @click="showCompteurSelector = true"
+              class="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-xs rounded-lg flex items-center gap-1 transition whitespace-nowrap"
             >
-              <!-- Category Icon -->
-              <span class="material-symbols-outlined text-xl">{{ getCategoryIcon(category) }}</span>
-              <!-- Category Label -->
-              <span class="text-xs font-medium text-center leading-tight">{{ $t(getCategoryTranslationKey(category)) }}</span>
+              <span class="material-symbols-outlined text-sm">tune</span>
+              {{ $t('dashboard.manageMeters') }}
             </button>
           </div>
 
-          <!-- Elements Selection (if meter has multiple elements) -->
-          <div v-if="currentMeterData?.elements && currentMeterData.elements.length > 1">
-            <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">
-              {{ $t('puissance.selectElement') }}
-            </p>
-            <div class="flex gap-1.5 flex-wrap">
-              <button
-                v-for="element in (currentMeterData?.elements || [])"
-                :key="element"
-                @click="selectedElement = element"
-                :class="[
-                  'px-3 py-1.5 rounded-md font-medium text-xs transition-all duration-200',
-                  selectedElement === element
-                    ? 'text-white shadow-md border-2 border-transparent'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
-                ]"
-                :style="selectedElement === element ? {
-                  background: `linear-gradient(135deg, ${currentMeterData?.color || '#000'} 0%, ${adjustBrightness(currentMeterData?.color || '#000', -15)} 100%)`
-                } : {}"
-              >
-                {{ element }}
-              </button>
-            </div>
+          <!-- All Meters Pills - Grid Layout -->
+          <div v-if="selectedMeterIds.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            <button
+              v-for="(meterId, index) in selectedMeterIds"
+              :key="meterId"
+              @click="selectMeter(index)"
+              :class="[
+                'px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 border-2 flex items-center justify-center gap-1 relative overflow-hidden group',
+                currentMeterIndex === index
+                  ? 'text-white shadow-lg scale-105 border-transparent'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800/50'
+              ]"
+              :style="currentMeterIndex === index ? { backgroundColor: metersStore.getMeterColor(meterId) } : {}"
+            >
+              <!-- Background gradient for non-selected -->
+              <div
+                v-if="currentMeterIndex !== index"
+                class="absolute inset-0 opacity-0 group-hover:opacity-5 transition"
+                :style="{ backgroundColor: metersStore.getMeterColor(meterId) }"
+              />
+
+              <!-- Content -->
+              <span v-if="currentMeterIndex === index" class="material-symbols-outlined text-sm flex-shrink-0">check_circle</span>
+              <span class="truncate relative z-10">{{ getMeterName(meterId) }}</span>
+            </button>
           </div>
         </div>
 
-        <!-- Display Mode Card -->
-        <div class="flex-[1] bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600">
-          <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">
-            {{ $t('puissance.displayMode') }}
-          </p>
-          <div class="grid grid-cols-3 gap-2">
-            <button
-              @click="viewMode = 'overview'"
-              :class="[
-                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
-                viewMode === 'overview'
-                  ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md border-transparent'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
-              ]"
-            >
-              <span class="material-symbols-outlined text-xl">dashboard</span>
-              <span class="text-xs font-medium text-center leading-tight">{{ $t('puissance.views.overview') }}</span>
-            </button>
-            <button
-              @click="viewMode = 'charts'"
-              :class="[
-                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
-                viewMode === 'charts'
-                  ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md border-transparent'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
-              ]"
-            >
-              <span class="material-symbols-outlined text-xl">bar_chart</span>
-              <span class="text-xs font-medium text-center leading-tight">{{ $t('puissance.views.charts') }}</span>
-            </button>
-            <button
-              @click="viewMode = 'tables'"
-              :class="[
-                'px-2 py-2 rounded-lg flex flex-col items-center justify-center gap-1 transition-all duration-300 border-2',
-                viewMode === 'tables'
-                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md border-transparent'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700'
-              ]"
-            >
-              <span class="material-symbols-outlined text-xl">table_chart</span>
-              <span class="text-xs font-medium text-center leading-tight">{{ $t('puissance.views.tables') }}</span>
-            </button>
-          </div>
+        <!-- Empty State -->
+        <div v-else class="text-center py-6 text-gray-500 dark:text-gray-400">
+          <span class="material-symbols-outlined text-3xl mb-2 block opacity-50">inbox</span>
+          <p class="text-sm">{{ $t('dashboard.noMetersSelected.description') }}</p>
         </div>
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="!isMeterDataReady" class="flex items-center justify-center py-12">
+    <!-- Loading State - Improved with current meter info -->
+    <div v-if="!isMeterDataReady && selectedMeterIds.length > 0" class="flex items-center justify-center py-16">
       <div class="text-center">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
-        <p class="mt-4 text-slate-600 dark:text-slate-400">Loading meter data...</p>
+        <div class="inline-block mb-4">
+          <div class="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 dark:border-slate-700 border-t-teal-600"></div>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ $t('common.loading') }} {{ currentMeterId ? getMeterName(currentMeterId) : $t('common.meterData') }}</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-400">{{ $t('puissance.labels.fetchingData') }}</p>
+        <div class="mt-4 flex items-center justify-center gap-2">
+          <div class="w-2 h-2 rounded-full bg-teal-600 animate-pulse"></div>
+          <span class="text-xs text-slate-500 dark:text-slate-500">{{ $t('common.meter') }} {{ currentMeterIndex + 1 }} {{ $t('common.of') }} {{ selectedMeterIds.length }}</span>
+        </div>
       </div>
-    </div>    <!-- Overview View: 2-Column Layout (Widgets Left, Charts Right) -->
-    <div v-if="isMeterDataReady && currentMeterData && viewMode === 'overview'" class="space-y-8 animate-fadeIn">
+    </div>
+
+    <!-- No Data Message - When meter has no elements/data -->
+    <div v-else-if="isMeterDataReady && currentMeterData && (!currentMeterData.elements || currentMeterData.elements.length === 0)" class="flex items-center justify-center py-16">
+      <div class="text-center max-w-md">
+        <span class="material-symbols-outlined text-5xl mb-3 block text-slate-400">info</span>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ $t('puissance.labels.noElementData') }}</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          <strong>{{ currentMeterId ? getMeterName(currentMeterId) : $t('common.thisMeter') }}</strong> {{ $t('puissance.labels.noElementBreakdown') }}
+        </p>
+        <p class="text-xs text-slate-500 dark:text-slate-500">
+          {{ $t('puissance.labels.tryDifferentMeter') }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Display Mode Toggle - Only show when data is ready AND has elements -->
+    <div v-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0)" class="flex items-center justify-between mb-6 px-1">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+        <span class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">{{ $t('puissance.displayMode') }}</span>
+      </h2>
+      <div class="flex gap-2">
+        <button
+          @click="viewMode = 'overview'"
+          :class="[
+            'px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 border text-sm font-medium',
+            viewMode === 'overview'
+              ? 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-md border-transparent'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-700'
+          ]"
+        >
+          <span class="material-symbols-outlined">dashboard</span>
+          {{ $t('puissance.tabs.overview') }}
+        </button>
+        <button
+          @click="viewMode = 'charts'"
+          :class="[
+            'px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 border text-sm font-medium',
+            viewMode === 'charts'
+              ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md border-transparent'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-700'
+          ]"
+        >
+          <span class="material-symbols-outlined">bar_chart</span>
+          {{ $t('puissance.tabs.charts') }}
+        </button>
+        <button
+          @click="viewMode = 'tables'"
+          :class="[
+            'px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 border text-sm font-medium',
+            viewMode === 'tables'
+              ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md border-transparent'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800 border-gray-200 dark:border-slate-700'
+          ]"
+        >
+          <span class="material-symbols-outlined">table_chart</span>
+          {{ $t('puissance.tabs.tables') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Overview View: 2-Column Layout (Widgets Left, Charts Right) - Only if has elements -->
+    <div v-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0) && viewMode === 'overview'" class="space-y-8 animate-fadeIn">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left Column: KPI Cards (1 col) -->
         <div v-if="displayElements.kpis" class="lg:col-span-1 space-y-4">
@@ -158,7 +192,7 @@
                 </div>
               <button
                 @click="showChartModal('monthly')"
-                class="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition border border-blue-200 dark:border-blue-800"
+                :class="['px-3 py-2 rounded-lg text-sm font-medium hover:transition border', getDetailButtonClasses(currentMeterData.color)]"
               >
                 <span class="material-symbols-outlined inline text-lg align-text-bottom mr-1">zoom_in</span>
                 {{ $t('common.viewDetails') }}
@@ -183,7 +217,7 @@
                 </div>
                 <button
                   @click="showChartModal('daily')"
-                  class="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition border border-blue-200 dark:border-blue-800"
+                  :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
                 >
                   <span class="material-symbols-outlined text-lg">zoom_in</span>
                 </button>
@@ -205,7 +239,7 @@
                 </div>
                 <button
                   @click="showChartModal('hourly')"
-                  class="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition border border-blue-200 dark:border-blue-800"
+                  :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
                 >
                   <span class="material-symbols-outlined text-lg">zoom_in</span>
                 </button>
@@ -223,8 +257,8 @@
       </div>
     </div>
 
-    <!-- Charts View: Full Width Charts -->
-    <div v-else-if="isMeterDataReady && currentMeterData && viewMode === 'charts'" class="space-y-8 animate-fadeIn">
+    <!-- Charts View: Full Width Charts - Only if has elements -->
+    <div v-else-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0) && viewMode === 'charts'" class="space-y-8 animate-fadeIn">
       <!-- Monthly Chart -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -234,7 +268,7 @@
           </div>
           <button
             @click="showChartModal('monthly')"
-            class="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition border border-blue-200 dark:border-blue-800"
+            :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
           >
             <span class="material-symbols-outlined inline text-lg align-text-bottom mr-1">zoom_in</span>
             {{ $t('common.viewDetails') }}
@@ -259,7 +293,7 @@
             </div>
             <button
               @click="showChartModal('daily')"
-              class="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition border border-blue-200 dark:border-blue-800"
+              :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
             >
               <span class="material-symbols-outlined text-lg">zoom_in</span>
             </button>
@@ -281,7 +315,7 @@
             </div>
             <button
               @click="showChartModal('hourly')"
-              class="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition border border-blue-200 dark:border-blue-800"
+              :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
             >
               <span class="material-symbols-outlined text-lg">zoom_in</span>
             </button>
@@ -297,8 +331,8 @@
       </div>
     </div>
 
-    <!-- Tables View: Full Width Tables -->
-    <div v-else-if="isMeterDataReady && currentMeterData && viewMode === 'tables'" class="space-y-8 animate-fadeIn">
+    <!-- Tables View: Full Width Tables - Only if has elements -->
+    <div v-else-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0) && viewMode === 'tables'" class="space-y-8 animate-fadeIn">
       <!-- Hourly Table -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -308,7 +342,7 @@
           </div>
           <button
             @click="showTableModal('hourly')"
-            class="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-200 dark:border-purple-800"
+            :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
           >
             <span class="material-symbols-outlined inline text-lg align-text-bottom mr-1">zoom_in</span>
             {{ $t('common.viewDetails') }}
@@ -318,7 +352,7 @@
           :title="$t('puissance.tables.hourlyPower', { meter: currentMeterData.name })"
           :realtime-label="$t('puissance.tables.realtimeLastDay')"
           :columns="[
-            { key: 'timestamp', label: $t('puissance.tables.columns.timestamp'), format: 'default' },
+            { key: 'timestamp', label: $t('puissance.tables.columns.timestamp'), format: 'time' },
             { key: 'power', label: $t('puissance.tables.columns.power'), format: 'number' },
           ]"
           :data="currentMeterData.hourlyTableData"
@@ -336,7 +370,7 @@
           </div>
             <button
               @click="showTableModal('daily')"
-              class="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-200 dark:border-purple-800"
+              :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
             >
               <span class="material-symbols-outlined text-lg">zoom_in</span>
             </button>
@@ -345,7 +379,7 @@
             :title="$t('puissance.tables.dailyTotal')"
             :realtime-label="$t('puissance.tables.realtimeMonth')"
             :columns="[
-              { key: 'timestamp', label: $t('puissance.tables.columns.timestamp'), format: 'default' },
+              { key: 'timestamp', label: $t('puissance.tables.columns.date'), format: 'date' },
               { key: 'power', label: $t('puissance.tables.columns.dailyPower'), format: 'number' },
             ]"
             :data="currentMeterData.dailyTableData"
@@ -361,7 +395,7 @@
           </div>
             <button
               @click="showTableModal('monthly')"
-              class="px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-sm font-medium hover:bg-purple-100 dark:hover:bg-purple-900/30 transition border border-purple-200 dark:border-purple-800"
+              :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
             >
               <span class="material-symbols-outlined text-lg">zoom_in</span>
             </button>
@@ -370,7 +404,7 @@
             :title="$t('puissance.tables.dailyAverage')"
             :realtime-label="$t('puissance.tables.realtimeMonth')"
             :columns="[
-              { key: 'timestamp', label: $t('puissance.tables.columns.timestamp'), format: 'default' },
+              { key: 'timestamp', label: $t('puissance.tables.columns.month'), format: 'date' },
               { key: 'power', label: $t('puissance.tables.columns.averagePower'), format: 'number' },
             ]"
             :data="currentMeterData.dailyAverageData"
@@ -408,13 +442,14 @@
       :hourly-data="currentMeterData.hourlyTableData"
       :daily-data="currentMeterData.dailyTableData"
       :monthly-data="currentMeterData.dailyAverageData"
+      :initial-period="tableModalData.initialPeriod"
       @close="tableModalOpen = false"
     />
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -423,16 +458,115 @@ import BarChart from '@/components/puissance/BarChart.vue'
 import DataTable from '@/components/puissance/DataTable.vue'
 import ChartDetailModal from '@/components/puissance/ChartDetailModal.vue'
 import TableDetailModal from '@/components/puissance/TableDetailModal.vue'
+import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { useMetersStore } from '@/stores/useMetersStore'
+import { useDashboardStore } from '@/stores/useDashboardStore'
+import { useCompteurSelection } from '@/composables/useCompteurSelection'
+import { getMeterColorByIndex } from '@/utils/meterColors'
 import type { Meter, KPIValues } from '@/data/metersData'
 
 const { t } = useI18n()
 
-// ✅ USE CENTRALIZED METER STORE
+// ✅ USE COMPOSABLE FOR CENTRALIZED METER MANAGEMENT
 const metersStore = useMetersStore()
-const { selectedMeterIds } = storeToRefs(metersStore)
+const dashboardStore = useDashboardStore()
+
+// Use the same composable as DashboardView for consistency
+const {
+  selectedCompteurIds,
+  availableCompteurs: allCompteurs,
+  initialize: initializeCompteurSelection,
+} = useCompteurSelection()
+
+// Get selected meter IDs as a reactive computed
+const selectedMeterIds = computed(() => selectedCompteurIds.value)
+
+// Create a separate ref that tracks the array for prop passing
+const selectedMeterIdsArray = computed(() => [...selectedMeterIds.value])
+
+// ✅ TRACK CURRENTLY DISPLAYED METER
+const currentMeterIndex = ref(0)
+const currentMeterId = computed(() => selectedMeterIds.value[currentMeterIndex.value] || null)
+
+// Functions to navigate between selected meters
+function selectMeter(index: number) {
+  currentMeterIndex.value = index
+}
+
+function previousMeter() {
+  if (currentMeterIndex.value > 0) {
+    currentMeterIndex.value--
+  }
+}
+
+function nextMeter() {
+  if (currentMeterIndex.value < selectedMeterIds.value.length - 1) {
+    currentMeterIndex.value++
+  }
+}
+
+// Watch for changes in selectedMeterIds to keep index valid
+watch(selectedMeterIds, (newIds) => {
+  if (currentMeterIndex.value >= newIds.length && newIds.length > 0) {
+    currentMeterIndex.value = newIds.length - 1
+  } else if (newIds.length === 0) {
+    currentMeterIndex.value = 0
+  }
+})
+
+// UI State
+const showCompteurSelector = ref(false)
+
+// Handle meter selection from modal
+function handleCompteurSelection(selectedIds: string[]) {
+  metersStore.setSelectedMeters(selectedIds)
+  showCompteurSelector.value = false
+}
+
+// Helper function to get meter name by ID
+function getMeterName(meterId: string): string {
+  const compteur = allCompteurs.value.find(c => c.id === meterId)
+  return compteur?.name || 'Unknown'
+}
+
+// Helper function to get meter color by index
+function getMeterColorByIndexHelper(index: number): string {
+  return getMeterColorByIndex(index).hex
+}
+
+/**
+ * Get button color classes based on meter's color for "Details" buttons
+ * Provides color-coded styling that matches the selected meter
+ */
+function getDetailButtonClasses(meterColor: string): string {
+  const colorMap: Record<string, string> = {
+    'red': 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 border-red-200 dark:border-red-800',
+    'green': 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 border-green-200 dark:border-green-800',
+    'blue': 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 border-blue-200 dark:border-blue-800',
+    'yellow': 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800',
+  }
+  return colorMap[meterColor] || colorMap['blue'] // Default to blue
+}
 
 // ===========================
+// AUTO-SELECT 8 METERS ON MOUNT
+// ===========================
+onMounted(() => {
+  // Initialize compteur selection (syncs with DashboardView)
+  initializeCompteurSelection()
+
+  // Restore and clean up any invalid meter IDs from localStorage
+  metersStore.restoreSelection()
+
+  // Auto-select first 8 meters if none are selected after restoration
+  if (selectedMeterIds.value.length === 0 && dashboardStore.compteurs.length > 0) {
+    const defaultSelection = dashboardStore.compteurs.slice(0, 8).map(c => c.id)
+    metersStore.setSelectedMeters(defaultSelection)
+    console.log('Auto-selected 8 meters for Puissance view:', defaultSelection)
+  } else if (selectedMeterIds.value.length > 0) {
+    console.log('Restored selected meters for Puissance view:', selectedMeterIds.value)
+  }
+})
 // Type for Transformed Data
 // ===========================
 interface TransformedMeterData {
@@ -445,9 +579,9 @@ interface TransformedMeterData {
   hourlyData: { labels: string[]; values: number[] }
   dailyData: { labels: string[]; values: number[] }
   monthlyData: { labels: string[]; values: number[] }
-  hourlyTableData: Array<{ time: string; power: number; efficiency: number; status: string }>
-  dailyTableData: Array<{ date: string; total: number; average: number }>
-  dailyAverageData: Array<{ month: string; average: number; days: number }>
+  hourlyTableData: Array<{ timestamp: string; power: number; efficiency: number; status: string }>
+  dailyTableData: Array<{ timestamp: string; power: number; average: number }>
+  dailyAverageData: Array<{ timestamp: string; power: number; days: number }>
 }
 
 // Selected meter (single-meter view, but from the centralized selected list)
@@ -475,6 +609,7 @@ const chartModalData = ref({
 const tableModalData = ref({
   title: '',
   columns: [] as any[],
+  initialPeriod: 'hourly' as 'hourly' | 'daily' | 'monthly',
 })
 
 // ✅ ALL AVAILABLE METERS FROM CENTRALIZED STORE
@@ -539,20 +674,13 @@ const visibleKpiKeys = computed(() => {
  * Current meter data - using centralized metersData.ts
  * Returns full meter data with time series and KPIs
  * If element is selected, returns element-specific data
+ * Updates when currentMeterId changes (navigation between selected meters)
  */
 const currentMeterData = computed<TransformedMeterData | null>(() => {
-  // Find the currently selected meter from the store
-  const selectedMeterObj = metersStore.allMeters.find(m => m.id === selectedMeter.value)
+  // Use currentMeterId which changes when user navigates between selected meters
+  if (!currentMeterId.value) return null
 
-  // If no meter found, default to first available meter
-  if (!selectedMeterObj) {
-    const firstMeter = metersStore.allMeters[0]
-    if (!firstMeter) return null
-    selectedMeter.value = firstMeter.id
-    return transformMeterData(firstMeter.id)
-  }
-
-  return transformMeterData(selectedMeterObj.id)
+  return transformMeterData(currentMeterId.value)
 })
 
 /**
@@ -595,19 +723,19 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
           values: elementData.timeSeries.monthly.map(d => d.value)
         },
         hourlyTableData: elementData.timeSeries.hourly.map((d, i) => ({
-          time: d.timestamp,
+          timestamp: d.timestamp,
           power: d.value,
           efficiency: Math.round(85 + Math.random() * 10),
           status: d.value > elementAvgPower ? 'high' : 'normal'
         })),
         dailyTableData: elementData.timeSeries.daily.map(d => ({
-          date: d.timestamp,
-          total: d.value * 24,
+          timestamp: d.timestamp,
+          power: d.value * 24,
           average: d.value
         })),
         dailyAverageData: elementData.timeSeries.monthly.map(d => ({
-          month: d.timestamp,
-          average: d.value,
+          timestamp: d.timestamp,
+          power: d.value,
           days: 30
         }))
       }
@@ -635,19 +763,19 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
       values: fullData.timeSeries.monthly.map(d => d.value)
     },
     hourlyTableData: fullData.timeSeries.hourly.map((d, i) => ({
-      time: d.timestamp,
+      timestamp: d.timestamp,
       power: d.value,
       efficiency: Math.round(85 + Math.random() * 10),
       status: d.value > avgPower ? 'high' : 'normal'
     })),
     dailyTableData: fullData.timeSeries.daily.map(d => ({
-      date: d.timestamp,
-      total: d.value * 24,
+      timestamp: d.timestamp,
+      power: d.value * 24,
       average: d.value
     })),
     dailyAverageData: fullData.timeSeries.monthly.map(d => ({
-      month: d.timestamp,
-      average: d.value,
+      timestamp: d.timestamp,
+      power: d.value,
       days: 30
     }))
   }
@@ -803,24 +931,29 @@ const showTableModal = (tableType: 'hourly' | 'daily' | 'monthly') => {
   if (!currentMeterData.value) return
 
   let title = ''
-  const columns = [
-    { key: 'timestamp', label: t('puissance.tables.columns.timestamp'), format: 'default' as const },
-    { key: 'power', label: t('puissance.tables.columns.power'), format: 'number' as const },
-  ]
+  let format: 'time' | 'date' | 'datetime' | 'number' | 'default' = 'time'
 
   switch (tableType) {
     case 'hourly':
       title = t('puissance.tables.hourlyPower', { meter: currentMeterData.value.name })
+      format = 'time'
       break
     case 'daily':
       title = t('puissance.tables.dailyTotal')
+      format = 'date'
       break
     case 'monthly':
       title = t('puissance.tables.dailyAverage')
+      format = 'date'
       break
   }
 
-  tableModalData.value = { title, columns }
+  const columns = [
+    { key: 'timestamp', label: t('puissance.tables.columns.timestamp'), format },
+    { key: 'power', label: t('puissance.tables.columns.power'), format: 'number' as const },
+  ]
+
+  tableModalData.value = { title, columns, initialPeriod: tableType }
   tableModalOpen.value = true
 }
 </script>
@@ -839,6 +972,14 @@ const showTableModal = (tableType: 'hourly' | 'daily' | 'monthly') => {
 
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-in-out;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 
 ::-webkit-scrollbar {

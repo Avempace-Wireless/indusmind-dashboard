@@ -126,38 +126,62 @@ export const useMetersStore = defineStore('meters', () => {
   /**
    * Restore selection from localStorage
    * Called on app startup (in router guard or App.vue onMounted)
-   * Falls back to default (first 4 meters) if no saved selection
+   * Validates and cleans up invalid IDs (e.g., old 'compteur-X' format)
+   * Falls back to first 8 meters if no valid selection found
    */
   function restoreSelection() {
     try {
       const saved = localStorage.getItem('meters:selected')
       if (saved) {
         const restored = JSON.parse(saved)
-        // Validate that restored IDs still exist
-        const validIds = restored.filter((id: string) =>
-          allMeters.value.some(m => m.id === id)
-        )
-        if (validIds.length > 0) {
-          selectedMeterIds.value = validIds
-          return
+        if (Array.isArray(restored)) {
+          // Validate that restored IDs still exist in current meter list
+          const validIds = restored.filter((id: string) =>
+            allMeters.value.some(m => m.id === id)
+          )
+
+          // If we have valid IDs and some were filtered out, clean up localStorage
+          if (validIds.length > 0 && validIds.length < restored.length) {
+            console.warn('Cleaning up invalid meter IDs from localStorage:', restored.filter(id => !validIds.includes(id)))
+            selectedMeterIds.value = validIds
+            persistSelection() // Save cleaned list
+            return
+          }
+
+          // If all IDs are valid, use them
+          if (validIds.length > 0) {
+            selectedMeterIds.value = validIds
+            return
+          }
         }
       }
-      // Default: select first 4 meters if no valid saved selection
-      selectAllMeters()
+      // Default: select first 8 meters if no valid saved selection
+      selectedMeterIds.value = allMeters.value.slice(0, 8).map(m => m.id)
+      persistSelection()
     } catch (e) {
       console.warn('Failed to restore meter selection:', e)
-      // On error, select all as fallback
-      selectAllMeters()
+      // On error, select first 8 as fallback
+      selectedMeterIds.value = allMeters.value.slice(0, 8).map(m => m.id)
+      try {
+        persistSelection()
+      } catch (e2) {
+        console.warn('Failed to save fallback selection:', e2)
+      }
     }
   }
 
   /**
    * Persist current selection to localStorage
+   * Validates IDs before persisting to ensure data integrity
    * Called automatically after any selection change
    */
   function persistSelection() {
     try {
-      localStorage.setItem('meters:selected', JSON.stringify(selectedMeterIds.value))
+      // Only save valid IDs that exist in allMeters
+      const validIds = selectedMeterIds.value.filter((id: string) =>
+        allMeters.value.some(m => m.id === id)
+      )
+      localStorage.setItem('meters:selected', JSON.stringify(validIds))
     } catch (e) {
       console.warn('Failed to persist meter selection:', e)
       // Quota exceeded or other error, continue without persistence
