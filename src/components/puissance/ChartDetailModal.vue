@@ -42,8 +42,15 @@
               />
             </div>
 
+            <!-- No Data State -->
+            <div v-if="periodData.labels.length === 0" class="flex items-center justify-center h-96 bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+              <div class="text-center">
+                <p class="text-gray-500 dark:text-gray-400 text-lg">{{ t('puissance.labels.noElementData') }}</p>
+              </div>
+            </div>
+
             <!-- Chart Container with Range Slider -->
-            <div class="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 mb-4">
+            <div v-else class="bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700 mb-4">
               <div style="position: relative; height: 400px;">
                 <canvas ref="detailChartRef"></canvas>
               </div>
@@ -60,7 +67,7 @@
             </div>
 
             <!-- Statistics -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div v-if="periodData.labels.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
                 <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ t('puissance.labels.average') }}</p>
                 <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ avgValue.toFixed(1) }} kW</p>
@@ -189,15 +196,15 @@ const onRangeChange = (newRange: { start: number; end: number }) => {
 const periodData = computed(() => {
   switch (selectedPeriod.value) {
     case 'hour':
-      return props.hourlyData || { labels: props.labels, values: props.data }
+      return props.hourlyData || { labels: [], values: [] }
     case 'day':
-      return props.dailyData || { labels: props.labels, values: props.data }
+      return props.dailyData || { labels: [], values: [] }
     case 'week':
-      return props.weeklyData || props.dailyData || { labels: props.labels, values: props.data }
+      return props.weeklyData || props.dailyData || { labels: [], values: [] }
     case 'month':
-      return props.monthlyData || { labels: props.labels, values: props.data }
+      return props.monthlyData || { labels: [], values: [] }
     case 'year':
-      return props.yearlyData || props.monthlyData || { labels: props.labels, values: props.data }
+      return props.yearlyData || props.monthlyData || { labels: [], values: [] }
     default:
       return { labels: props.labels, values: props.data }
   }
