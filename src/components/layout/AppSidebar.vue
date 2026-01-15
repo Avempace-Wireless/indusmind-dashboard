@@ -94,7 +94,7 @@
                   />
                 </button>
                 <router-link
-                  v-else-if="item.path"
+                  v-else-if="item.path && !item.disabled"
                   :to="item.path"
                   :class="[
                     'menu-item group',
@@ -123,6 +123,28 @@
                     >
                   </span>
                 </router-link>
+                <div
+                  v-else-if="item.path && item.disabled"
+                  :class="[
+                    'menu-item group opacity-50 cursor-not-allowed',
+                    'menu-item-inactive text-gray-400 dark:text-gray-600',
+                  ]"
+                >
+                  <span class="menu-item-icon-inactive">
+                    <component :is="item.icon" />
+                  </span>
+                  <span
+                    v-if="isExpanded || isHovered || isMobileOpen"
+                    class="menu-item-text flex items-center gap-2"
+                  >
+                    {{ item.name }}
+                    <span
+                      v-if="item.comingSoon"
+                      class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-300 text-gray-700 dark:bg-gray-600 dark:text-gray-300"
+                      >{{ t('sidebar.comingSoon') }}</span
+                    >
+                  </span>
+                </div>
                 <transition
                   @enter="startTransition"
                   @after-enter="endTransition"
@@ -257,60 +279,77 @@ const menuGroups = computed(() => [
     ],
   },
   {
-    title: t('sidebar.analysis'),
+    title: t('sidebar.analysis') + ' & ' + t('sidebar.reports'),
     items: [
-      {
-        icon: PieChartIcon,
-        name: t('sidebar.baseLoad'),
-        path: '/base-load',
-      },
-      {
+ /*      {
         icon: BarChartIcon,
         name: t('sidebar.peakDemand'),
         path: '/peak-demand',
-      },
+        disabled: true,
+        comingSoon: true,
+      }, */
       {
         icon: CartIcon,
         name: t('sidebar.electricalConsumption'),
         path: '/consumption',
+        disabled: true,
+        comingSoon: true,
       },
       {
         icon: PieChartIcon,
-        name: t('sidebar.analysisView'),
-        path: '/analysis',
+        name: t('sidebar.baseLoad'),
+        path: '/base-load',
+        disabled: true,
+        comingSoon: true,
       },
       {
         icon: CartIcon,
         name: t('sidebar.costAnalysis'),
         path: '/cost-analysis',
+        disabled: true,
+        comingSoon: true,
+      },
+       {
+        icon: PageIcon,
+        name: t('sidebar.reportsView'),
+        path: '/reports',
+        disabled: true,
+        comingSoon: true,
       },
     ],
   },
-    {
+  {
     title: t('sidebar.equipment'),
     items: [
       {
         icon: BoxIcon,
         name: t('sidebar.equipment'),
         path: '/equipment',
+        disabled: true,
+        comingSoon: true,
       },
-   /*    {
-        icon: UserCircleIcon,
-        name: t('sidebar.sitesLocations'),
-        path: '/locations',
+
+/*       {
+        icon: PlugInIcon,
+        name: t('sidebar.maintenance'),
+        path: '/maintenance',
+        disabled: true,
+        comingSoon: true,
       }, */
     ],
   },
-  {
+/*   {
     title: t('sidebar.reports'),
     items: [
       {
         icon: PageIcon,
         name: t('sidebar.reportsView'),
         path: '/reports',
+        disabled: true,
+        comingSoon: true,
       },
     ],
-  },
+  }, */
   {
     title: t('sidebar.alerts'),
     items: [
@@ -318,11 +357,15 @@ const menuGroups = computed(() => [
         icon: BellIcon,
         name: t('sidebar.alertsView'),
         path: '/alerts',
+        disabled: true,
+        comingSoon: true,
       },
       {
         icon: TaskIcon,
         name: t('sidebar.alertRules'),
         path: '/alert-config',
+        disabled: true,
+        comingSoon: true,
       },
     ],
   },

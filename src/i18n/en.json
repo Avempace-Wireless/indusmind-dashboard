@@ -188,7 +188,8 @@
     "equipment": "Equipment",
     "sitesLocations": "Sites & Locations",
     "settings": "Settings",
-    "userManagement": "User Management"
+    "userManagement": "User Management",
+    "comingSoon": "Coming Soon"
   },
   "dashboard": {
     "title": "Real-time Monitoring",
