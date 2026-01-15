@@ -5,6 +5,11 @@
 Successfully refactored **EnergyHistorical.vue** to be fully compatible with the centralized meter selection system, ensuring consistency with Dashboard, Power (Puissance), and Comparison views.
 
 ---
+## Executive Summary
+
+Successfully refactored **EnergyHistorical.vue** to be fully compatible with the centralized meter selection system, ensuring consistency with Dashboard, Power (Puissance), and Comparison views.
+
+---
 
 ## Problem Analysis
 
