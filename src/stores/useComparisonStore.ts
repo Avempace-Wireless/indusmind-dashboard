@@ -77,9 +77,8 @@ export const useComparisonStore = defineStore('comparison', () => {
   // ===========================
 
   const availableMeters = computed(() => {
-    return dashboardStore.compteurs.filter(c =>
-      ['TGBT', 'Compresseurs', 'Clim', 'Éclairage'].includes(c.name)
-    )
+    // Use all compteur data as available meters to match centralized selection
+    return dashboardStore.compteurs
   })
 
   /**
@@ -204,7 +203,7 @@ export const useComparisonStore = defineStore('comparison', () => {
           id: meter.id,
           label: meter.name,
           value,
-          color: getMeterColor(meter.name)
+          color: metersStore.getMeterColor(meter.id)
         })
       })
     } else {
@@ -219,7 +218,7 @@ export const useComparisonStore = defineStore('comparison', () => {
             periodId: lbl,
             periodLabel: lbl,
             value,
-            color: getMeterColor(meter.name)
+            color: metersStore.getMeterColor(meter.id)
           })
         })
       })
