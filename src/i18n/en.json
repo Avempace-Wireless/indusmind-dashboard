@@ -12,6 +12,7 @@
     "export": "Export",
     "import": "Import",
     "loading": "Loading...",
+    "meterData": "meter data",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
@@ -27,7 +28,19 @@
       "ampere": "A",
       "kwh": "kWh"
     },
-    "viewDetails": "View Details"
+    "viewDetails": "View Details",
+    "selectUpTo": "Select up to",
+    "items": "items",
+    "noResults": "No results found",
+    "selected": "selected",
+    "maxSelectionReached": "Maximum selection reached (8 max)",
+    "clearAll": "Clear All",
+    "apply": "Apply",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page",
+    "of": "of",
+    "itemsPerPage": "Items per page"
   },
   "auth": {
     "login": {
@@ -251,6 +264,7 @@
       "deselectAll": "Deselect all",
       "selected": "{count} selected",
       "noResults": "No meters found",
+      "maxSelectionWarning": "Maximum selection of 8 meters reached. Deselect a meter to add another.",
       "apply": "Apply",
       "cancel": "Cancel",
       "categories": {
@@ -343,17 +357,23 @@
   },
   "puissance": {
     "pageTitle": "Electrical Consumption – Power",
+    "pageDescription": "Real-time power monitoring and analysis for selected equipment meters",
     "displayMode": "Display Mode",
     "selectElement": "Select Element",
     "displaying": "Displaying",
-      "views": {
-        "overview": "Overview",
-        "charts": "Charts",
-        "tables": "Tables"
-      },
-      "overview": {
-        "yearly": "Yearly Overview"
-      },
+    "tabs": {
+      "overview": "Overview",
+      "charts": "Charts",
+      "tables": "Tables"
+    },
+    "views": {
+      "overview": "Overview",
+      "charts": "Charts",
+      "tables": "Tables"
+    },
+    "overview": {
+      "yearly": "Yearly Overview"
+    },
     "sidebar": {
       "title": "ELECTRICAL MONITORING",
       "globalView": "Global View",
@@ -396,7 +416,15 @@
       "month": "Last 12 months",
       "year": "Yearly overview"
     },
+    "periods": {
+      "hour": "Hourly",
+      "day": "Daily",
+      "week": "Weekly",
+      "month": "Monthly",
+      "year": "Yearly"
+    },
     "labels": {
+      "periodSelection": "Period Selection",
       "metrics": "Metrics",
       "daily": "Daily",
       "hourly": "Hourly",
@@ -407,7 +435,11 @@
       "average": "Average",
       "peak": "Peak",
       "minimum": "Minimum",
-      "total": "Total"
+      "total": "Total",
+      "fetchingData": "Fetching data...",
+      "noElementData": "No Element Data Available",
+      "noElementBreakdown": "No detailed breakdown available",
+      "tryDifferentMeter": "Try selecting a different meter"
     },
     "tables": {
       "hourlyPower": "Power {meter} Hour by Hour",
@@ -417,8 +449,13 @@
       "realtimeMonth": "Realtime – Current month so far",
       "columns": {
         "timestamp": "Timestamp",
+        "time": "Time",
+        "date": "Date",
+        "month": "Month",
         "power": "Power (kW)",
+        "total": "Total (kW)",
         "dailyPower": "Daily Power (kW)",
+        "average": "Average (kW)",
         "averagePower": "Average Daily Power (kW)"
       }
     }
@@ -585,10 +622,29 @@
       "deselectAll": "Deselect all"
     }
   },
+  "tableDetailModal": {
+    "searchPlaceholder": "Search records...",
+    "noDataFound": "No data matching your search",
+    "showing": "Showing",
+    "to": "to",
+    "of": "of",
+    "exportCsv": "Export CSV",
+    "original": "Original",
+    "hourly": "Hourly",
+    "daily": "Daily",
+    "monthly": "Monthly"
+  },
   "thermal": {
     "pageTitle": "Temperature Control",
+    "title": "Temperature Control",
     "subtitle": "Multi-zone temperature monitoring and control",
     "menuItem": "Temperature Control",
+    "manageSensors": "Manage Sensors",
+    "noSensorsSelected": {
+      "title": "No sensors selected",
+      "description": "Select temperature sensors to view their data",
+      "action": "Select Sensors"
+    },
     "zone": "Zone {number}",
     "currentTemp": "Temperature",
     "maxTemp": "Max Temp",
