@@ -9,14 +9,33 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button v-for="m in meterList" :key="m" @click="selectMeter(m)"
-          :class="['px-4 py-2 rounded font-medium', selectedMeter===m ? 'text-white':'text-gray-700']"
-          :style="selectedMeter===m ? {'backgroundColor': meters[m].color } : {'backgroundColor':'#f3f4f6'}">
-          {{ meters[m].name }}
+      <div class="flex items-center gap-4">
+        <!-- Primary Meter Selection -->
+        <button
+          @click="showMeterSelector = true"
+          class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium flex items-center gap-2 transition"
+        >
+          <span class="material-symbols-outlined">tune</span>
+          {{ primaryMeter ? primaryMeter.name : 'Select Meter' }}
+        </button>
+
+        <!-- Comparison Toggle -->
+        <button
+          @click="showComparisonPanel = !showComparisonPanel"
+          :class="['px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition', showComparisonPanel ? 'bg-secondary-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300']"
+        >
+          <span class="material-symbols-outlined">compare_arrows</span>
+          Compare
         </button>
       </div>
     </div>
+
+    <!-- Meter Selector Modal -->
+    <MeterSelector
+      :is-open="showMeterSelector"
+      @apply="handlePrimaryMeterSelection"
+      @close="showMeterSelector = false"
+    />
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       <div class="lg:col-span-2 grid grid-cols-3 gap-4">
@@ -73,17 +92,43 @@
 
 <script setup lang="ts">
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import MeterSelector from '@/components/common/MeterSelector.vue'
 import KPICard from '@/components/puissance/KPICard.vue'
 import PowerBarChart from '@/components/puissance/PowerBarChart.vue'
 import DataTable from '@/components/puissance/DataTable.vue'
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
+import { useMetersStore } from '@/stores/useMetersStore'
 import { puissanceMeters, meterList as importedMeterList } from '@/data/puissanceMock'
 
 const meters = puissanceMeters as any
 const meterList = importedMeterList
+const metersStore = useMetersStore()
 
-const selectedMeter = ref('compresseur')
-function selectMeter(id:string){ selectedMeter.value = id }
+// Initialize default meter selection on mount
+onMounted(() => {
+  // Restore selection from localStorage or set default (first 8 meters)
+  metersStore.restoreSelection()
+})
+
+// UI State
+const showMeterSelector = ref(false)
+const showComparisonPanel = ref(false)
+
+// Primary meter selection
+const primaryMeter = computed(() => metersStore.selectedMeters[0] || null)
+
+function handlePrimaryMeterSelection(meterIds: string[]) {
+  metersStore.setSelectedMeters([meterIds[0]]) // Only keep first as primary
+  showMeterSelector.value = false
+}
+
+// For backward compatibility with existing data structure
+const selectedMeter = computed(() => {
+  if (primaryMeter.value) {
+    return importedMeterList.find(m => m === primaryMeter.value.id) || 'compresseur'
+  }
+  return 'compresseur'
+})
 
 // KPI list derived from selected meter
 const kpiList = computed(()=>{
@@ -116,7 +161,4 @@ const dailyAvgRows = computed(()=> meters[selectedMeter.value].dailyPower.map((p
 const hourlyColumns = [{ key: 'timestamp', label: 'Timestamp' }, { key: 'power', label: 'Puissance (kW)' }]
 const dailyColumns = [{ key: 'date', label: 'Date' }, { key: 'power', label: 'Puissance journalière (kW)' }]
 const dailyAvgColumns = [{ key: 'date', label: 'Date' }, { key: 'avg', label: 'Puissance moyenne journalière (kW)' }]
-
-// initial selection default
-selectMeter(selectedMeter.value)
 </script>

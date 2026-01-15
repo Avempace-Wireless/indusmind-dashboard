@@ -12,20 +12,35 @@
     "export": "Exporter",
     "import": "Importer",
     "loading": "Chargement...",
+    "meterData": "données du compteur",
     "error": "Erreur",
     "success": "Succès",
     "warning": "Avertissement",
     "info": "Information",
-    "justNow": "À l'instant",    "meter": "compteur",
+    "justNow": "À l'instant",
+    "meter": "compteur",
     "meters": "compteurs",
-    "allMeters": "Tous les compteurs",    "unit": {
+    "allMeters": "Tous les compteurs",
+    "unit": {
       "kw": "kW",
       "celsius": "°C",
       "volt": "V",
       "ampere": "A",
       "kwh": "kWh"
     },
-    "viewDetails": "Voir les détails"
+    "viewDetails": "Voir les détails",
+    "selectUpTo": "Sélectionnez jusqu'à",
+    "items": "éléments",
+    "noResults": "Aucun résultat trouvé",
+    "selected": "sélectionné(s)",
+    "maxSelectionReached": "Sélection maximale atteinte (8 max)",
+    "clearAll": "Effacer tout",
+    "apply": "Appliquer",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "page": "Page",
+    "of": "de",
+    "itemsPerPage": "Éléments par page"
   },
   "auth": {
     "login": {
@@ -249,6 +264,7 @@
       "deselectAll": "Tout désélectionner",
       "selected": "{count} sélectionné(s)",
       "noResults": "Aucun compteur trouvé",
+      "maxSelectionWarning": "Sélection maximale de 8 compteurs atteinte. Désélectionnez un compteur pour en ajouter un autre.",
       "apply": "Appliquer",
       "cancel": "Annuler",
       "categories": {
@@ -341,17 +357,23 @@
   },
   "puissance": {
     "pageTitle": "Consommation électrique – Puissance",
+    "pageDescription": "Surveillance en temps réel et analyse de la puissance pour les compteurs d'équipements sélectionnés",
     "displayMode": "Mode d'affichage",
     "selectElement": "Sélectionner un élément",
     "displaying": "Affichage",
-      "views": {
-        "overview": "Aperçu",
-        "charts": "Graphiques",
-        "tables": "Tableaux"
-      },
-      "overview": {
-        "yearly": "Aperçu annuel"
-      },
+    "tabs": {
+      "overview": "Aperçu",
+      "charts": "Graphiques",
+      "tables": "Tableaux"
+    },
+    "views": {
+      "overview": "Aperçu",
+      "charts": "Graphiques",
+      "tables": "Tableaux"
+    },
+    "overview": {
+      "yearly": "Aperçu annuel"
+    },
     "sidebar": {
       "title": "SUIVI ÉLECTRIQUE",
       "globalView": "Vue Globale",
@@ -394,7 +416,15 @@
       "month": "Derniers 12 mois",
       "year": "Aperçu annuel"
     },
+    "periods": {
+      "hour": "Horaire",
+      "day": "Journalier",
+      "week": "Hebdomadaire",
+      "month": "Mensuel",
+      "year": "Annuel"
+    },
     "labels": {
+      "periodSelection": "Sélection de la période",
       "metrics": "Métriques",
       "daily": "Journalier",
       "hourly": "Horaire",
@@ -405,7 +435,11 @@
       "average": "Moyenne",
       "peak": "Pic",
       "minimum": "Minimum",
-      "total": "Total"
+      "total": "Total",
+      "fetchingData": "Récupération des données...",
+      "noElementData": "Aucune donnée disponible",
+      "noElementBreakdown": "Pas de détails disponibles",
+      "tryDifferentMeter": "Essayez de sélectionner un autre compteur"
     },
     "tables": {
       "hourlyPower": "Puissance {meter} heure par heure",
@@ -415,8 +449,13 @@
       "realtimeMonth": "Realtime – Mois en cours jusqu'à présent",
       "columns": {
         "timestamp": "Horodatage",
+        "time": "Heure",
+        "date": "Date",
+        "month": "Mois",
         "power": "Puissance (kW)",
+        "total": "Total (kW)",
         "dailyPower": "Puissance journalière (kW)",
+        "average": "Moyenne (kW)",
         "averagePower": "Puissance moyenne journalière (kW)"
       }
     }
@@ -581,10 +620,29 @@
       "deselectAll": "Tout désélectionner"
     }
   },
+  "tableDetailModal": {
+    "searchPlaceholder": "Rechercher les enregistrements...",
+    "noDataFound": "Aucune donnée ne correspond à votre recherche",
+    "showing": "Affichage",
+    "to": "à",
+    "of": "de",
+    "exportCsv": "Exporter CSV",
+    "original": "Original",
+    "hourly": "Horaire",
+    "daily": "Quotidien",
+    "monthly": "Mensuel"
+  },
   "thermal": {
     "pageTitle": "Contrôle de Température",
+    "title": "Contrôle de Température",
     "subtitle": "Surveillance et contrôle de température multi-zones",
     "menuItem": "Contrôle de Température",
+    "manageSensors": "Gérer les Capteurs",
+    "noSensorsSelected": {
+      "title": "Aucun capteur sélectionné",
+      "description": "Sélectionnez les capteurs de température pour afficher leurs données",
+      "action": "Sélectionner des Capteurs"
+    },
     "zone": "Zone {number}",
     "currentTemp": "Température",
     "maxTemp": "Temp. Max",

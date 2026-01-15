@@ -4,18 +4,19 @@
     <div
       v-if="isOpen"
       @click="handleBackdropClick"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm overflow-y-auto"
     >
-      <!-- Modal Container -->
-      <div
-        @click.stop
-        class="relative w-full max-w-2xl rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl"
-      >
+      <div class="min-h-full flex items-center justify-center py-24 px-4 lg:pl-[calc(16rem+1rem)]">
+        <!-- Modal Container -->
+        <div
+          @click.stop
+          class="relative w-full max-w-2xl max-h-[calc(100vh-8rem)] flex flex-col rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl"
+        >
         <!-- Header -->
-        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-6 py-5 bg-slate-50 dark:bg-slate-900/60 rounded-t-xl">
-          <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-slate-500 dark:text-slate-300 text-2xl">electrical_services</span>
-            <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">{{ $t('compteur.selector.title') }}</h2>
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 sm:px-6 py-4 sm:py-5 bg-slate-50 dark:bg-slate-900/60 rounded-t-lg sm:rounded-t-xl">
+          <div class="flex items-center gap-2 sm:gap-3">
+            <span class="material-symbols-outlined text-slate-500 dark:text-slate-300 text-xl sm:text-2xl">electrical_services</span>
+            <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">{{ $t('compteur.selector.title') }}</h2>
           </div>
           <button
             @click="close"
@@ -27,35 +28,45 @@
         </div>
 
         <!-- Content -->
-        <div class="px-6 py-5 max-h-[32rem] overflow-y-auto custom-scrollbar">
+        <div class="px-4 sm:px-6 py-4 sm:py-5 flex-1 overflow-y-auto custom-scrollbar">
           <!-- Selection Status + Actions -->
           <div class="mb-4 flex flex-col gap-3">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 v-model="query"
                 type="search"
                 :placeholder="$t('compteur.selector.search')"
-                class="flex-1 h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700"
+                class="flex-1 h-9 sm:h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700"
                 :aria-label="$t('compteur.selector.search')"
               />
-              <button
-                @click="selectAll"
-                class="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-              >
-                {{ $t('compteur.selector.selectAll') }}
-              </button>
-              <button
-                v-if="selectedCount > 0"
-                @click="clearAll"
-                class="h-9 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-              >
-                {{ $t('compteur.selector.deselectAll') }}
-              </button>
+              <div class="flex gap-2">
+                <button
+                  @click="selectAll"
+                  :disabled="!canSelectMore && selectedCount < MAX_SELECTABLE_METERS"
+                  class="flex-1 sm:flex-none h-9 sm:h-10 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  {{ $t('compteur.selector.selectAll') }}
+                </button>
+                <button
+                  v-if="selectedCount > 0"
+                  @click="clearAll"
+                  class="flex-1 sm:flex-none h-9 sm:h-10 px-3 rounded-md border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 whitespace-nowrap"
+                >
+                  {{ $t('compteur.selector.deselectAll') }}
+                </button>
+              </div>
             </div>
             <div class="rounded-lg bg-slate-50 dark:bg-slate-800/40 p-3 border border-slate-200 dark:border-slate-700">
               <p class="text-xs text-slate-700 dark:text-slate-300">
-                {{ selectedCount }} {{ $t('compteur.selector.selected', { count: totalCount }) }}
+                {{ selectedCount }}/{{ totalCount }} {{ $t('compteur.selector.selected', { count: totalCount }) }}
               </p>
+              <!-- Max Selection Warning -->
+              <div v-if="selectedCount === MAX_SELECTABLE_METERS" class="mt-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-2">
+                <p class="text-xs text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1">
+                  <span class="material-symbols-outlined text-sm">info</span>
+                  {{ $t('compteur.selector.maxSelectionWarning') }}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -75,8 +86,12 @@
                 type="checkbox"
                 :id="`compteur-${compteur.id}`"
                 :checked="isSelected(compteur.id)"
+                :disabled="!canSelectMore && !isSelected(compteur.id)"
                 @change="toggleCompteur(compteur.id)"
-                class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700 cursor-pointer"
+                :class="[
+                  'h-4 w-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700',
+                  (!canSelectMore && !isSelected(compteur.id)) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                ]"
               />
               <label
                 :for="`compteur-${compteur.id}`"
@@ -105,6 +120,51 @@
             </div>
           </div>
 
+          <!-- Pagination Controls -->
+          <div v-if="totalPages > 1" class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button
+                @click="previousPage"
+                :disabled="currentPage === 1"
+                class="w-full sm:w-auto px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span class="flex items-center justify-center gap-1">
+                  <span class="material-symbols-outlined text-sm">chevron_left</span>
+                  <span class="hidden sm:inline">{{ $t('common.previous') }}</span>
+                  <span class="sm:hidden">Prev</span>
+                </span>
+              </button>
+
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-600 dark:text-slate-400">
+                  {{ $t('common.page') }} {{ currentPage }} {{ $t('common.of') }} {{ totalPages }}
+                </span>
+                <select
+                  v-model.number="itemsPerPage"
+                  class="px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700"
+                >
+                  <option :value="4">4</option>
+                  <option :value="6">6</option>
+                  <option :value="8">8</option>
+                  <option :value="10">10</option>
+                </select>
+                <span class="text-xs text-slate-600 dark:text-slate-400 hidden sm:inline">/ {{ $t('common.page') }}</span>
+              </div>
+
+              <button
+                @click="nextPage"
+                :disabled="currentPage === totalPages"
+                class="w-full sm:w-auto px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span class="flex items-center justify-center gap-1">
+                  <span class="hidden sm:inline">{{ $t('common.next') }}</span>
+                  <span class="sm:hidden">Next</span>
+                  <span class="material-symbols-outlined text-sm">chevron_right</span>
+                </span>
+              </button>
+            </div>
+          </div>
+
           <!-- Empty State (no data) -->
           <div
             v-if="totalCount === 0"
@@ -127,13 +187,13 @@
         </div>
 
         <!-- Footer -->
-        <div class="flex gap-3 border-t border-slate-200 dark:border-slate-700 px-6 py-5 bg-slate-50 dark:bg-slate-900/60 rounded-b-xl">
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 border-t border-slate-200 dark:border-slate-700 px-4 sm:px-6 py-4 sm:py-5 bg-slate-50 dark:bg-slate-900/60 rounded-b-lg sm:rounded-b-xl">
           <button
             @click="cancel"
             class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
             <span class="flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined text-lg">close</span>
+              <span class="material-symbols-outlined text-base sm:text-lg">close</span>
               {{ $t('common.cancel') }}
             </span>
           </button>
@@ -143,10 +203,11 @@
             class="flex-1 rounded-lg bg-slate-900 dark:bg-slate-100 px-4 py-2.5 text-sm font-semibold text-white dark:text-slate-900 hover:bg-black/80 dark:hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             <span class="flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined text-lg">check</span>
+              <span class="material-symbols-outlined text-base sm:text-lg">check</span>
               {{ $t('common.save') }} ({{ selectedCount }})
             </span>
           </button>
+        </div>
         </div>
       </div>
     </div>
@@ -154,7 +215,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, unref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Compteur } from '@/composables/useCompteurSelection'
 
@@ -185,6 +246,12 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 // ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const MAX_SELECTABLE_METERS = 8
+
+// ============================================================================
 // STATE
 // ============================================================================
 
@@ -195,12 +262,17 @@ const { t } = useI18n()
 const localSelectedIds = ref<string[]>([...props.selectedIds])
 const query = ref('')
 
+// Pagination state
+const currentPage = ref(1)
+const itemsPerPage = ref(6)
+
 // ============================================================================
 // COMPUTED
 // ============================================================================
 
 const selectedCount = computed(() => localSelectedIds.value.length)
 const totalCount = computed(() => props.allCompteurs.length)
+const canSelectMore = computed(() => selectedCount.value < MAX_SELECTABLE_METERS)
 
 const subtitleMap: Record<string, string> = {
   'Compresseurs industriels': 'equipment.compressorsIndustrial',
@@ -215,10 +287,20 @@ const getTranslatedSubtitle = (subtitle: string): string => {
   return key ? t(key) : subtitle
 }
 
-const filteredCompteurs = computed(() => {
+const allFilteredCompteurs = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (!q) return props.allCompteurs
   return props.allCompteurs.filter((c) => c.name.toLowerCase().includes(q))
+})
+
+const totalPages = computed(() =>
+  Math.ceil(allFilteredCompteurs.value.length / itemsPerPage.value)
+)
+
+const filteredCompteurs = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return allFilteredCompteurs.value.slice(start, end)
 })
 
 // ============================================================================
@@ -233,32 +315,33 @@ function isSelected(compteurId: string): boolean {
 }
 
 /**
- * Toggle a compteur's selection
+ * Toggle a compteur's selection (enforce max 8)
  */
 function toggleCompteur(compteurId: string) {
   const index = localSelectedIds.value.indexOf(compteurId)
   if (index > -1) {
     // Deselect
     localSelectedIds.value.splice(index, 1)
-  } else {
-    // Select
+  } else if (canSelectMore.value) {
+    // Select only if under max
     localSelectedIds.value.push(compteurId)
   }
 }
 
 /**
- * Select all filtered compteurs
+ * Select all filtered compteurs (up to max 8) across all pages
  */
 function selectAll() {
-  const ids = filteredCompteurs.value.map((c) => c.id)
-  localSelectedIds.value = Array.from(new Set([...localSelectedIds.value, ...ids]))
+  // Get all filtered IDs (not just current page) and select first 8
+  const ids = allFilteredCompteurs.value.map((c) => c.id)
+  localSelectedIds.value = ids.slice(0, MAX_SELECTABLE_METERS)
 }
 
 /**
  * Apply selection and close modal
  */
 function apply() {
-  if (localSelectedIds.value.length > 0) {
+  if (localSelectedIds.value.length > 0 && localSelectedIds.value.length <= MAX_SELECTABLE_METERS) {
     emit('apply', localSelectedIds.value)
     emit('update:selected', localSelectedIds.value)
     close()
@@ -302,6 +385,24 @@ function clearAll() {
 }
 
 /**
+ * Navigate to next page
+ */
+function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+  }
+}
+
+/**
+ * Navigate to previous page
+ */
+function previousPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--
+  }
+}
+
+/**
  * Get category badge class based on color
  */
 function getCategoryBadgeClass(color: 'red' | 'green' | 'blue' | 'yellow'): string {
@@ -319,13 +420,17 @@ function getCategoryBadgeClass(color: 'red' | 'green' | 'blue' | 'yellow'): stri
 // ============================================================================
 
 /**
- * Sync local state when props change
+ * Sync local state when props change (with deep watch for arrays)
  */
 watch(
   () => props.selectedIds,
   (newIds) => {
-    localSelectedIds.value = [...newIds]
-  }
+    const ids = unref(newIds)
+    if (Array.isArray(ids)) {
+      localSelectedIds.value = [...ids]
+    }
+  },
+  { deep: true, immediate: false }
 )
 
 /**
@@ -335,10 +440,20 @@ watch(
   () => props.isOpen,
   (isOpen) => {
     if (isOpen) {
-      localSelectedIds.value = [...props.selectedIds]
+      const ids = unref(props.selectedIds)
+      localSelectedIds.value = Array.isArray(ids) ? [...ids] : []
+      currentPage.value = 1
+      query.value = ''
     }
   }
 )
+
+/**
+ * Reset to page 1 when search query or items per page changes
+ */
+watch([query, itemsPerPage], () => {
+  currentPage.value = 1
+})
 </script>
 
 <style scoped>

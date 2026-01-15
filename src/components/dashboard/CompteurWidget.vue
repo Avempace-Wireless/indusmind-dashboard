@@ -142,9 +142,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Compteur, CompteurMode } from '@/composables/useCompteurSelection'
+import { getMeterColorByIndex } from '@/utils/meterColors'
 
 // ============================================================================
 // PROPS & EMITS
@@ -154,11 +155,13 @@ interface Props {
   compteur: Compteur
   currentMode?: CompteurMode
   isLoading?: boolean
+  colorIndex?: number  // Index in selected meters array for color consistency
 }
 
 const props = withDefaults(defineProps<Props>(), {
   currentMode: 'instantanée',
   isLoading: false,
+  colorIndex: 0,
 })
 
 const emit = defineEmits<{
@@ -207,30 +210,30 @@ const translatedSubtitle = computed(() => {
 })
 
 const colorClasses = computed(() => {
-  const colorMap = {
-    red: {
-      border: 'border-red-500',
-      text: 'text-red-600 dark:text-red-500',
-      bg: 'bg-red-500',
-    },
-    green: {
-      border: 'border-green-500',
-      text: 'text-green-600 dark:text-green-500',
-      bg: 'bg-green-500',
-    },
-    blue: {
-      border: 'border-blue-500',
-      text: 'text-blue-600 dark:text-blue-500',
-      bg: 'bg-blue-500',
-    },
-    yellow: {
-      border: 'border-yellow-500',
-      text: 'text-yellow-600 dark:text-yellow-500',
-      bg: 'bg-yellow-500',
-    },
+  // Use shared color utility for consistency with charts
+  const colorConfig = getMeterColorByIndex(props.colorIndex)
+  const tailwindColor = colorConfig.tailwind
+
+  // Map to complete Tailwind class names (required for JIT compilation)
+  const colorMap: Record<string, { border: string; text: string; bg: string }> = {
+    red: { border: 'border-red-500', text: 'text-red-600 dark:text-red-500', bg: 'bg-red-500' },
+    blue: { border: 'border-blue-500', text: 'text-blue-600 dark:text-blue-500', bg: 'bg-blue-500' },
+    green: { border: 'border-green-500', text: 'text-green-600 dark:text-green-500', bg: 'bg-green-500' },
+    amber: { border: 'border-amber-500', text: 'text-amber-600 dark:text-amber-500', bg: 'bg-amber-500' },
+    purple: { border: 'border-purple-500', text: 'text-purple-600 dark:text-purple-500', bg: 'bg-purple-500' },
+    pink: { border: 'border-pink-500', text: 'text-pink-600 dark:text-pink-500', bg: 'bg-pink-500' },
+    teal: { border: 'border-teal-500', text: 'text-teal-600 dark:text-teal-500', bg: 'bg-teal-500' },
+    orange: { border: 'border-orange-500', text: 'text-orange-600 dark:text-orange-500', bg: 'bg-orange-500' },
+    cyan: { border: 'border-cyan-500', text: 'text-cyan-600 dark:text-cyan-500', bg: 'bg-cyan-500' },
+    violet: { border: 'border-violet-500', text: 'text-violet-600 dark:text-violet-500', bg: 'bg-violet-500' },
+    lime: { border: 'border-lime-500', text: 'text-lime-600 dark:text-lime-500', bg: 'bg-lime-500' },
+    rose: { border: 'border-rose-500', text: 'text-rose-600 dark:text-rose-500', bg: 'bg-rose-500' },
+    indigo: { border: 'border-indigo-500', text: 'text-indigo-600 dark:text-indigo-500', bg: 'bg-indigo-500' },
+    yellow: { border: 'border-yellow-500', text: 'text-yellow-600 dark:text-yellow-500', bg: 'bg-yellow-500' },
+    emerald: { border: 'border-emerald-500', text: 'text-emerald-600 dark:text-emerald-500', bg: 'bg-emerald-500' },
   }
 
-  return colorMap[props.compteur.color] || colorMap.blue
+  return colorMap[tailwindColor] || colorMap.blue
 })
 
 /**

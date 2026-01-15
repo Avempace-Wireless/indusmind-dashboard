@@ -68,6 +68,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Chart, LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler } from 'chart.js'
+import { getMeterColorByIndex } from '@/utils/meterColors'
 
 Chart.register(LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler)
 
@@ -126,15 +127,6 @@ const chartTitle = computed(() => {
     : t('dashboard.temperature')
 })
 
-// Color mapping for compteur categories
-const compteurColors = {
-  'TGBT': { bg: '#ef4444', border: '#dc2626' },
-  'Compresseurs': { bg: '#22c55e', border: '#16a34a' },
-  'Clim': { bg: '#3b82f6', border: '#1d4ed8' },
-  'Climatisation': { bg: '#3b82f6', border: '#1d4ed8' },
-  'Éclairage': { bg: '#eab308', border: '#ca8a04' }
-}
-
 // Generate energy data based on selected compteurs
 function generateEnergyData() {
   if (props.selectedCompteurs.length === 0) {
@@ -192,24 +184,24 @@ function generateEnergyData() {
   const data: Record<string, number[]> = {}
 
   // Generate data for each selected compteur
-  props.selectedCompteurs.forEach((compteur) => {
+  props.selectedCompteurs.forEach((compteur, index) => {
     const baseValue = props.period === 'yesterday' ? compteur.yesterday : compteur.today
 
-    // For energy, we show hourly/daily variation
+    // For energy, we show hourly/daily variation with index-based variation for differentiation
     if (props.period === 'today' || props.period === 'yesterday') {
       data[compteur.name] = Array.from(
         { length: dataLength },
-        (_, i) => baseValue / 24 * (0.6 + Math.sin(i / 8) * 0.3 + Math.random() * 0.1)
+        (_, i) => baseValue / 24 * (0.6 + Math.sin((i + index) / 8) * 0.3 + Math.random() * 0.1)
       )
     } else if (props.period === '7days') {
       data[compteur.name] = Array.from(
         { length: dataLength },
-        (_, i) => baseValue * (0.8 + Math.sin(i / 3) * 0.2 + Math.random() * 0.1)
+        (_, i) => baseValue * (0.8 + Math.sin((i + index) / 3) * 0.2 + Math.random() * 0.1)
       )
     } else {
       data[compteur.name] = Array.from(
         { length: dataLength },
-        (_, i) => baseValue + Math.sin(i / 10) * 100 + Math.random() * 50
+        (_, i) => baseValue + Math.sin((i + index) / 10) * 100 + Math.random() * 50
       )
     }
   })
@@ -335,19 +327,18 @@ function renderChart() {
   const data = chartData.value as any
 
   if (props.mode === 'energy') {
-    // Build datasets dynamically from selected compteurs
-    const datasets = props.selectedCompteurs.map((compteur) => {
-      const colorMap = compteurColors[compteur.category as keyof typeof compteurColors] ||
-                      compteurColors[compteur.name as keyof typeof compteurColors] ||
-                      { bg: '#6b7280', border: '#4b5563' }
+    // Build datasets dynamically from selected compteurs with distinct colors
+    const datasets = props.selectedCompteurs.map((compteur, index) => {
+      // Use shared color utility for consistent colors across dashboard
+      const colorConfig = getMeterColorByIndex(index)
 
       const dataValues = data.data[compteur.name] || []
 
       return {
         label: compteur.name,
         data: dataValues,
-        backgroundColor: colorMap.bg,
-        borderColor: colorMap.border,
+        backgroundColor: colorConfig.hex,
+        borderColor: colorConfig.border,
         borderWidth: 1,
         borderRadius: 4
       }

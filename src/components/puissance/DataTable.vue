@@ -34,7 +34,15 @@
             class="border-b border-gray-100 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             <td v-for="column in columns" :key="column.key" class="px-6 py-4 text-gray-700 dark:text-gray-300 font-medium">
-              {{ formatCell(row[column.key], column.format) }}
+              <div class="flex items-center gap-2">
+                <!-- Icon for date/time columns -->
+                <span v-if="column.format === 'date' || column.format === 'datetime'" class="material-symbols-outlined text-sm text-blue-500 dark:text-blue-400 flex-shrink-0">calendar_today</span>
+                <span v-else-if="column.format === 'time'" class="material-symbols-outlined text-sm text-purple-500 dark:text-purple-400 flex-shrink-0">schedule</span>
+                <!-- Formatted value with tooltip showing original timestamp -->
+                <span :title="`Original: ${row[column.key]}`" class="cursor-help">
+                  {{ formatCell(row[column.key], column.format) }}
+                </span>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -95,7 +103,7 @@ import { ref, computed } from 'vue'
 export interface TableColumn {
   key: string
   label: string
-  format?: 'date' | 'number' | 'default'
+  format?: 'date' | 'time' | 'datetime' | 'number' | 'default'
 }
 
 interface Props {
@@ -178,13 +186,107 @@ const toggleSort = (key: string) => {
 }
 
 const formatCell = (value: any, format?: string): string => {
+  // Helper to parse ISO 8601 timestamps safely
+  const parseDate = (val: any): Date | null => {
+    try {
+      // Handle null/undefined
+      if (!val) return null
+
+      // Handle ISO 8601 format: 2026-01-14T23:00:00.000Z
+      if (typeof val === 'string' && val.includes('T')) {
+        const date = new Date(val)
+        // Verify it's a valid date
+        if (!isNaN(date.getTime())) {
+          return date
+        }
+        return null
+      }
+
+      // Handle numeric timestamps (milliseconds since epoch)
+      if (typeof val === 'number' && val > 0) {
+        const date = new Date(val)
+        if (!isNaN(date.getTime())) {
+          return date
+        }
+        return null
+      }
+
+      // Handle date strings or other formats
+      if (typeof val === 'string') {
+        const date = new Date(val)
+        if (!isNaN(date.getTime())) {
+          return date
+        }
+      }
+
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  // Helper to format date as YYYY-MM-DD
+  const formatDate = (date: Date): string => {
+    try {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    } catch {
+      return ''
+    }
+  }
+
+  // Helper to format time as HH:MM:SS
+  const formatTime = (date: Date): string => {
+    try {
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const seconds = String(date.getSeconds()).padStart(2, '0')
+      return `${hours}:${minutes}:${seconds}`
+    } catch {
+      return ''
+    }
+  }
+
+  // Always try to parse ISO timestamps first
+  const parsedDate = parseDate(value)
+
   if (format === 'date') {
-    return new Date(value).toLocaleString()
+    if (parsedDate && !isNaN(parsedDate.getTime())) {
+      return formatDate(parsedDate)
+    }
+    return value ? String(value) : '—'
   }
+
+  if (format === 'time') {
+    if (parsedDate && !isNaN(parsedDate.getTime())) {
+      return formatTime(parsedDate)
+    }
+    return value ? String(value) : '—'
+  }
+
+  if (format === 'datetime') {
+    if (parsedDate && !isNaN(parsedDate.getTime())) {
+      return `${formatDate(parsedDate)} ${formatTime(parsedDate)}`
+    }
+    return value ? String(value) : '—'
+  }
+
   if (format === 'number') {
-    return Number(value).toFixed(1)
+    const num = Number(value)
+    if (!isNaN(num) && isFinite(num)) {
+      return num.toFixed(2).replace(/\.?0+$/, '')
+    }
+    return value ? String(value) : '—'
   }
-  return String(value)
+
+  // Default format - if it looks like an ISO timestamp, format it as datetime
+  if (parsedDate && !isNaN(parsedDate.getTime()) && typeof value === 'string' && value.includes('T')) {
+    return `${formatDate(parsedDate)} ${formatTime(parsedDate)}`
+  }
+
+  return value ? String(value) : '—'
 }
 </script>
 

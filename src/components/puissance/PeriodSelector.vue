@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">Period Selection</p>
+    <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">{{ t('puissance.labels.periodSelection') }}</p>
 
     <!-- Period Buttons -->
     <div class="flex gap-2 flex-wrap">
@@ -19,13 +19,15 @@
         }"
       >
         <span class="material-symbols-outlined text-lg">{{ period.icon }}</span>
-        {{ period.label }}
+        {{ t(`puissance.periods.${period.value}`) }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 interface Props {
   selectedPeriod: 'hour' | 'day' | 'week' | 'month' | 'year'
   meterColor: string
@@ -37,12 +39,14 @@ defineEmits<{
   'period-change': [period: 'hour' | 'day' | 'week' | 'month' | 'year']
 }>()
 
+const { t } = useI18n()
+
 const periods = [
-  { value: 'hour' as const, label: 'Hourly', icon: 'schedule' },
-  { value: 'day' as const, label: 'Daily', icon: 'calendar_today' },
-  { value: 'week' as const, label: 'Weekly', icon: 'date_range' },
-  { value: 'month' as const, label: 'Monthly', icon: 'calendar_month' },
-  { value: 'year' as const, label: 'Yearly', icon: 'event_note' },
+  { value: 'hour' as const, icon: 'schedule' },
+  { value: 'day' as const, icon: 'calendar_today' },
+  { value: 'week' as const, icon: 'date_range' },
+  { value: 'month' as const, icon: 'calendar_month' },
+  { value: 'year' as const, icon: 'event_note' },
 ]
 
 </script>

@@ -24,7 +24,7 @@ import { useEquipmentStore } from '@/stores/useEquipmentStore'
 export interface Compteur {
   id: string
   name: string
-  category: 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'
+  category: 'PM2200' | 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'
   subtitle: string
   color: 'red' | 'green' | 'blue' | 'yellow'
   instantaneous: number // kW (current)

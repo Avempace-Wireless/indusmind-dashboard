@@ -126,12 +126,14 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Selected Compteurs
   // ===========================
   /**
-   * ✅ USE CENTRALIZED METER STORE
-   * Get selected compteurs from centralized store
-   * Returns only the meters that are currently selected globally
+   * Get selected compteurs from dashboard store
+   * Filters actual compteur data by IDs from centralized meter selection
    */
   const selectedCompteurs = computed(() => {
-    return dashboardStore.compteurs.filter(c => selectedMeterIds.value.includes(c.id))
+    // Get actual compteur data from dashboardStore filtered by centralized selection
+    return dashboardStore.compteurs.filter(c =>
+      metersStore.selectedMeterIds.includes(c.id)
+    )
   })
 
   // User-selected active meters within selectedCompteurs

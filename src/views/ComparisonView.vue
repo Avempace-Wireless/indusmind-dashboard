@@ -13,6 +13,13 @@
         </div>
         <div class="flex gap-3">
           <button
+            @click="showCompteurSelector = true"
+            class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
+          >
+            <span class="material-symbols-outlined text-base">tune</span>
+            {{ t('dashboard.manageMeters') }}
+          </button>
+          <button
             @click="exportToCSV"
             class="flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
@@ -27,6 +34,44 @@
     <div class="grid grid-cols-1 xl:grid-cols-10 gap-6">
       <!-- Left Panel: Chart & Analysis Area (65%) -->
       <div class="xl:col-span-6 space-y-6">
+        <!-- Meter Selector -->
+        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('comparison.selectMeters') }}
+            </h3>
+            <button
+              @click="showCompteurSelector = true"
+              class="px-3 py-1 bg-primary-500 hover:bg-primary-600 text-white text-sm rounded-lg flex items-center gap-1 transition"
+            >
+              <span class="material-symbols-outlined text-sm">tune</span>
+              Select
+            </button>
+          </div>
+          <div v-if="selectedMeters.length === 0" class="text-center py-4 text-gray-500 dark:text-gray-400">
+            Click "Select" to add meters for comparison
+          </div>
+          <div v-else class="flex flex-wrap gap-2">
+            <div
+              v-for="meter in selectedMeters"
+              :key="meter.id"
+              class="px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1"
+              :style="{ backgroundColor: getMeterColor(meter.id) || '#3b82f6' }"
+            >
+              {{ meter.name }}
+              <button @click="toggleMeter(meter.id)" class="ml-1 text-white hover:text-gray-200">×</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CompteurSelector Modal -->
+        <CompteurSelector
+          :is-open="showCompteurSelector"
+          :all-compteurs="allCompteurs"
+          :selected-ids="selectedMeterIds"
+          @apply="handleCompteurSelection"
+          @close="showCompteurSelector = false"
+        />
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div
@@ -501,15 +546,36 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { storeToRefs } from 'pinia'
+import { useMetersStore } from '../stores/useMetersStore'
+import { useDashboardStore } from '../stores/useDashboardStore'
 import { useComparisonStore } from '../stores/useComparisonStore'
+import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import AdminLayout from '../components/layout/AdminLayout.vue'
+import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { Chart, BarController, LineController, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js'
 
 // Register Chart.js components
 Chart.register(BarController, LineController, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend)
 
 const { t, locale } = useI18n()
+const metersStore = useMetersStore()
+const dashboardStore = useDashboardStore()
 const store = useComparisonStore()
+
+// Use the same composable as DashboardView, PuissanceView, and EnergyHistorical for consistency
+const {
+  availableCompteurs: allCompteurs,
+  initialize: initializeCompteurSelection,
+} = useCompteurSelection()
+
+// UI State
+const showCompteurSelector = ref(false)
+
+function handleCompteurSelection(selectedIds: string[]) {
+  // Update meters store with new selection (comparison store will react to this)
+  metersStore.setSelectedMeters(selectedIds)
+  showCompteurSelector.value = false
+}
 
 const {
   comparisonMode,
@@ -811,6 +877,12 @@ watch([chartType, comparisonMode, comparisonData, selectedMeters], () => {
 }, { deep: true })
 
 onMounted(() => {
+  // Restore and clean up any invalid meter IDs from localStorage
+  metersStore.restoreSelection()
+
+  // Initialize compteur selection (syncs with all other views)
+  initializeCompteurSelection()
+
   // Initialize store data if needed
   if (selectedMeterIds.value.length === 0) {
     selectAllMeters()

@@ -126,38 +126,82 @@ export const useMetersStore = defineStore('meters', () => {
   /**
    * Restore selection from localStorage
    * Called on app startup (in router guard or App.vue onMounted)
-   * Falls back to default (first 4 meters) if no saved selection
+   * Validates and cleans up invalid IDs (e.g., old 'compteur-X' format)
+   * Falls back to first 8 meters if no valid selection found
    */
   function restoreSelection() {
     try {
       const saved = localStorage.getItem('meters:selected')
       if (saved) {
         const restored = JSON.parse(saved)
-        // Validate that restored IDs still exist
-        const validIds = restored.filter((id: string) =>
-          allMeters.value.some(m => m.id === id)
-        )
-        if (validIds.length > 0) {
-          selectedMeterIds.value = validIds
-          return
+        if (Array.isArray(restored)) {
+          // Validate that restored IDs still exist in current meter list
+          const validIds = restored.filter((id: string) =>
+            allMeters.value.some(m => m.id === id)
+          )
+
+          // If we have valid IDs and some were filtered out, clean up localStorage
+          if (validIds.length > 0 && validIds.length < restored.length) {
+            console.warn('Cleaning up invalid meter IDs from localStorage:', restored.filter(id => !validIds.includes(id)))
+            // If less than 8 valid IDs remain, fill with additional meters
+            if (validIds.length < 8) {
+              const additionalIds = allMeters.value
+                .filter(m => !validIds.includes(m.id))
+                .slice(0, 8 - validIds.length)
+                .map(m => m.id)
+              selectedMeterIds.value = [...validIds, ...additionalIds]
+            } else {
+              selectedMeterIds.value = validIds
+            }
+            persistSelection() // Save cleaned list
+            return
+          }
+
+          // If all IDs are valid and we have at least 8, use them
+          if (validIds.length >= 8) {
+            selectedMeterIds.value = validIds
+            return
+          }
+
+          // If we have some valid IDs but less than 8, add more
+          if (validIds.length > 0 && validIds.length < 8) {
+            const additionalIds = allMeters.value
+              .filter(m => !validIds.includes(m.id))
+              .slice(0, 8 - validIds.length)
+              .map(m => m.id)
+            selectedMeterIds.value = [...validIds, ...additionalIds]
+            persistSelection()
+            return
+          }
         }
       }
-      // Default: select first 4 meters if no valid saved selection
-      selectAllMeters()
+      // Default: select first 8 meters if no valid saved selection
+      selectedMeterIds.value = allMeters.value.slice(0, 8).map(m => m.id)
+      persistSelection()
     } catch (e) {
       console.warn('Failed to restore meter selection:', e)
-      // On error, select all as fallback
-      selectAllMeters()
+      // On error, select first 8 as fallback
+      selectedMeterIds.value = allMeters.value.slice(0, 8).map(m => m.id)
+      try {
+        persistSelection()
+      } catch (e2) {
+        console.warn('Failed to save fallback selection:', e2)
+      }
     }
   }
 
   /**
    * Persist current selection to localStorage
+   * Validates IDs before persisting to ensure data integrity
    * Called automatically after any selection change
    */
   function persistSelection() {
     try {
-      localStorage.setItem('meters:selected', JSON.stringify(selectedMeterIds.value))
+      // Only save valid IDs that exist in allMeters
+      const validIds = selectedMeterIds.value.filter((id: string) =>
+        allMeters.value.some(m => m.id === id)
+      )
+      localStorage.setItem('meters:selected', JSON.stringify(validIds))
     } catch (e) {
       console.warn('Failed to persist meter selection:', e)
       // Quota exceeded or other error, continue without persistence
@@ -201,23 +245,36 @@ export const useMetersStore = defineStore('meters', () => {
   /**
    * Get color for a specific meter
    * Used in charts across all views for consistent coloring
+   * Each meter gets a unique color from the palette based on its ID
    *
    * @param meterId - Meter ID
    * @returns Hex color or fallback gray
    */
   function getMeterColor(meterId: string): string {
-    const meter = getMeterById(meterId)
-    if (!meter) return '#999999'
+    // Unique color palette - each meter gets a different color
+    const colorPalette = [
+      '#ef4444', // red-500
+      '#f97316', // orange-500
+      '#eab308', // yellow-500
+      '#22c55e', // green-500
+      '#10b981', // emerald-500
+      '#14b8a6', // teal-500
+      '#06b6d4', // cyan-500
+      '#3b82f6', // blue-500
+      '#6366f1', // indigo-500
+      '#8b5cf6', // violet-500
+      '#d946ef', // fuchsia-500
+      '#ec4899', // pink-500
+    ]
 
-    // Map color names to hex values
-    const colorMap: Record<string, string> = {
-      red: '#ef4444',
-      green: '#22c55e',
-      blue: '#3b82f6',
-      yellow: '#f59e0b',
-    }
+    if (!meterId || allMeters.value.length === 0) return '#999999'
 
-    return colorMap[meter.color] || meter.color
+    // Find meter index to assign consistent color
+    const meterIndex = allMeters.value.findIndex(m => m.id === meterId)
+    if (meterIndex === -1) return '#999999'
+
+    // Assign color based on index modulo palette length for cycling
+    return colorPalette[meterIndex % colorPalette.length]
   }
 
   /**
