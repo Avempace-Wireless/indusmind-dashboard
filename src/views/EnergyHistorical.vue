@@ -826,7 +826,12 @@ const emptyStateMessage = computed(() => {
 // Chart Methods
 // ===========================
 function initChart() {
-  if (!chartCanvas.value) return
+  // Return early if no canvas available
+  if (!chartCanvas.value) {
+    console.warn('Chart canvas not found, retrying in next tick')
+    nextTick(() => initChart())
+    return
+  }
 
   // Destroy existing chart
   if (chartInstance) {
@@ -834,7 +839,10 @@ function initChart() {
   }
 
   const ctx = chartCanvas.value.getContext('2d')
-  if (!ctx) return
+  if (!ctx) {
+    console.warn('Cannot get 2D context from canvas')
+    return
+  }
 
   // Prepare datasets (filter hidden ones)
   const visibleDatasets = chartData.value.datasets
@@ -1058,8 +1066,18 @@ onMounted(async () => {
   await refreshData()
 
   // Initialize chart after data is loaded
+  // Multiple nextTick calls ensure DOM is fully ready
+  await nextTick()
+  await nextTick()
   await nextTick()
   initChart()
+
+  // Force chart re-initialization if canvas still not ready
+  setTimeout(() => {
+    if (!chartInstance && hasChartData.value) {
+      initChart()
+    }
+  }, 100)
 })
 
 onBeforeUnmount(() => {
@@ -1073,7 +1091,9 @@ onBeforeUnmount(() => {
 // ===========================
 watch(
   () => chartData.value,
-  () => {
+  async () => {
+    // Ensure DOM is ready before initializing chart
+    await nextTick()
     initChart()
   },
   { deep: true }
@@ -1085,6 +1105,13 @@ watch(viewMode, (m) => {
     initChart()
   }
 })
+
+// Refresh chart when meter selection changes (activeCompteurIds toggle)
+watch(activeCompteurIds, async () => {
+  await nextTick()
+  await refreshData()
+  initChart()
+}, { deep: true })
 
 // Adjust table paging when resolution changes
 watch(effectiveResolution, (res) => {
