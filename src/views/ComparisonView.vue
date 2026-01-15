@@ -30,50 +30,77 @@
       </div>
     </div>
 
+    <!-- Controls Section - Compact Meter Selection -->
+    <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600 mb-6">
+      <div v-if="metersStoreSelectedIds.length > 0" class="space-y-3">
+        <!-- Header: Title + Manage Button -->
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+            Sélectionnez les compteurs à comparer
+          </h3>
+          <button
+            @click="showCompteurSelector = true"
+            class="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-xs rounded-lg flex items-center gap-1 transition whitespace-nowrap"
+          >
+            <span class="material-symbols-outlined text-sm">tune</span>
+            {{ t('dashboard.manageMeters') }}
+          </button>
+        </div>
+
+        <!-- All Meters Pills - Grid Layout -->
+        <div v-if="metersStoreSelectedIds.length > 0" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-x-5 gap-y-5">
+          <button
+            v-for="meterId in metersStoreSelectedIds"
+            :key="meterId"
+            @click="toggleMeterVisibility(meterId)"
+            :class="[
+              'px-4 py-3 rounded-lg text-xs font-medium transition-all duration-200 border-2 flex items-center justify-center gap-3 relative overflow-hidden',
+              activeMeterIds.includes(meterId) || activeMeterIds.length === 0
+                ? 'text-white shadow-lg scale-105 border-transparent'
+                : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800/50'
+            ]"
+            :style="(activeMeterIds.includes(meterId) || activeMeterIds.length === 0) ? { backgroundColor: metersStore.getMeterColor(meterId) } : {}"
+          >
+            <!-- Background gradient for non-active -->
+            <div
+              v-if="!activeMeterIds.includes(meterId) && activeMeterIds.length > 0"
+              class="absolute inset-0 opacity-0 group-hover:opacity-5 transition"
+              :style="{ backgroundColor: metersStore.getMeterColor(meterId) }"
+            />
+
+            <!-- Content -->
+            <span class="relative z-10">{{ getMeterName(meterId) }}</span>
+          </button>
+        </div>
+
+        <!-- Info: Selected Count -->
+        <div class="text-xs text-slate-600 dark:text-slate-400 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+          {{ activeMeterIds.length === 0 ? metersStoreSelectedIds.length : activeMeterIds.length }} / {{ metersStoreSelectedIds.length }} {{ t('comparison.meters.selected', { count: metersStoreSelectedIds.length }) }}
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else class="text-center py-6 text-gray-500 dark:text-gray-400">
+        <span class="material-symbols-outlined text-3xl mb-2 block opacity-50">inbox</span>
+        <p class="text-sm">{{ t('comparison.meters.selectMeters') }}</p>
+      </div>
+    </div>
+
+        <!-- CompteurSelector Modal -->
+    <CompteurSelector
+      :is-open="showCompteurSelector"
+      :all-compteurs="allCompteurs"
+      :selected-ids="metersStoreSelectedIds"
+      @apply="handleCompteurSelection"
+      @close="showCompteurSelector = false"
+    />
+
     <!-- Main Content Grid: 65% Chart Area, 35% Controls -->
     <div class="grid grid-cols-1 xl:grid-cols-10 gap-6">
       <!-- Left Panel: Chart & Analysis Area (65%) -->
       <div class="xl:col-span-6 space-y-6">
-        <!-- Meter Selector -->
-        <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('comparison.selectMeters') }}
-            </h3>
-            <button
-              @click="showCompteurSelector = true"
-              class="px-3 py-1 bg-primary-500 hover:bg-primary-600 text-white text-sm rounded-lg flex items-center gap-1 transition"
-            >
-              <span class="material-symbols-outlined text-sm">tune</span>
-              Select
-            </button>
-          </div>
-          <div v-if="selectedMeters.length === 0" class="text-center py-4 text-gray-500 dark:text-gray-400">
-            Click "Select" to add meters for comparison
-          </div>
-          <div v-else class="flex flex-wrap gap-2">
-            <div
-              v-for="meter in selectedMeters"
-              :key="meter.id"
-              class="px-3 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1"
-              :style="{ backgroundColor: getMeterColor(meter.id) || '#3b82f6' }"
-            >
-              {{ meter.name }}
-              <button @click="toggleMeter(meter.id)" class="ml-1 text-white hover:text-gray-200">×</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- CompteurSelector Modal -->
-        <CompteurSelector
-          :is-open="showCompteurSelector"
-          :all-compteurs="allCompteurs"
-          :selected-ids="selectedMeterIds"
-          @apply="handleCompteurSelection"
-          @close="showCompteurSelector = false"
-        />
         <!-- KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div v-if="metersStore.selectedMeters.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div
             v-for="card in kpiCards"
             :key="card.label"
@@ -93,7 +120,7 @@
         </div>
 
         <!-- Main Comparison Chart -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+        <div v-if="metersStore.selectedMeters.length > 0" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <div class="flex items-center justify-between mb-6">
             <div>
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -131,7 +158,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="meter in selectedMeters" :key="meter.id">
+                  <tr v-for="meter in (activeMeterIds.length > 0 ? metersStore.selectedMeters.filter(m => activeMeterIds.includes(m.id)) : metersStore.selectedMeters)" :key="meter.id">
                     <td class="border border-gray-300 dark:border-gray-600 p-2 text-xs font-medium text-gray-700 dark:text-gray-300">
                       {{ meter.name }}
                     </td>
@@ -182,10 +209,28 @@
               </table>
             </div>
           </div>
+
+          <!-- Chart Legend (Interactive) -->
+          <div v-if="chartType === 'bar' || chartType === 'line'" class="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              v-for="meterId in metersStoreSelectedIds"
+              :key="meterId"
+              @click="toggleMeterVisibility(meterId)"
+              :class="[
+                'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all',
+                activeMeterIds.includes(meterId) || activeMeterIds.length === 0
+                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 ring-1 ring-offset-0 ring-transparent'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+              ]"
+            >
+              <span class="w-3 h-3 rounded-full" :style="{ backgroundColor: metersStore.getMeterColor(meterId) }"></span>
+              <span class="truncate max-w-[12rem]">{{ getMeterName(meterId) }}</span>
+            </button>
+          </div>
         </div>
 
         <!-- Comparison Data Table -->
-        <div v-if="chartType !== 'table'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+        <div v-if="metersStore.selectedMeters.length > 0 && chartType !== 'table'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
           <div class="p-6 border-b border-gray-200 dark:border-gray-700">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Detailed Comparison</h3>
           </div>
@@ -288,7 +333,7 @@
       <!-- Right Panel: Controls (35%) -->
       <div class="xl:col-span-4 space-y-6">
         <!-- Comparison Mode Selector -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ t('comparison.mode.title') }}</h3>
 
           <div class="space-y-2">
@@ -317,154 +362,125 @@
         </div>
 
         <!-- Meters Selection -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('comparison.meters.title') }}</h3>
-            <button @click="selectAllMeters" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            <button @click="selectAllMetersUI" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
               {{ t('comparison.buttons.selectAll') }}
             </button>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
-            <label
-              v-for="meter in availableMeters"
-              :key="meter.id"
-              class="flex items-center gap-2 cursor-pointer group p-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800"
+          <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-5">
+            <button
+              v-for="meterId in metersStoreSelectedIds"
+              :key="meterId"
+              @click="toggleMeterSelection(meterId)"
+              class="flex items-center gap-3 cursor-pointer group p-0 rounded-lg transition-all"
             >
-              <input
-                type="checkbox"
-                :checked="selectedMeterIds.includes(meter.id)"
-                @change="toggleMeter(meter.id)"
-                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: getMeterColor(meter.name) }"></span>
-              <span class="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white truncate">
-                {{ meter.name }}
+              <span class="w-3.5 h-3.5 rounded-full flex-shrink-0" :style="{ backgroundColor: metersStore.getMeterColor(meterId) }"></span>
+              <span class="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white">
+                {{ getMeterName(meterId) }}
               </span>
-            </label>
+            </button>
           </div>
 
           <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            {{ t('comparison.meters.selected', { count: selectedMeters.length }) }}
+            {{ t('comparison.meters.selected', { count: metersStoreSelectedIds.length }) }}
           </div>
         </div>
 
         <!-- Period Selection -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ t('comparison.periods.title') }}</h3>
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('comparison.periods.title') }}</h3>
+            <button v-if="selectedDates.length > 0" @click="clearDates" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+              {{ t('common.clear') }}
+            </button>
+          </div>
 
           <!-- Period Presets -->
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-3 gap-2 mb-4">
             <button
               v-for="preset in ['last7Days', 'last4Weeks', 'last3Months']"
               :key="preset"
               @click="selectPresetAndHideCalendar(preset)"
               :class="[
-                'px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors',
+                'px-3 py-2 text-xs font-medium rounded-lg border transition-colors',
                 isPresetActive(preset)
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                  ? 'bg-blue-600 text-white border-blue-600'
                   : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               ]"
             >
               {{ t(`comparison.periods.presets.${preset}`) }}
             </button>
-            <button
-              v-if="comparisonMode === 'matrix'"
-              @click="toggleCustomCalendar"
-              :class="[
-                'px-2 py-1.5 text-xs font-medium rounded-lg border transition-colors',
-                showCustomCalendar
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-              ]"
-            >
-              {{ t('comparison.periods.presets.custom') }}
-            </button>
           </div>
 
-          <!-- Selected Periods Chips -->
-          <div class="mt-2 flex flex-wrap gap-1">
-            <button
-              v-for="d in selectedDates"
-              :key="d"
-              @click="toggleDate(d)"
-              class="px-2 py-0.5 text-xs rounded-full border transition-colors focus:outline-none"
-              :class="[
-                selectedDates.includes(d)
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700'
-              ]"
-            >
-              {{ d }}
-            </button>
-          </div>
-
-          <!-- Calendar (conditional - only for matrix mode) -->
-          <div v-if="showCustomCalendar && comparisonMode === 'matrix'" class="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
-            <!-- Month Navigation -->
-            <div class="flex items-center justify-between mb-2">
-              <button
-                @click="prevMonth"
-                class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-              >
-                <span class="material-symbols-outlined text-lg">chevron_left</span>
-              </button>
-              <span class="text-xs font-medium text-gray-900 dark:text-white">
-                {{ monthLabel }}
-              </span>
-              <button
-                @click="nextMonth"
-                class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-              >
-                <span class="material-symbols-outlined text-lg">chevron_right</span>
-              </button>
-            </div>
-
-            <!-- Weekday Headers -->
-            <div class="grid grid-cols-7 gap-0.5 mb-1">
-              <div
-                v-for="day in weekDays"
-                :key="day"
-                class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-0.5"
-              >
-                {{ day.substring(0, 1) }}
+          <!-- Selected Dates Info -->
+          <div v-if="selectedDates.length > 0" class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div class="flex items-center justify-between">
+              <div class="text-xs">
+                <span class="font-semibold text-blue-900 dark:text-blue-100">
+                  {{ selectedDates.length }} dates selected
+                </span>
+                <div v-if="selectedDates.length > 1" class="text-blue-700 dark:text-blue-300 mt-1">
+                  {{ selectedDates[0] }} → {{ selectedDates[selectedDates.length - 1] }}
+                </div>
               </div>
             </div>
+          </div>
 
-            <!-- Calendar Days -->
-            <div class="grid grid-cols-7 gap-0.5">
-              <button
-                v-for="(day, index) in calendarDays"
-                :key="index"
-                @click="day.isCurrentMonth && day.date && toggleDate(day.date)"
-                :disabled="!day.isCurrentMonth"
-                :class="[
-                  'aspect-square flex items-center justify-center text-xs rounded transition-all relative',
-                  day.isCurrentMonth
-                    ? day.isSelected
-                      ? 'bg-blue-600 text-white font-semibold'
-                      : day.isToday
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    : 'text-gray-300 dark:text-gray-700 cursor-not-allowed'
-                ]"
-              >
-                {{ day.dateObj ? day.dateObj.getDate() : '' }}
-                <span
-                    v-if="comparisonMode === 'matrix'"
-                  class="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-green-500"
-                ></span>
-              </button>
+          <!-- Month Navigation -->
+          <div class="flex items-center justify-between mb-4">
+            <button
+              @click="prevMonth"
+              class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+            >
+              <span class="material-symbols-outlined text-xl">chevron_left</span>
+            </button>
+            <span class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ monthLabel }}
+            </span>
+            <button
+              @click="nextMonth"
+              class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
+            >
+              <span class="material-symbols-outlined text-xl">chevron_right</span>
+            </button>
+          </div>
+
+          <!-- Weekday Headers -->
+          <div class="grid grid-cols-7 gap-1 mb-2">
+            <div
+              v-for="day in weekDays"
+              :key="day"
+              class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-1"
+            >
+              {{ day }}
             </div>
           </div>
 
-          <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-              <span>{{ selectedDates.length }} dates</span>
-              <button v-if="selectedDates.length > 0" @click="clearDates" class="text-blue-600 dark:text-blue-400 hover:underline">
-                Clear
-              </button>
-            </div>
+          <!-- Calendar Days -->
+          <div class="grid grid-cols-7 gap-1">
+            <button
+              v-for="(day, index) in calendarDays"
+              :key="index"
+              @click="day.isCurrentMonth && day.date && toggleDate(day.date)"
+              :disabled="!day.isCurrentMonth"
+              :class="[
+                'aspect-square flex items-center justify-center text-xs rounded-md transition-all relative',
+                day.isCurrentMonth
+                  ? day.isSelected
+                    ? 'bg-blue-600 text-white font-semibold'
+                    : day.isToday
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  : day.isSelected
+                  ? 'bg-blue-500 text-white font-medium'
+                  : 'text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+              ]"
+            >
+              {{ day.dateObj ? day.dateObj.getDate() : '' }}
+            </button>
           </div>
         </div>
 
@@ -571,11 +587,37 @@ const {
 // UI State
 const showCompteurSelector = ref(false)
 
+// Track which meters are visible/active in comparison
+const activeMeterIds = ref<string[]>([])
+
 function handleCompteurSelection(selectedIds: string[]) {
-  // Update meters store with new selection (comparison store will react to this)
+  // Update meters store with new selection
   metersStore.setSelectedMeters(selectedIds)
+
+  // Initialize all selected meters as active
+  activeMeterIds.value = [...selectedIds]
+
   showCompteurSelector.value = false
 }
+
+function toggleMeterVisibility(meterId: string) {
+  const idx = activeMeterIds.value.indexOf(meterId)
+  if (idx > -1) {
+    // Remove from active list
+    activeMeterIds.value.splice(idx, 1)
+  } else {
+    // Add to active list
+    activeMeterIds.value.push(meterId)
+  }
+}
+
+// Helper function to get meter name by ID
+function getMeterName(meterId: string): string {
+  const meter = allCompteurs.value.find(c => c.id === meterId)
+  return meter?.name || 'Unknown'
+}
+
+const { selectedMeterIds: metersStoreSelectedIds } = storeToRefs(metersStore)
 
 const {
   comparisonMode,
@@ -587,7 +629,7 @@ const {
   viewOptions,
   currentMonth,
   availableMeters,
-  selectedMeters,
+  selectedMeters: comparisonStoreSelectedMeters,
   comparisonData,
   aggregatedLabels,
   activePeriodLabel,
@@ -595,6 +637,9 @@ const {
   comparisonTable,
   calendarDays
 } = storeToRefs(store)
+
+// Use metersStore as the source of truth for selected meters
+const selectedMeters = computed(() => metersStore.selectedMeters)
 
 const {
   toggleMeter,
@@ -638,12 +683,25 @@ const monthLabel = computed(() => {
   return month.charAt(0).toUpperCase() + month.slice(1)
 })
 
-const totalTablePages = computed(() => Math.ceil(comparisonTable.value.length / itemsPerPage))
+const totalTablePages = computed(() => {
+  let filteredTable = comparisonTable.value
+
+  if (activeMeterIds.value.length > 0) {
+    filteredTable = comparisonTable.value.filter(row => {
+      return activeMeterIds.value.some(id => row.label.includes(getMeterName(id)))
+    })
+  }
+
+  return Math.ceil(filteredTable.length / itemsPerPage)
+})
 
 const paginatedComparisonTable = computed(() => {
+  const filteredTable = activeMeterIds.value.length > 0
+    ? comparisonTable.value.filter(row => activeMeterIds.value.some(id => row.label.includes(getMeterName(id))))
+    : comparisonTable.value
   const start = (currentTablePage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
-  return comparisonTable.value.slice(start, end)
+  return filteredTable.slice(start, end)
 })
 
 function prevTablePage() {
@@ -705,6 +763,24 @@ function isPresetActive(preset: string): boolean {
   return true
 }
 
+// Toggle selection using metersStore as source of truth
+function toggleMeterSelection(meterId: string) {
+  const current = [...metersStoreSelectedIds.value]
+  const idx = current.indexOf(meterId)
+  if (idx > -1) {
+    current.splice(idx, 1)
+  } else {
+    current.push(meterId)
+  }
+  metersStore.setSelectedMeters(current)
+}
+
+// Select-all using central store and keep active list in sync
+function selectAllMetersUI() {
+  const allIds = allCompteurs.value.map(c => c.id)
+  handleCompteurSelection(allIds)
+}
+
 // Chart instance
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
@@ -721,10 +797,15 @@ function initChart() {
   if (!ctx) return
 
   if (comparisonMode.value === 'byMeters') {
+    // Filter data based on active meters
+    const visibleData = activeMeterIds.value.length > 0
+      ? comparisonData.value.filter(d => activeMeterIds.value.includes(d.meterId || d.id))
+      : comparisonData.value
+
     // One bar/point per meter with different colors
-    const labels = comparisonData.value.map(d => d.label || d.meterLabel || '')
-    const data = comparisonData.value.map(d => d.value)
-    const colors = comparisonData.value.map(d => d.color)
+    const labels = visibleData.map(d => d.label || d.meterLabel || '')
+    const data = visibleData.map(d => d.value)
+    const colors = visibleData.map(d => metersStore.getMeterColor((d.id || d.meterId) as string))
 
     chartInstance = new Chart(ctx, {
       type: chartType.value === 'bar' ? 'bar' : 'line',
@@ -773,19 +854,23 @@ function initChart() {
     // byPeriods or matrix: Multiple lines/bars - one per meter across periods
     const uniquePeriods = [...new Set(comparisonData.value.map(d => d.periodLabel || d.label || d.periodId))]
     const labels = uniquePeriods.sort()
-    const meters = selectedMeters.value
+
+    // Filter meters based on active selection
+    const metersToShow = activeMeterIds.value.length > 0
+      ? selectedMeters.value.filter(m => activeMeterIds.value.includes(m.id))
+      : selectedMeters.value
 
     // Debug logging
     console.log('Chart byPeriods/Matrix mode:', {
       mode: comparisonMode.value,
       dataLength: comparisonData.value.length,
-      metersCount: meters.length,
+      metersCount: metersToShow.length,
       labelsCount: labels.length,
       labels,
       sampleData: comparisonData.value.slice(0, 5)
     })
 
-    const datasets = meters.map(meter => {
+    const datasets = metersToShow.map(meter => {
       const meterData = labels.map(label => {
         const item = comparisonData.value.find(d => {
           const idMatch = d.meterId === meter.id || d.id === meter.id
@@ -795,7 +880,7 @@ function initChart() {
         return item ? item.value : 0
       })
 
-      const color = getMeterColor(meter.name)
+      const color = metersStore.getMeterColor(meter.id)
       return {
         label: meter.name,
         data: meterData,
@@ -876,6 +961,25 @@ watch([chartType, comparisonMode, comparisonData, selectedMeters], () => {
   }
 }, { deep: true })
 
+// Watch for changes to selected meters and update active list
+watch(metersStoreSelectedIds, (newIds) => {
+  // If new meters were added to selection, add them to active list
+  const newMeters = newIds.filter(id => !activeMeterIds.value.includes(id))
+  if (newMeters.length > 0) {
+    activeMeterIds.value.push(...newMeters)
+  }
+
+  // If meters were removed from selection, remove them from active list
+  activeMeterIds.value = activeMeterIds.value.filter(id => newIds.includes(id))
+}, { deep: true })
+
+// Re-init chart when active meters change
+watch(activeMeterIds, () => {
+  if (chartType.value === 'bar' || chartType.value === 'line') {
+    setTimeout(initChart, 100)
+  }
+}, { deep: true })
+
 onMounted(() => {
   // Restore and clean up any invalid meter IDs from localStorage
   metersStore.restoreSelection()
@@ -884,9 +988,12 @@ onMounted(() => {
   initializeCompteurSelection()
 
   // Initialize store data if needed
-  if (selectedMeterIds.value.length === 0) {
+  if (metersStoreSelectedIds.value.length === 0) {
     selectAllMeters()
   }
+
+  // Initialize active meter IDs to match selected meters
+  activeMeterIds.value = [...metersStoreSelectedIds.value]
 
   if (selectedPeriods.value.length === 0 && selectedDates.value.length === 0) {
     selectPeriodPreset('last7Days')

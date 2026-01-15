@@ -1037,7 +1037,7 @@ function removeDate(dateStr: string) {
 // ===========================
 // Lifecycle Hooks
 // ===========================
-onMounted(() => {
+onMounted(async () => {
   // Restore and clean up any invalid meter IDs from localStorage
   metersStore.restoreSelection()
 
@@ -1051,13 +1051,15 @@ onMounted(() => {
   // Initialize with today's date
   goToToday()
 
-  // Refresh data to populate charts
-  refreshData()
+  // Wait for next tick to ensure all state is synchronized
+  await nextTick()
 
-  // Initialize chart
-  nextTick(() => {
-    initChart()
-  })
+  // Refresh data to populate charts (MUST await to ensure data is loaded)
+  await refreshData()
+
+  // Initialize chart after data is loaded
+  await nextTick()
+  initChart()
 })
 
 onBeforeUnmount(() => {

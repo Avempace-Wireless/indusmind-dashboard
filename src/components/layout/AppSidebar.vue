@@ -183,7 +183,7 @@
           </div>
         </div>
       </nav>
-      <SidebarWidget v-if="isExpanded || isHovered || isMobileOpen" />
+<!--       <SidebarWidget v-if="isExpanded || isHovered || isMobileOpen" /> -->
     </div>
   </aside>
 </template>
@@ -286,6 +286,21 @@ const menuGroups = computed(() => [
       },
     ],
   },
+    {
+    title: t('sidebar.equipment'),
+    items: [
+      {
+        icon: BoxIcon,
+        name: t('sidebar.equipment'),
+        path: '/equipment',
+      },
+   /*    {
+        icon: UserCircleIcon,
+        name: t('sidebar.sitesLocations'),
+        path: '/locations',
+      }, */
+    ],
+  },
   {
     title: t('sidebar.reports'),
     items: [
@@ -311,7 +326,7 @@ const menuGroups = computed(() => [
       },
     ],
   },
-  {
+/*   {
     title: t('sidebar.performance'),
     items: [
       {
@@ -325,23 +340,9 @@ const menuGroups = computed(() => [
         path: '/benchmarking',
       },
     ],
-  },
-  {
-    title: t('sidebar.inventory'),
-    items: [
-      {
-        icon: BoxIcon,
-        name: t('sidebar.equipment'),
-        path: '/equipment',
-      },
-      {
-        icon: UserCircleIcon,
-        name: t('sidebar.sitesLocations'),
-        path: '/locations',
-      },
-    ],
-  },
-  {
+  }, */
+
+/*   {
     title: t('sidebar.configuration'),
     items: [
       {
@@ -355,7 +356,7 @@ const menuGroups = computed(() => [
         path: '/users',
       },
     ],
-  },
+  }, */
 ])
 
 const isActive = (path) => route.path === path
