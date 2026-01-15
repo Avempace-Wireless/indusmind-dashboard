@@ -155,7 +155,4 @@ const dailyAvgRows = computed(()=> meters[selectedMeter.value].dailyPower.map((p
 const hourlyColumns = [{ key: 'timestamp', label: 'Timestamp' }, { key: 'power', label: 'Puissance (kW)' }]
 const dailyColumns = [{ key: 'date', label: 'Date' }, { key: 'power', label: 'Puissance journalière (kW)' }]
 const dailyAvgColumns = [{ key: 'date', label: 'Date' }, { key: 'avg', label: 'Puissance moyenne journalière (kW)' }]
-
-// initial selection default
-selectMeter(selectedMeter.value)
 </script>
