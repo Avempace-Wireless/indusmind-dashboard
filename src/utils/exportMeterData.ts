@@ -24,10 +24,11 @@ export function exportMeterJSON(meterId: string): string {
 }
 
 /**
- * Export meter data for specific category
+ * Export meter data for a given type label
+ * (uses meter.type field; pass the type string you want to filter on)
  */
-export function exportCategoryJSON(category: 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'): string {
-  const meters = MOCK_METERS.filter(m => m.category === category)
+export function exportCategoryJSON(typeLabel: string): string {
+  const meters = MOCK_METERS.filter(m => (m.type ?? 'meter') === typeLabel)
   return JSON.stringify(meters, null, 2)
 }
 

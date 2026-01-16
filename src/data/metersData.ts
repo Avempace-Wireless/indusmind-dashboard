@@ -17,12 +17,9 @@ export {
   type Meter,
 
   // Data
-  CATEGORIES,
   MOCK_METERS as METERS_DATA, // Re-export MOCK_METERS as METERS_DATA for backward compatibility
 
   // Helper Functions
-  getMetersByCategory,
   getMeterById,
-  getElementData,
-  getAllCategories
+  getElementData
 } from './mockData'

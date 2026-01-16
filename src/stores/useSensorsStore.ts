@@ -37,6 +37,11 @@ export const useSensorsStore = defineStore('sensors', () => {
   // Color palette for sensors (different from meters)
   const colorPalette = SENSOR_COLOR_PALETTE
 
+    /**
+     * All available sensors (for views that need full list)
+     */
+    const availableSensors = computed(() => allSensors.value)
+
   // ===========================
   // ACTIONS
   // ===========================
@@ -176,7 +181,7 @@ export const useSensorsStore = defineStore('sensors', () => {
     const lowerQuery = query.toLowerCase()
     return allSensors.value.filter(s =>
       s.name.toLowerCase().includes(lowerQuery) ||
-      s.zone.toLowerCase().includes(lowerQuery)
+        (s.zone?.toLowerCase() ?? '').includes(lowerQuery)
     )
   }
 
@@ -264,6 +269,7 @@ export const useSensorsStore = defineStore('sensors', () => {
     searchSensors,
 
     // Getters
+      availableSensors,
     selectedSensors,
     selectedSensorColors,
     canSelectMore,

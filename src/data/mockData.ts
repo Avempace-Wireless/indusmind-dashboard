@@ -37,7 +37,6 @@ export interface MeterMetrics {
   consumption: number
   power: number
   cost: number
-  co2: number
   voltage?: number
   current?: number
   temperature?: number
@@ -54,32 +53,57 @@ export interface MeterElement {
 export interface Meter {
   id: string
   name: string
-  category: 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'
-  subtitle: string
-  type: string
+  label: string
+  deviceUUID: string
+  accessToken: string
+  subtitle?: string
+  type?: string
   unit: string
-  site: string
-  color: 'red' | 'green' | 'blue' | 'yellow'
-  icon: string
+  site?: string
+  color?: string // Auto-assigned or custom
+  icon?: string
   status: 'online' | 'offline'
-  linkedEquipment: string[]
+  linkedEquipment?: string[]
   translationKey?: string
   elements?: MeterElement[]
   metrics: MeterMetrics
   timeSeries: TimeSeriesData
   kpis: KPIValues
+  assignedToCustomer: boolean
+  customerId: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Sensor {
   id: string
   name: string
-  label?: string
-  zone: string
+  label: string
+  deviceUUID: string
+  accessToken: string
+  zone?: string
   readings: DataPoint[]
   timeSeries: TimeSeriesData
   minTemp: number
   maxTemp: number
   avgTemp: number
+  assignedToCustomer: boolean
+  customerId: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Controller {
+  id: string
+  name: string
+  label: string
+  deviceUUID: string
+  accessToken: string
+  controlledSensors?: string[] // IDs of sensors this controller manages
+  assignedToCustomer: boolean
+  customerId: number
+  createdAt: string
+  updatedAt: string
 }
 
 // ===========================
@@ -151,29 +175,29 @@ function generateMonthlyData(baseValue: number, variation: number, months: numbe
 }
 
 // ===========================
-// Meter Categories
-// ===========================
-
-export const CATEGORIES = ['TGBT', 'Compresseurs', 'Clim', 'Éclairage'] as const
-
-// ===========================
 // Unified Meters Mock Data
 // ===========================
 
 export const MOCK_METERS: Meter[] = [
-  // TGBT - Main Electrical Panel (with L1, L2, L3 elements)
+  // PM2200-TGBT-Indusmind - Main Electrical Panel (with L1, L2, L3 elements)
   {
     id: '8',
-    name: 'TGBT',
-    category: 'TGBT',
+    name: 'PM2200-TGBT-Indusmind',
+    label: 'TGBT',
+    deviceUUID: '545ffcb0-ab9c-11f0-a05e-97f672464deb',
+    accessToken: 'UgPrFSjDhgKUquEwyIB8',
     subtitle: 'PM2200-TGBT-Indusmind',
     type: 'Main Electrical Panel',
     unit: 'kWh',
     site: 'Main',
-    color: 'red',
+    color: '#ef4444',
     icon: 'electric_bolt',
     status: 'online',
     linkedEquipment: ['eq-1', 'eq-2', 'eq-3'],
+    assignedToCustomer: true,
+    customerId: 2,
+    createdAt: '2025-10-18T21:03:25.881Z',
+    updatedAt: '2025-10-18T21:03:25.881Z',
     elements: [
       {
         id: 'L1',
@@ -182,7 +206,6 @@ export const MOCK_METERS: Meter[] = [
           consumption: 2122.5,
           power: 88.4,
           cost: 254.7,
-          co2: 425.0,
           voltage: 230,
           current: 384.3
         },
@@ -211,7 +234,6 @@ export const MOCK_METERS: Meter[] = [
           consumption: 2198.3,
           power: 91.6,
           cost: 263.8,
-          co2: 439.7,
           voltage: 230,
           current: 398.3
         },
@@ -240,7 +262,6 @@ export const MOCK_METERS: Meter[] = [
           consumption: 2045.8,
           power: 85.2,
           cost: 245.5,
-          co2: 409.2,
           voltage: 230,
           current: 370.4
         },
@@ -267,7 +288,6 @@ export const MOCK_METERS: Meter[] = [
       consumption: 6366.6,
       power: 265.2,
       cost: 764.0,
-      co2: 1273.9,
       voltage: 400,
       current: 1153.0
     },
@@ -290,20 +310,26 @@ export const MOCK_METERS: Meter[] = [
     }
   },
 
-  // Compresseurs - Industrial Compressors (with Unit 1, 2, 3 elements)
+  // PM2200-Compresseur - Industrial Compressors (with Unit 1, 2, 3 elements)
   {
     id: '4',
-    name: 'Compresseurs',
-    category: 'Compresseurs',
+    name: 'PM2200-Compresseur',
+    label: 'Compresseur',
+    deviceUUID: '04f2b660-2f80-11f0-81a4-050c01ec03ef',
+    accessToken: 'AbaCddzoPbEuQMlfGMy9',
     subtitle: 'Compresseurs industriels',
     type: 'Industrial Compressors',
     unit: 'kWh',
     site: 'Main',
-    color: 'green',
+    color: '#22c55e',
     icon: 'compress',
     status: 'online',
     linkedEquipment: ['eq-4', 'eq-5'],
     translationKey: 'equipment.compressorsIndustrial',
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-05-18T19:12:49.107Z',
+    updatedAt: '2025-11-03T11:12:16.410Z',
     elements: [
       {
         id: 'Unit-1',
@@ -312,7 +338,6 @@ export const MOCK_METERS: Meter[] = [
           consumption: 1528.4,
           power: 63.7,
           cost: 183.4,
-          co2: 305.7,
           temperature: 72
         },
         timeSeries: {
@@ -340,7 +365,6 @@ export const MOCK_METERS: Meter[] = [
           consumption: 1453.2,
           power: 60.5,
           cost: 174.4,
-          co2: 290.6,
           temperature: 68
         },
         timeSeries: {
@@ -368,7 +392,6 @@ export const MOCK_METERS: Meter[] = [
           consumption: 1103.6,
           power: 46.0,
           cost: 132.4,
-          co2: 220.7,
           temperature: 65
         },
         timeSeries: {
@@ -393,9 +416,7 @@ export const MOCK_METERS: Meter[] = [
     metrics: {
       consumption: 4085.2,
       power: 170.2,
-      cost: 490.2,
-      co2: 817.0,
-      temperature: 68
+      cost: 490.2
     },
     timeSeries: {
       hourly: generateHourlyData(170, 26),
@@ -416,20 +437,26 @@ export const MOCK_METERS: Meter[] = [
     }
   },
 
-  // Clim - Cooling System (with Zone A, B elements)
+  // PM2200-Climatisation - Cooling System (with Zone A, B elements)
   {
     id: '3',
-    name: 'Clim',
-    category: 'Clim',
+    name: 'PM2200-Climatisation',
+    label: 'Climatisation',
+    deviceUUID: 'f3f72da0-2f7f-11f0-81a4-050c01ec03ef',
+    accessToken: 'OYdnyzPDNZvOyeS1uild',
     subtitle: 'Climatisation générale',
     type: 'General Cooling',
     unit: 'kWh',
     site: 'Main',
-    color: 'blue',
+    color: '#3b82f6',
     icon: 'ac_unit',
     status: 'online',
     linkedEquipment: ['eq-6', 'eq-7'],
     translationKey: 'equipment.climGeneral',
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-05-18T19:12:24.369Z',
+    updatedAt: '2025-11-03T11:12:16.270Z',
     elements: [
       {
         id: 'Zone-A',
@@ -438,7 +465,6 @@ export const MOCK_METERS: Meter[] = [
           consumption: 1281.7,
           power: 53.4,
           cost: 153.8,
-          co2: 256.3,
           temperature: 22
         },
         timeSeries: {
@@ -466,7 +492,6 @@ export const MOCK_METERS: Meter[] = [
           consumption: 852.8,
           power: 35.5,
           cost: 102.3,
-          co2: 170.6,
           temperature: 23
         },
         timeSeries: {
@@ -491,9 +516,7 @@ export const MOCK_METERS: Meter[] = [
     metrics: {
       consumption: 2134.5,
       power: 88.9,
-      cost: 256.1,
-      co2: 426.9,
-      temperature: 22
+      cost: 256.1
     },
     timeSeries: {
       hourly: generateHourlyData(88, 14),
@@ -514,25 +537,29 @@ export const MOCK_METERS: Meter[] = [
     }
   },
 
-  // TGBT Secondaire - Secondary Main Panel
+  // PM2200-TGBT - Secondary Main Panel
   {
     id: '5',
-    name: 'PM2200 - TGBT Secondaire',
-    category: 'TGBT',
+    name: 'PM2200-TGBT',
+    label: 'TGBT',
+    deviceUUID: 'da5fd130-2f7f-11f0-81a4-050c01ec03ef',
+    accessToken: 'kMj8u3wYEaBfhzZvQsoY',
     subtitle: 'TGBT Secondaire',
     type: 'Secondary Electrical Panel',
     unit: 'kWh',
     site: 'Secondary',
-    color: 'yellow',
+    color: '#eab308',
     icon: 'electric_bolt',
     status: 'online',
     linkedEquipment: ['eq-12'],
-    translationKey: 'equipment.tgbtSecondary',
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-05-18T19:13:15.059Z',
+    updatedAt: '2025-11-03T11:12:16.539Z',
     metrics: {
       consumption: 3039.6,
       power: 126.6,
-      cost: 364.7,
-      co2: 607.9
+      cost: 364.7
     },
     timeSeries: {
       hourly: generateHourlyData(126, 20),
@@ -553,25 +580,30 @@ export const MOCK_METERS: Meter[] = [
     }
   },
 
-  // Éclairage - Lighting System (single unit, no elements)
+  // PM2200-Eclairage - Lighting System (adding more based on naming pattern)
   {
     id: '9',
-    name: 'Éclairage',
-    category: 'Éclairage',
+    name: 'PM2200-Eclairage',
+    label: 'Éclairage',
+    deviceUUID: 'da5fd140-2f7f-11f0-81a4-050c01ec03ef',
+    accessToken: 'kMj8u3wYEaBfhzZvQsoY',
     subtitle: 'Éclairage général',
     type: 'General Lighting',
     unit: 'kWh',
     site: 'Main',
-    color: 'yellow',
+    color: '#eab308',
     icon: 'lightbulb',
     status: 'online',
     linkedEquipment: ['eq-8'],
     translationKey: 'equipment.lightingGeneral',
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-06-15T10:30:00.000Z',
+    updatedAt: '2025-11-03T11:12:16.000Z',
     metrics: {
       consumption: 3039.6,
       power: 126.6,
-      cost: 364.7,
-      co2: 607.9
+      cost: 364.7
     },
     timeSeries: {
       hourly: generateHourlyData(126, 20),
@@ -592,25 +624,30 @@ export const MOCK_METERS: Meter[] = [
     }
   },
 
-  // Compresseur Zone 2 - Secondary Compressor
+  // PM2200-Compresseur-2 - Secondary Compressor
   {
     id: '10',
-    name: 'Compresseur Zone 2',
-    category: 'Compresseurs',
+    name: 'PM2200-Compresseur-2',
+    label: 'Compresseur Zone 2',
+    deviceUUID: '04f2b670-2f80-11f0-81a4-050c01ec03ef',
+    accessToken: 'BbaCddzoPbEuQMlfGMy9',
     subtitle: 'Compresseur secondaire',
     type: 'Secondary Compressor',
     unit: 'kWh',
     site: 'Zone 2',
-    color: 'green',
+    color: '#22c55e',
     icon: 'compress',
     status: 'online',
     linkedEquipment: ['eq-9'],
     translationKey: 'equipment.compressorSecondary',
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-06-01T14:00:00.000Z',
+    updatedAt: '2025-11-03T11:12:17.000Z',
     metrics: {
       consumption: 1876.4,
       power: 78.2,
       cost: 225.2,
-      co2: 375.3,
       temperature: 70
     },
     timeSeries: {
@@ -627,30 +664,35 @@ export const MOCK_METERS: Meter[] = [
       avgPowerThisMonth: 78.2,
       avgPowerYesterday: 76.7,
       avgPowerToday: 78.2,
-      avgPowerBeforeYesterday: 74.6,
+      avgPowerBeforeYesterday: 75.1,
       instantaneousPower: 78.2
     }
   },
 
-  // Clim Bureau - Office Cooling
+  // PM2200-Climatisation-Bureau - Office Cooling
   {
     id: '11',
-    name: 'Clim Bureau',
-    category: 'Clim',
+    name: 'PM2200-Climatisation-Bureau',
+    label: 'Clim Bureau',
+    deviceUUID: 'f3f72db0-2f7f-11f0-81a4-050c01ec03ef',
+    accessToken: 'PYdnyzPDNZvOyeS1uild',
     subtitle: 'Climatisation bureaux',
     type: 'Office Cooling',
     unit: 'kWh',
     site: 'Office',
-    color: 'blue',
+    color: '#3b82f6',
     icon: 'ac_unit',
     status: 'online',
     linkedEquipment: ['eq-10', 'eq-11'],
     translationKey: 'equipment.climOffices',
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-06-10T09:15:00.000Z',
+    updatedAt: '2025-11-03T11:12:18.000Z',
     metrics: {
       consumption: 987.3,
       power: 41.1,
       cost: 118.5,
-      co2: 197.5,
       temperature: 21
     },
     timeSeries: {
@@ -672,25 +714,30 @@ export const MOCK_METERS: Meter[] = [
     }
   },
 
-  // Production Line - Main Production Equipment
+  // PM2200-Production - Main Production Equipment
   {
     id: '12',
-    name: 'Ligne Production',
-    category: 'TGBT',
+    name: 'PM2200-Production',
+    label: 'Ligne Production',
+    deviceUUID: '545ffcc0-ab9c-11f0-a05e-97f672464deb',
+    accessToken: 'VgPrFSjDhgKUquEwyIB8',
     subtitle: 'Ligne Production',
     type: 'Production Equipment',
     unit: 'kWh',
     site: 'Production',
-    color: 'red',
+    color: '#ef4444',
     icon: 'factory',
     status: 'online',
     linkedEquipment: ['eq-13', 'eq-14'],
     translationKey: 'equipment.productionLine',
+    assignedToCustomer: true,
+    customerId: 2,
+    createdAt: '2025-07-01T08:00:00.000Z',
+    updatedAt: '2025-11-03T11:12:19.000Z',
     metrics: {
       consumption: 5240.8,
       power: 218.4,
-      cost: 628.9,
-      co2: 1048.2
+      cost: 628.9
     },
     timeSeries: {
       hourly: generateHourlyData(218, 35),
@@ -718,12 +765,19 @@ export const MOCK_METERS: Meter[] = [
 
 export const MOCK_SENSORS: Sensor[] = [
   {
-    id: 'sensor-1',
-    name: 'Hall Principal',
-    zone: 'Zona-A',
+    id: '1',
+    name: 'Indusmind_T_Sensor_95E64C',
+    label: 'Zone 2',
+    deviceUUID: 'fc1ce180-3030-11f0-81a4-050c01ec03ef',
+    accessToken: 'uesmGoF8Kn3OWHYIsaVE',
+    zone: 'Zone-2',
     minTemp: 18,
     maxTemp: 28,
     avgTemp: 22,
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-05-18T19:11:32.021Z',
+    updatedAt: '2025-11-03T11:12:16.005Z',
     readings: generateDailyData(22, 3),
     timeSeries: {
       hourly: generateHourlyData(22, 2),
@@ -732,12 +786,19 @@ export const MOCK_SENSORS: Sensor[] = [
     }
   },
   {
-    id: 'sensor-2',
-    name: 'Salle Serveurs',
-    zone: 'Zone-B',
+    id: '2',
+    name: 'Indusmind_T_Sensor_9527CC',
+    label: 'Zone 1',
+    deviceUUID: 'c44ae4c0-2f7f-11f0-81a4-050c01ec03ef',
+    accessToken: '01NdZW9LlxH8TNRm8ZDz',
+    zone: 'Zone-1',
     minTemp: 16,
     maxTemp: 24,
     avgTemp: 20,
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-05-18T19:11:57.663Z',
+    updatedAt: '2025-11-03T11:12:16.137Z',
     readings: generateDailyData(20, 2),
     timeSeries: {
       hourly: generateHourlyData(20, 1.5),
@@ -746,12 +807,19 @@ export const MOCK_SENSORS: Sensor[] = [
     }
   },
   {
-    id: 'sensor-3',
-    name: 'Zone Production',
-    zone: 'Zone-C',
+    id: '6',
+    name: 'Indusmind_T_Sensor_95DC2C',
+    label: 'Zone 3',
+    deviceUUID: 'd5054c60-348e-11f0-ba36-29b3a8b296dd',
+    accessToken: 'C6o7mVoRWXq1h0pdn13L',
+    zone: 'Zone-3',
     minTemp: 19,
     maxTemp: 30,
     avgTemp: 24,
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-05-19T09:09:06.971Z',
+    updatedAt: '2025-11-03T11:12:16.671Z',
     readings: generateDailyData(24, 4),
     timeSeries: {
       hourly: generateHourlyData(24, 2.5),
@@ -759,13 +827,21 @@ export const MOCK_SENSORS: Sensor[] = [
       monthly: generateMonthlyData(24, 4)
     }
   },
+  // Additional sensors to expand the data set
   {
-    id: 'sensor-4',
-    name: 'Bureau Direction',
-    zone: 'Zone-D',
+    id: '13',
+    name: 'Indusmind_T_Sensor_95E751',
+    label: 'Bureau Direction',
+    deviceUUID: 'fc1ce190-3030-11f0-81a4-050c01ec03ef',
+    accessToken: 'vfsmGoF8Kn3OWHYIsaVE',
+    zone: 'Zone-4',
     minTemp: 20,
     maxTemp: 26,
     avgTemp: 23,
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-06-20T10:00:00.000Z',
+    updatedAt: '2025-11-03T11:12:20.000Z',
     readings: generateDailyData(23, 2),
     timeSeries: {
       hourly: generateHourlyData(23, 1.5),
@@ -774,12 +850,19 @@ export const MOCK_SENSORS: Sensor[] = [
     }
   },
   {
-    id: 'sensor-5',
-    name: 'Stockage Matières',
-    zone: 'Zone-E',
+    id: '14',
+    name: 'Indusmind_T_Sensor_95E852',
+    label: 'Stockage Matières',
+    deviceUUID: 'c44ae4d0-2f7f-11f0-81a4-050c01ec03ef',
+    accessToken: '02NdZW9LlxH8TNRm8ZDz',
+    zone: 'Zone-5',
     minTemp: 17,
     maxTemp: 29,
     avgTemp: 21,
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-06-25T14:30:00.000Z',
+    updatedAt: '2025-11-03T11:12:21.000Z',
     readings: generateDailyData(21, 3.5),
     timeSeries: {
       hourly: generateHourlyData(21, 2),
@@ -788,12 +871,19 @@ export const MOCK_SENSORS: Sensor[] = [
     }
   },
   {
-    id: 'sensor-6',
-    name: 'Chaufferie',
-    zone: 'Zone-F',
+    id: '15',
+    name: 'Indusmind_T_Sensor_95E953',
+    label: 'Chaufferie',
+    deviceUUID: 'd5054c70-348e-11f0-ba36-29b3a8b296dd',
+    accessToken: 'D7o7mVoRWXq1h0pdn13L',
+    zone: 'Zone-6',
     minTemp: 25,
     maxTemp: 35,
     avgTemp: 30,
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-07-01T08:00:00.000Z',
+    updatedAt: '2025-11-03T11:12:22.000Z',
     readings: generateDailyData(30, 3),
     timeSeries: {
       hourly: generateHourlyData(30, 2),
@@ -802,12 +892,19 @@ export const MOCK_SENSORS: Sensor[] = [
     }
   },
   {
-    id: 'sensor-7',
-    name: 'Atelier Mécanique',
-    zone: 'Zone-G',
+    id: '16',
+    name: 'Indusmind_T_Sensor_95EA54',
+    label: 'Atelier Mécanique',
+    deviceUUID: 'fc1ce1a0-3030-11f0-81a4-050c01ec03ef',
+    accessToken: 'wgsmGoF8Kn3OWHYIsaVE',
+    zone: 'Zone-7',
     minTemp: 18,
     maxTemp: 32,
     avgTemp: 25,
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-07-10T09:15:00.000Z',
+    updatedAt: '2025-11-03T11:12:23.000Z',
     readings: generateDailyData(25, 4.5),
     timeSeries: {
       hourly: generateHourlyData(25, 3),
@@ -816,18 +913,68 @@ export const MOCK_SENSORS: Sensor[] = [
     }
   },
   {
-    id: 'sensor-8',
-    name: 'Zone Embaliage',
-    zone: 'Zone-H',
+    id: '17',
+    name: 'Indusmind_T_Sensor_95EB55',
+    label: 'Zone Emballage',
+    deviceUUID: 'c44ae4e0-2f7f-11f0-81a4-050c01ec03ef',
+    accessToken: '03NdZW9LlxH8TNRm8ZDz',
+    zone: 'Zone-8',
     minTemp: 19,
     maxTemp: 27,
     avgTemp: 23,
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-07-15T13:45:00.000Z',
+    updatedAt: '2025-11-03T11:12:24.000Z',
     readings: generateDailyData(23, 2.5),
     timeSeries: {
       hourly: generateHourlyData(23, 2),
       daily: generateDailyData(23, 2.5),
       monthly: generateMonthlyData(23, 2.5)
     }
+  }
+]
+
+// ===========================
+// Controllers Mock Data
+// ===========================
+
+export const MOCK_CONTROLLERS: Controller[] = [
+  {
+    id: '7',
+    name: 'Indusmind_Controller_A80C6C',
+    label: 'Indusmind_Controller_A80C6C',
+    deviceUUID: '5ddb6820-44a8-11f0-9944-971940e1d7c1',
+    accessToken: 'aH4S96e7Wzof3LRcljRv',
+    controlledSensors: ['1', '2', '6'], // Controls first 3 sensors
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-06-11T22:39:40.337Z',
+    updatedAt: '2025-11-03T11:12:16.802Z'
+  },
+  {
+    id: '18',
+    name: 'Indusmind_Controller_A80D7D',
+    label: 'Indusmind_Controller_A80D7D',
+    deviceUUID: '5ddb6830-44a8-11f0-9944-971940e1d7c1',
+    accessToken: 'bI5T07f8Xzpg4MSdmkSw',
+    controlledSensors: ['13', '14', '15'], // Controls sensors 13-15
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-07-20T10:00:00.000Z',
+    updatedAt: '2025-11-03T11:12:25.000Z'
+  },
+  {
+    id: '19',
+    name: 'Indusmind_Controller_A80E8E',
+    label: 'Indusmind_Controller_A80E8E',
+    deviceUUID: '5ddb6840-44a8-11f0-9944-971940e1d7c1',
+    accessToken: 'cJ6U18g9Yaqh5NTenl Tx',
+    controlledSensors: ['16', '17'], // Controls sensors 16-17
+    assignedToCustomer: true,
+    customerId: 1,
+    createdAt: '2025-07-25T14:30:00.000Z',
+    updatedAt: '2025-11-03T11:12:26.000Z'
   }
 ]
 
@@ -850,16 +997,6 @@ export const SENSOR_COLOR_PALETTE = [
 // Helper Functions
 // ===========================
 
-/**
- * Get meters by category
- */
-export function getMetersByCategory(category: typeof CATEGORIES[number]): Meter[] {
-  return MOCK_METERS.filter(meter => meter.category === category)
-}
-
-/**
- * Get meter by ID
- */
 export function getMeterById(id: string): Meter | undefined {
   return MOCK_METERS.find(meter => meter.id === id)
 }
@@ -874,13 +1011,6 @@ export function getElementData(meterId: string, elementId: string): MeterElement
 }
 
 /**
- * Get all categories
- */
-export function getAllCategories(): readonly (typeof CATEGORIES[number])[] {
-  return CATEGORIES
-}
-
-/**
  * Get sensor by ID
  */
 export function getSensorById(id: string): Sensor | undefined {
@@ -892,4 +1022,45 @@ export function getSensorById(id: string): Sensor | undefined {
  */
 export function getAllSensors(): Sensor[] {
   return MOCK_SENSORS
+}
+
+/**
+ * Get controller by ID
+ */
+export function getControllerById(id: string): Controller | undefined {
+  return MOCK_CONTROLLERS.find(controller => controller.id === id)
+}
+
+/**
+ * Get all controllers
+ */
+export function getAllControllers(): Controller[] {
+  return MOCK_CONTROLLERS
+}
+
+/**
+ * Get sensors controlled by a controller
+ */
+export function getSensorsByController(controllerId: string): Sensor[] {
+  const controller = getControllerById(controllerId)
+  if (!controller?.controlledSensors) return []
+  return controller.controlledSensors
+    .map(sensorId => getSensorById(sensorId))
+    .filter(Boolean) as Sensor[]
+}
+
+/**
+ * Filter devices by type (PM2200, Sensor, Controller)
+ */
+export function filterDevicesByType(type: 'meter' | 'sensor' | 'controller'): (Meter | Sensor | Controller)[] {
+  switch (type) {
+    case 'meter':
+      return MOCK_METERS.filter(m => m.name.startsWith('PM2200'))
+    case 'sensor':
+      return MOCK_SENSORS.filter(s => s.name.startsWith('Indusmind_T_Sensor'))
+    case 'controller':
+      return MOCK_CONTROLLERS.filter(c => c.name.startsWith('Indusmind_Controller'))
+    default:
+      return []
+  }
 }
