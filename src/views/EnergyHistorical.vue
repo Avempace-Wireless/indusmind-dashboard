@@ -31,13 +31,6 @@
           <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
             {{ t('compteur.selector.title') }}
           </h3>
-          <button
-            @click="showCompteurSelector = true"
-            class="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-xs rounded-lg flex items-center gap-1 transition whitespace-nowrap"
-          >
-            <span class="material-symbols-outlined text-sm">tune</span>
-            {{ t('dashboard.manageMeters') }}
-          </button>
         </div>
 
         <!-- All Meters Pills - Grid Layout -->

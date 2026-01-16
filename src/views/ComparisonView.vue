@@ -11,20 +11,13 @@
             {{ t('comparison.subtitle') }}
           </p>
         </div>
-        <div class="flex gap-3">
+        <div class="flex items-center justify-between">
           <button
             @click="showCompteurSelector = true"
             class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
           >
             <span class="material-symbols-outlined text-base">tune</span>
             {{ t('dashboard.manageMeters') }}
-          </button>
-          <button
-            @click="exportToCSV"
-            class="flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <span class="material-symbols-outlined text-lg">file_download</span>
-            {{ t('comparison.buttons.export') }}
           </button>
         </div>
       </div>
@@ -38,13 +31,7 @@
           <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
             Sélectionnez les compteurs à comparer
           </h3>
-          <button
-            @click="showCompteurSelector = true"
-            class="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-xs rounded-lg flex items-center gap-1 transition whitespace-nowrap"
-          >
-            <span class="material-symbols-outlined text-sm">tune</span>
-            {{ t('dashboard.manageMeters') }}
-          </button>
+
         </div>
 
         <!-- All Meters Pills - Grid Layout -->
@@ -136,6 +123,13 @@
                 {{ t('comparison.periods.title') }}: <span class="font-medium text-gray-700 dark:text-gray-200">{{ aggregatedLabels.length }}</span>
               </p>
             </div>
+            <button
+              @click="exportToCSV"
+              class="flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap transition-colors"
+            >
+              <span class="material-symbols-outlined text-lg">file_download</span>
+              {{ t('comparison.buttons.export') }}
+            </button>
           </div>
 
           <!-- Chart Canvas -->
