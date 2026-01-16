@@ -11,8 +11,8 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import * as deviceAPI from '../services/deviceAPI'
-import type { Sensor } from '../services/deviceAPI'
+import { MOCK_SENSORS, SENSOR_COLOR_PALETTE, getAllSensors } from '../data/mockData'
+import type { Sensor } from '../data/mockData'
 
 /**
  * Maximum number of sensors that can be selected for visualization
@@ -35,30 +35,26 @@ export const useSensorsStore = defineStore('sensors', () => {
   const lastModified = ref<Date | null>(null)
 
   // Color palette for sensors (different from meters)
-  const colorPalette = [
-    '#f97316', // orange
-    '#ef4444', // red
-    '#3b82f6', // blue
-    '#10b981', // green
-    '#ec4899', // pink
-    '#06b6d4', // cyan
-    '#8b5cf6', // purple
-    '#f59e0b', // amber
-  ]
+  const colorPalette = SENSOR_COLOR_PALETTE
+
+    /**
+     * All available sensors (for views that need full list)
+     */
+    const availableSensors = computed(() => allSensors.value)
 
   // ===========================
   // ACTIONS
   // ===========================
 
   /**
-   * Fetch all available sensors from API
+   * Fetch all available sensors from mock data
    * Called on app startup or when data refresh is needed
    */
   async function fetchSensors() {
     try {
       isLoading.value = true
       error.value = null
-      allSensors.value = await deviceAPI.getAllSensors()
+      allSensors.value = getAllSensors()
       // Restore previously selected sensors if available
       restoreSelection()
     } catch (err) {
@@ -180,9 +176,13 @@ export const useSensorsStore = defineStore('sensors', () => {
   /**
    * Search sensors by name or label
    */
-  async function searchSensors(query: string): Promise<Sensor[]> {
+  function searchSensors(query: string): Sensor[] {
     if (!query.trim()) return allSensors.value
-    return deviceAPI.searchSensors(query)
+    const lowerQuery = query.toLowerCase()
+    return allSensors.value.filter(s =>
+      s.name.toLowerCase().includes(lowerQuery) ||
+        (s.zone?.toLowerCase() ?? '').includes(lowerQuery)
+    )
   }
 
   // ===========================
@@ -269,6 +269,7 @@ export const useSensorsStore = defineStore('sensors', () => {
     searchSensors,
 
     // Getters
+      availableSensors,
     selectedSensors,
     selectedSensorColors,
     canSelectMore,

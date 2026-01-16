@@ -3,20 +3,20 @@
  * Useful for debugging, testing, and data analysis
  */
 
-import { METERS_DATA } from '../data/metersData'
+import { MOCK_METERS } from '../data/mockData'
 
 /**
  * Export all meter data as JSON string
  */
 export function exportAllMetersJSON(): string {
-  return JSON.stringify(METERS_DATA, null, 2)
+  return JSON.stringify(MOCK_METERS, null, 2)
 }
 
 /**
  * Export specific meter data as JSON
  */
 export function exportMeterJSON(meterId: string): string {
-  const meter = METERS_DATA.find(m => m.id === meterId)
+  const meter = MOCK_METERS.find(m => m.id === meterId)
   if (!meter) {
     throw new Error(`Meter ${meterId} not found`)
   }
@@ -24,10 +24,11 @@ export function exportMeterJSON(meterId: string): string {
 }
 
 /**
- * Export meter data for specific category
+ * Export meter data for a given type label
+ * (uses meter.type field; pass the type string you want to filter on)
  */
-export function exportCategoryJSON(category: 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'): string {
-  const meters = METERS_DATA.filter(m => m.category === category)
+export function exportCategoryJSON(typeLabel: string): string {
+  const meters = MOCK_METERS.filter(m => (m.type ?? 'meter') === typeLabel)
   return JSON.stringify(meters, null, 2)
 }
 
@@ -35,7 +36,7 @@ export function exportCategoryJSON(category: 'TGBT' | 'Compresseurs' | 'Clim' | 
  * Export element data for multi-element meters
  */
 export function exportElementJSON(meterId: string, elementId: string): string {
-  const meter = METERS_DATA.find(m => m.id === meterId)
+  const meter = MOCK_METERS.find(m => m.id === meterId)
   if (!meter) {
     throw new Error(`Meter ${meterId} not found`)
   }
@@ -52,7 +53,7 @@ export function exportElementJSON(meterId: string, elementId: string): string {
  * Export hourly time series data for a meter
  */
 export function exportHourlyDataJSON(meterId: string, elementId?: string): string {
-  const meter = METERS_DATA.find(m => m.id === meterId)
+  const meter = MOCK_METERS.find(m => m.id === meterId)
   if (!meter) {
     throw new Error(`Meter ${meterId} not found`)
   }
@@ -72,7 +73,7 @@ export function exportHourlyDataJSON(meterId: string, elementId?: string): strin
  * Export daily time series data for a meter
  */
 export function exportDailyDataJSON(meterId: string, elementId?: string): string {
-  const meter = METERS_DATA.find(m => m.id === meterId)
+  const meter = MOCK_METERS.find(m => m.id === meterId)
   if (!meter) {
     throw new Error(`Meter ${meterId} not found`)
   }
@@ -92,7 +93,7 @@ export function exportDailyDataJSON(meterId: string, elementId?: string): string
  * Export monthly time series data for a meter
  */
 export function exportMonthlyDataJSON(meterId: string, elementId?: string): string {
-  const meter = METERS_DATA.find(m => m.id === meterId)
+  const meter = MOCK_METERS.find(m => m.id === meterId)
   if (!meter) {
     throw new Error(`Meter ${meterId} not found`)
   }
@@ -147,7 +148,7 @@ export function downloadAllMetersJSON() {
  * Log meter data to console for debugging
  */
 export function logMeterData(meterId: string, elementId?: string) {
-  const meter = METERS_DATA.find(m => m.id === meterId)
+  const meter = MOCK_METERS.find(m => m.id === meterId)
   if (!meter) {
     console.error(`Meter ${meterId} not found`)
     return

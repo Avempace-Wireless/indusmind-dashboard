@@ -651,10 +651,25 @@
     "manual": "Manuel",
     "auto": "Auto",
     "powerOn": "ACTIF",
-    "powerOff": "INACTIF",    "power": {
+    "powerOff": "INACTIF",
+    "power": {
       "on": "MARCHE",
       "off": "ARRÊT"
-    },    "status": {
+    },
+    "chart": {
+      "open": "Voir le graphique 24h",
+      "label": "Graphique",
+      "subtitle": "Historique de température sur 24h",
+      "current": "Actuel",
+      "maxTarget": "Cible max",
+      "minTarget": "Cible min",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "temperature": "Température",
+      "annotationMax": "Max",
+      "annotationMin": "Min"
+    },
+    "status": {
       "active": "Zones Actives",
       "avgTemp": "Temp. Moyenne",
       "operational": "Opérationnel",
@@ -663,7 +678,11 @@
       "energy": "Énergie",
       "efficiency": "Rendement",
       "systemStatus": "État",
-      "allSystems": "Tous les systèmes"
+      "allSystems": "Tous les systèmes",
+      "tempRange": "Plage de Température",
+      "minMax": "Min — Max",
+      "systemHealth": "Santé du Système",
+      "withinTargets": "Dans les Limites"
     },
     "sections": {
       "zoneControl": "Contrôle et Gestion des Zones",
@@ -702,7 +721,9 @@
       "limitsOn": "Limites : ACTIVÉES",
       "limitsOff": "Limites : DÉSACTIVÉES",
       "resetDefaults": "Réinitialiser aux valeurs par défaut",
-      "limitsDisabled": "Les limites sont désactivées. Activez-les pour modifier les températures."
+      "limitsDisabled": "Les limites sont désactivées. Activez-les pour modifier les températures.",
+      "manageSensors": "Gérer les Capteurs",
+      "sensorsLabel": "Capteurs"
     }
   }
 }

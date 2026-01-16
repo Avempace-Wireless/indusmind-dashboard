@@ -463,7 +463,7 @@ import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/stores/useDashboardStore'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { getMeterColorByIndex } from '@/utils/meterColors'
-import type { Meter, KPIValues } from '@/data/metersData'
+import type { Meter, KPIValues } from '@/data/mockData'
 
 const { t } = useI18n()
 
@@ -618,11 +618,11 @@ const meters = computed(() => metersStore.allMeters.map(meter => ({
   name: meter.name,
   color: meter.color,
   icon: meter.icon,
-  category: meter.category
+  category: meter.type ?? 'meter'
 })))
 
 // Meter categories for filtering - Only display main 4 categories
-const mainCategories: ('TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage')[] = ['TGBT', 'Compresseurs', 'Clim', 'Éclairage']
+const mainCategories: string[] = ['TGBT', 'Compresseurs', 'Clim', 'Éclairage']
 const meterCategories = computed(() => {
   const availableCategories = new Set(meters.value.map(m => m.category))
   // Return only main categories that exist in data
@@ -706,8 +706,8 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
       return {
         name: `${fullData.name} - ${elementData.name}`,
         color: metersStore.getMeterColor(meterId),
-        icon: selectedMeterObj.icon,
-        category: fullData.category,
+        icon: selectedMeterObj.icon ?? 'default_icon',
+        category: (fullData.type ?? 'meter') as 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage',
         elements: fullData.elements.map(el => el.id),
         kpiValues: elementData.kpis,
         hourlyData: {
@@ -746,8 +746,8 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
   return {
     name: fullData.name,
     color: metersStore.getMeterColor(meterId),
-    icon: selectedMeterObj.icon,
-    category: fullData.category,
+    icon: selectedMeterObj.icon ?? 'default_icon',
+    category: (fullData.type ?? 'meter') as 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage',
     elements: fullData.elements?.map(el => el.id) || [],
     kpiValues: fullData.kpis,
     hourlyData: {

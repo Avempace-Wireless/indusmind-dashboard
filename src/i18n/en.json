@@ -658,6 +658,19 @@
       "on": "ON",
       "off": "OFF"
     },
+    "chart": {
+      "open": "View 24h chart",
+      "label": "Chart",
+      "subtitle": "24-hour temperature history",
+      "current": "Current",
+      "maxTarget": "Max target",
+      "minTarget": "Min target",
+      "active": "Active",
+      "inactive": "Inactive",
+      "temperature": "Temperature",
+      "annotationMax": "Max",
+      "annotationMin": "Min"
+    },
     "status": {
       "active": "Active Zones",
       "avgTemp": "Avg. Temperature",
@@ -667,7 +680,11 @@
       "energy": "Energy",
       "efficiency": "Efficiency",
       "systemStatus": "Status",
-      "allSystems": "All systems"
+      "allSystems": "All systems",
+      "tempRange": "Temperature Range",
+      "minMax": "Min — Max",
+      "systemHealth": "System Health",
+      "withinTargets": "Within Targets"
     },
     "sections": {
       "zoneControl": "Zone Control & Management",
@@ -706,7 +723,9 @@
       "limitsOn": "Limits: ON",
       "limitsOff": "Limits: OFF",
       "resetDefaults": "Reset to defaults",
-      "limitsDisabled": "Limits are disabled. Enable to edit temperatures."
+      "limitsDisabled": "Limits are disabled. Enable to edit temperatures.",
+      "manageSensors": "Manage Sensors",
+      "sensorsLabel": "Sensors"
     }
   }
 }

@@ -786,7 +786,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       const hourlyData: HourlyDataPoint[] = meterData.timeSeries.hourly.map((dataPoint, index) => ({
         hour: index,
         value: dataPoint.value,
-        quality: dataPoint.quality || 'good'
+        quality: (dataPoint.quality === 'fair' || dataPoint.quality === 'poor') ? 'estimated' : (dataPoint.quality as 'good' | 'estimated' | 'missing') || 'good'
       }))
 
       const totalValue = hourlyData.reduce((sum, d) => sum + d.value, 0)

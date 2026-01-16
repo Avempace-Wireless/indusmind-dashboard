@@ -99,7 +99,7 @@
                     {{ sensor.name }}
                   </p>
                   <p class="text-sm text-slate-600 dark:text-slate-400 truncate">
-                    {{ sensor.label }}
+                    {{ sensor.label || sensor.zone }}
                   </p>
                 </div>
 
@@ -216,7 +216,7 @@ const filteredSensors = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return sensorsStore.allSensors.filter(sensor =>
     sensor.name.toLowerCase().includes(query) ||
-    sensor.label.toLowerCase().includes(query)
+    ((sensor.label ?? sensor.zone ?? '')).toLowerCase().includes(query)
   )
 })
 

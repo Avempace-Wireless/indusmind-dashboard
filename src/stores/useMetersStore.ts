@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { METERS_DATA, type Meter, type MeterElement, getAllCategories } from '../data/metersData'
+import { MOCK_METERS, type Meter, type MeterElement } from '../data/mockData'
 
 /**
  * Meter Metadata Interface
@@ -9,14 +9,14 @@ import { METERS_DATA, type Meter, type MeterElement, getAllCategories } from '..
 export interface MeterMetadata {
   id: string
   name: string
-  category: 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage' | 'Other'
-  subtitle: string
+  subtitle?: string
+  type?: string
   unit: string // kWh, kW, V, A, etc.
-  site: string // Physical location
-  color: 'red' | 'green' | 'blue' | 'yellow' | string
-  icon: string // Material icon name
+  site?: string // Physical location
+  color?: 'red' | 'green' | 'blue' | 'yellow' | string
+  icon?: string // Material icon name
   status: 'online' | 'offline'
-  linkedEquipment: string[]
+  linkedEquipment?: string[]
   translationKey?: string
   lastReadTime?: Date
   elements?: string[] // Element IDs (e.g., ['L1', 'L2', 'L3'])
@@ -44,11 +44,11 @@ export const useMetersStore = defineStore('meters', () => {
    * Loaded from centralized data source
    */
   const allMeters = ref<MeterMetadata[]>(
-    METERS_DATA.map(meter => ({
+    MOCK_METERS.map(meter => ({
       id: meter.id,
       name: meter.name,
-      category: meter.category,
       subtitle: meter.subtitle,
+      type: meter.type,
       unit: meter.unit,
       site: meter.site,
       color: meter.color,
@@ -284,7 +284,7 @@ export const useMetersStore = defineStore('meters', () => {
    * @param category - Meter category
    */
   function getMetersByCategory(category: string) {
-    return allMeters.value.filter(m => m.category === category)
+    return allMeters.value.filter(m => (m.type ?? 'meter') === category)
   }
 
   /**
@@ -323,10 +323,11 @@ export const useMetersStore = defineStore('meters', () => {
   const metersByCategory = computed(() => {
     const grouped: Record<string, MeterMetadata[]> = {}
     allMeters.value.forEach(meter => {
-      if (!grouped[meter.category]) {
-        grouped[meter.category] = []
+      const key = meter.type ?? 'meter'
+      if (!grouped[key]) {
+        grouped[key] = []
       }
-      grouped[meter.category].push(meter)
+      grouped[key].push(meter)
     })
     return grouped
   })
@@ -335,7 +336,7 @@ export const useMetersStore = defineStore('meters', () => {
    * Get full meter data (including time series and KPIs) for a meter
    */
   function getFullMeterData(meterId: string): Meter | undefined {
-    return METERS_DATA.find(m => m.id === meterId)
+    return MOCK_METERS.find(m => m.id === meterId)
   }
 
   /**
@@ -345,13 +346,6 @@ export const useMetersStore = defineStore('meters', () => {
     const meter = getFullMeterData(meterId)
     if (!meter?.elements) return undefined
     return meter.elements.find(el => el.id === elementId)
-  }
-
-  /**
-   * Get categories list
-   */
-  function getCategories() {
-    return getAllCategories()
   }
 
   return {
@@ -370,7 +364,6 @@ export const useMetersStore = defineStore('meters', () => {
     clearPersisted,
     getFullMeterData,
     getElementData,
-    getCategories,
 
     // Getters (computed)
     selectedMeters,
