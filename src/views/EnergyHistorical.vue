@@ -597,9 +597,9 @@ const selectedElement = ref<string | null>(null)
  * Available meter categories from centralized store
  */
 const meterCategories = computed(() => {
-  const categories = Array.from(new Set(metersStore.allMeters.map(m => m.category)))
+  const categories = Array.from(new Set(metersStore.allMeters.map(m => m.type ?? 'meter')))
   const order = ['TGBT', 'Compresseurs', 'Clim', 'Éclairage']
-  return categories.sort((a, b) => order.indexOf(a) - order.indexOf(b)).slice(0, 4)
+  return categories.sort((a, b) => order.indexOf(a as string) - order.indexOf(b as string)).slice(0, 4)
 })
 
 /**
@@ -614,7 +614,7 @@ const selectedMetersFromStore = computed(() => metersStore.selectedMeters)
  */
 const filteredMetersForDisplay = computed(() => {
   if (!selectedCategory.value) return metersStore.allMeters
-  return metersStore.allMeters.filter(m => m.category === selectedCategory.value)
+  return metersStore.allMeters.filter(m => (m.type ?? 'meter') === selectedCategory.value)
 })
 
 /**
@@ -624,7 +624,7 @@ const filteredMetersForDisplay = computed(() => {
 const currentCategory = computed(() => {
   if (selectedMetersFromStore.value.length === 0) return null
   // Get category from first selected meter
-  return selectedMetersFromStore.value[0]?.category || null
+  return selectedMetersFromStore.value[0]?.type || null
 })
 
 /**
@@ -711,7 +711,7 @@ watch(selectedCategory, (newCategory) => {
 
   // Get all meters in this category
   const categoryMeterIds = metersStore.allMeters
-    .filter(m => m.category === newCategory)
+    .filter(m => (m.type ?? 'meter') === newCategory)
     .map(m => m.id)
 
   // Update centralized selection
@@ -736,7 +736,7 @@ watch(
   (meters) => {
     if (meters.length > 0 && !selectedCategory.value) {
       // Set category to match first selected meter
-      selectedCategory.value = meters[0].category
+      selectedCategory.value = meters[0].type || 'meter'
     }
   },
   { immediate: true }

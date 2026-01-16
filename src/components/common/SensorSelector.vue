@@ -216,7 +216,7 @@ const filteredSensors = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return sensorsStore.allSensors.filter(sensor =>
     sensor.name.toLowerCase().includes(query) ||
-    (sensor.label || sensor.zone).toLowerCase().includes(query)
+    ((sensor.label ?? sensor.zone ?? '')).toLowerCase().includes(query)
   )
 })
 
