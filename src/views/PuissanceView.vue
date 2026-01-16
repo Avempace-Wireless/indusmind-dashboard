@@ -463,7 +463,7 @@ import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/stores/useDashboardStore'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { getMeterColorByIndex } from '@/utils/meterColors'
-import type { Meter, KPIValues } from '@/data/metersData'
+import type { Meter, KPIValues } from '@/data/mockData'
 
 const { t } = useI18n()
 

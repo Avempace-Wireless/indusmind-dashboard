@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { METERS_DATA, type Meter, type MeterElement, getAllCategories } from '../data/metersData'
+import { MOCK_METERS, type Meter, type MeterElement, getAllCategories } from '../data/mockData'
 
 /**
  * Meter Metadata Interface
@@ -44,7 +44,7 @@ export const useMetersStore = defineStore('meters', () => {
    * Loaded from centralized data source
    */
   const allMeters = ref<MeterMetadata[]>(
-    METERS_DATA.map(meter => ({
+    MOCK_METERS.map(meter => ({
       id: meter.id,
       name: meter.name,
       category: meter.category,
@@ -335,7 +335,7 @@ export const useMetersStore = defineStore('meters', () => {
    * Get full meter data (including time series and KPIs) for a meter
    */
   function getFullMeterData(meterId: string): Meter | undefined {
-    return METERS_DATA.find(m => m.id === meterId)
+    return MOCK_METERS.find(m => m.id === meterId)
   }
 
   /**
