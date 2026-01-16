@@ -385,7 +385,7 @@ Status:             ✅ SUCCESS
 | IMPLEMENTATION-PHASE-1.md | 15 KB |
 | QUICK-START-GUIDE.md | 12 KB |
 | IMPLEMENTATION-COMPLETE.md | 14 KB |
-| API-ENDPOINTS-SPECIFICATION.md | 20 KB |
+
 | IMPLEMENTATION-SUMMARY.md | 12 KB |
 | **Total** | **73 KB** |
 
@@ -516,7 +516,7 @@ Status:             ✅ SUCCESS
 - ✅ JSDoc comments on functions
 
 ### For Backend Team
-- ✅ API-ENDPOINTS-SPECIFICATION.md - Complete endpoint spec
+
 - ✅ Data type definitions
 - ✅ Example request/response formats
 - ✅ Error handling patterns
@@ -564,7 +564,7 @@ Status:             ✅ SUCCESS
 3. Run: `npm run dev`
 
 **For Backend Integration:**
-1. [API-ENDPOINTS-SPECIFICATION.md](API-ENDPOINTS-SPECIFICATION.md)
+1. [ARCHITECTURE-SPEC.md](ARCHITECTURE-SPEC.md)
 2. Implement 10+ endpoints
 3. Set `VITE_API_URL` environment variable
 

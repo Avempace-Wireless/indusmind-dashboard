@@ -280,16 +280,9 @@ const menuGroups = computed(() => [
     ],
   },
   {
-    title: t('sidebar.analysis'),
+    title: t('sidebar.analysis') + ' & ' + t('sidebar.reports'),
     comingSoon: true,
     items: [
- /*      {
-        icon: BarChartIcon,
-        name: t('sidebar.peakDemand'),
-        path: '/peak-demand',
-        disabled: true,
-        comingSoon: true,
-      }, */
       {
         icon: CartIcon,
         name: t('sidebar.electricalConsumption'),
@@ -308,19 +301,13 @@ const menuGroups = computed(() => [
         path: '/cost-analysis',
         disabled: true,
       },
-    ],
-  },
-  {
-    title: t('sidebar.reports'),
-    comingSoon: true,
-    items: [
        {
         icon: PageIcon,
         name: t('sidebar.reportsView'),
         path: '/reports',
         disabled: true,
-      },
-    ],
+      }
+    ]
   },
   {
     title: t('sidebar.equipment'),
@@ -371,38 +358,7 @@ const menuGroups = computed(() => [
         disabled: true,
       },
     ],
-  },
-/*   {
-    title: t('sidebar.performance'),
-    items: [
-      {
-        icon: BarChartIcon,
-        name: t('sidebar.kpiDashboard'),
-        path: '/performance',
-      },
-      {
-        icon: CartIcon,
-        name: t('sidebar.benchmarking'),
-        path: '/benchmarking',
-      },
-    ],
-  }, */
-
-/*   {
-    title: t('sidebar.configuration'),
-    items: [
-      {
-        icon: PageIcon,
-        name: t('sidebar.settings'),
-        path: '/settings',
-      },
-      {
-        icon: UserCircleIcon,
-        name: t('sidebar.userManagement'),
-        path: '/users',
-      },
-    ],
-  }, */
+  }
 ])
 
 const isActive = (path) => route.path === path
