@@ -363,6 +363,7 @@
     "selectElement": "Sélectionner un élément",
     "displaying": "Affichage",
     "tabs": {
+      "detailed": "Comparaison détaillée",
       "overview": "Aperçu",
       "charts": "Graphiques",
       "tables": "Tableaux"
@@ -606,11 +607,16 @@
       "fromAverage": "de la moyenne"
     },
     "table": {
+      "detailed": "Comparaison détaillée",
       "rank": "Rang",
       "label": "Étiquette",
       "value": "Valeur",
       "variance": "Écart %",
-      "trend": "Tendance"
+      "trend": "Tendance",
+      "pagination": {
+        "range": "{start}-{end} sur {total}",
+        "page": "Page {current} / {total}"
+      }
     },
     "buttons": {
       "apply": "Appliquer les filtres",

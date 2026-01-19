@@ -3,7 +3,7 @@
     <!-- Header Section -->
     <div class="mb-8">
       <!-- Title & Description -->
-      <div class="mb-6 flex justify-between items-center gap-4">
+      <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
             {{ $t('puissance.pageTitle') }}
@@ -14,7 +14,7 @@
         </div>
         <button
           @click="showCompteurSelector = true"
-          class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
+          class="flex w-full sm:w-auto items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm self-start"
         >
           <span class="material-symbols-outlined text-base">tune</span>
           {{ $t('dashboard.manageMeters') }}
@@ -106,11 +106,14 @@
     </div>
 
     <!-- Display Mode Toggle - Only show when data is ready AND has elements -->
-    <div v-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0)" class="flex items-center justify-between mb-6 px-1">
+    <div
+      v-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0)"
+      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 px-1"
+    >
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
         <span class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">{{ $t('puissance.displayMode') }}</span>
       </h2>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2 w-full sm:w-auto">
         <button
           @click="viewMode = 'overview'"
           :class="[

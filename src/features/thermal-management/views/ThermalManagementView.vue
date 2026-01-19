@@ -1004,13 +1004,32 @@ const displayedZones = computed(() =>
     .filter((z): z is Zone => Boolean(z))
 )
 
-// Calculate optimal columns based on number of displayed zones
+// Calculate optimal columns so rows stay even (prefer divisible by 4, then 3)
 const autoColumnsPerRow = computed(() => {
   const count = displayedZones.value.length
   if (count <= 1) return 1
-  if (count <= 4) return 2
-  if (count <= 8) return 3
-  return 4
+
+  // Prefer perfect fits for 4 or 3 columns before falling back
+  const preferred = [4, 3]
+  for (const cols of preferred) {
+    if (count >= cols && count % cols === 0) return cols
+  }
+
+  // Evaluate options to minimize empty cells and excessive rows; break ties with wider grids
+  const candidates = [4, 3, 2]
+  let best = { cols: 2, score: Number.MAX_SAFE_INTEGER }
+
+  for (const cols of candidates) {
+    const rows = Math.ceil(count / cols)
+    const emptyCells = rows * cols - count
+    const score = rows * 2 + emptyCells // prioritize fewer rows, then fewer empty slots
+
+    if (score < best.score || (score === best.score && cols > best.cols)) {
+      best = { cols, score }
+    }
+  }
+
+  return Math.min(Math.max(best.cols, 1), 4)
 })
 
 // Sync slider to auto-columns when zones change, but allow manual override
