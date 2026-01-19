@@ -48,9 +48,13 @@ import BarChartIcon from './BarChartIcon.vue'
 import CartIcon from './CartIcon.vue'
 import BotIcon from './BotIcon.vue'
 import CallIcon from './CallIcon.vue'
+import LinearIcon from './LinearIcon.vue'
+import EnergyIcon from './EnergyIcon.vue'
 
 export {
   CallIcon,
+  LinearIcon,
+  EnergyIcon,
   BotIcon,
   CartIcon,
   BellIcon,

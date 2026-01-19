@@ -217,7 +217,6 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import {
-  CartIcon,
   GridIcon,
   CalenderIcon,
   UserCircleIcon,
@@ -226,7 +225,6 @@ import {
   MailIcon,
   PieChartIcon,
   ChevronDownIcon,
-  PageIcon,
   TableIcon,
   ListIcon,
   PlugInIcon,
@@ -235,8 +233,11 @@ import {
   CallIcon,
   BellIcon,
   BarChartIcon,
-  BoxIcon,
   SettingsIcon,
+  DocsIcon,
+  LayoutDashboardIcon,
+  LinearIcon,
+  EnergyIcon,
 } from '../../icons'
 import SidebarWidget from './SidebarWidget.vue'
 import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
@@ -258,7 +259,7 @@ const menuGroups = computed(() => [
         path: '/dashboard',
       },
       {
-        icon: BarChartIcon,
+        icon: EnergyIcon,
         name: t('sidebar.puissance'),
         path: '/puissance',
       },
@@ -284,37 +285,37 @@ const menuGroups = computed(() => [
     comingSoon: true,
     items: [
       {
-        icon: CartIcon,
+        icon: PlugInIcon,
         name: t('sidebar.electricalConsumption'),
         path: '/consumption',
         disabled: true,
       },
       {
-        icon: PieChartIcon,
+        icon: LayoutDashboardIcon,
         name: t('sidebar.baseLoad'),
         path: '/base-load',
         disabled: true,
       },
       {
-        icon: CartIcon,
+        icon: TableIcon,
         name: t('sidebar.costAnalysis'),
         path: '/cost-analysis',
         disabled: true,
       },
-       {
-        icon: PageIcon,
+      {
+        icon: DocsIcon,
         name: t('sidebar.reportsView'),
         path: '/reports',
         disabled: true,
       }
-    ]
+    ],
   },
   {
     title: t('sidebar.equipment'),
     comingSoon: true,
     items: [
       {
-        icon: BoxIcon,
+        icon: BoxCubeIcon,
         name: t('sidebar.equipment'),
         path: '/equipment',
         disabled: true,
