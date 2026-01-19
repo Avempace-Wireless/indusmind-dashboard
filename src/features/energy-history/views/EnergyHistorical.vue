@@ -2,7 +2,7 @@
   <AdminLayout>
     <!-- Page Header -->
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-5">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
             {{ t('energyHistory.title') }}
@@ -11,10 +11,10 @@
             {{ t('energyHistory.subtitle') }}
           </p>
         </div>
-        <div class="flex gap-3">
+        <div class="flex gap-3 w-full sm:w-auto sm:justify-end">
           <button
             @click="showCompteurSelector = true"
-            class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
+            class="flex w-full sm:w-auto items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm self-start sm:self-auto"
           >
             <span class="material-symbols-outlined text-base">tune</span>
             {{ t('dashboard.manageMeters') }}

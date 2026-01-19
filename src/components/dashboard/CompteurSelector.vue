@@ -131,7 +131,7 @@
                 <span class="flex items-center justify-center gap-1">
                   <span class="material-symbols-outlined text-sm">chevron_left</span>
                   <span class="hidden sm:inline">{{ $t('common.previous') }}</span>
-                  <span class="sm:hidden">Prev</span>
+                  <span class="sm:hidden">{{ $t('common.previous') }}</span>
                 </span>
               </button>
 
@@ -158,7 +158,7 @@
               >
                 <span class="flex items-center justify-center gap-1">
                   <span class="hidden sm:inline">{{ $t('common.next') }}</span>
-                  <span class="sm:hidden">Next</span>
+                  <span class="sm:hidden">{{ $t('common.next') }}</span>
                   <span class="material-symbols-outlined text-sm">chevron_right</span>
                 </span>
               </button>

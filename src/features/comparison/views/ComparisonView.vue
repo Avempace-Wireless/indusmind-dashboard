@@ -2,7 +2,7 @@
   <AdminLayout>
     <!-- Page Header -->
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-5">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
             {{ t('comparison.title') }}
@@ -11,10 +11,10 @@
             {{ t('comparison.subtitle') }}
           </p>
         </div>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between w-full sm:w-auto">
           <button
             @click="showCompteurSelector = true"
-            class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm"
+            class="flex w-full sm:w-auto items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm self-start sm:self-auto"
           >
             <span class="material-symbols-outlined text-base">tune</span>
             {{ t('dashboard.manageMeters') }}
@@ -226,7 +226,26 @@
         <!-- Comparison Data Table -->
         <div v-if="metersStore.selectedMeters.length > 0 && chartType !== 'table'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
           <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Detailed Comparison</h3>
+            <div class="flex flex-col gap-3">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('comparison.table.detailed') }}</h3>
+
+              <!-- Mobile view options placed near the table for better proximity -->
+              <div class="flex flex-wrap gap-3 xl:hidden">
+                <label
+                  v-for="option in (['showRanking', 'showVariance', 'highlightOutliers', 'showTrendArrows'] as const)"
+                  :key="`mobile-${option}`"
+                  class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="viewOptions[option]"
+                    @change="toggleViewOption(option)"
+                    class="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span>{{ t(`comparison.viewOptions.${option}`) }}</span>
+                </label>
+              </div>
+            </div>
           </div>
 
           <div class="overflow-x-auto">
@@ -299,7 +318,11 @@
           <!-- Pagination Controls -->
           <div class="mt-4 flex items-center justify-between px-6 py-3 border-t border-gray-200 dark:border-gray-700">
             <span class="text-xs text-gray-600 dark:text-gray-400">
-              {{ (currentTablePage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentTablePage * itemsPerPage, comparisonTable.length) }} of {{ comparisonTable.length }}
+              {{ t('comparison.table.pagination.range', {
+                start: (currentTablePage - 1) * itemsPerPage + 1,
+                end: Math.min(currentTablePage * itemsPerPage, comparisonTable.length),
+                total: comparisonTable.length,
+              }) }}
             </span>
             <div class="flex gap-2">
               <button
@@ -307,17 +330,17 @@
                 :disabled="currentTablePage === 1"
                 class="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                ← Prev
+                ← {{ t('common.previous') }}
               </button>
               <span class="px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300">
-                Page {{ currentTablePage }} / {{ totalTablePages }}
+                {{ t('comparison.table.pagination.page', { current: currentTablePage, total: totalTablePages }) }}
               </span>
               <button
                 @click="nextTablePage"
                 :disabled="currentTablePage === totalTablePages"
                 class="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Next →
+                {{ t('common.next') }} →
               </button>
             </div>
           </div>

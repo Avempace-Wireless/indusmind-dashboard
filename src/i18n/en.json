@@ -608,11 +608,16 @@
       "fromAverage": "from average"
     },
     "table": {
+      "detailed": "Detailed Comparison",
       "rank": "Rank",
       "label": "Label",
       "value": "Value",
       "variance": "Variance %",
-      "trend": "Trend"
+      "trend": "Trend",
+      "pagination": {
+        "range": "{start}-{end} of {total}",
+        "page": "Page {current} / {total}"
+      }
     },
     "buttons": {
       "apply": "Apply filters",
