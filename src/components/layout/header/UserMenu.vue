@@ -93,12 +93,13 @@ const menuItems = [
     icon: UserCircleIcon,
     translationKey: 'user.profile'
   },
-  {
-    id: 'settings',
-    href: '/account-settings',
-    icon: SettingsIcon,
-    translationKey: 'user.settings'
-  },
+  // Commented out: Account Settings menu item
+  // {
+  //   id: 'settings',
+  //   href: '/account-settings',
+  //   icon: SettingsIcon,
+  //   translationKey: 'user.settings'
+  // },
   {
     id: 'support',
     href: '/support',
