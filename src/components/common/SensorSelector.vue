@@ -181,7 +181,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useSensorsStore } from '@/stores/useSensorsStore'
+import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
 import type { Sensor } from '@/services/deviceAPI'
 
 const props = defineProps<{

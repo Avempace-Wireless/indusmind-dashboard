@@ -8,11 +8,11 @@ import type {
   HourlyDataPoint,
   HistoricalDataQuery,
   DEFAULT_METRICS,
-} from '../types/metrics'
-import { DEFAULT_METRICS as METRICS_CONFIG } from '../types/metrics'
+} from '@/types/metrics'
+import { DEFAULT_METRICS as METRICS_CONFIG } from '@/types/metrics'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
-import { useMetersStore } from './useMetersStore'
-import i18n from '../i18n'
+import { useMetersStore } from '@/stores/useMetersStore'
+import i18n from '@/i18n'
 
 /**
  * Energy History Store - Multi-Metric Historical Data Analysis

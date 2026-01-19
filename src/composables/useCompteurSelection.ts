@@ -17,7 +17,7 @@ import { ref, computed, watch } from 'vue'
 import type { Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useMetersStore } from '@/stores/useMetersStore'
-import { useDashboardStore } from '@/stores/useDashboardStore'
+import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useEquipmentStore } from '@/stores/useEquipmentStore'
 
 // Type definitions
