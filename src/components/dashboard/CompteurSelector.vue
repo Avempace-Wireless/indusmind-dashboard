@@ -6,11 +6,11 @@
       @click="handleBackdropClick"
       class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm overflow-y-auto"
     >
-      <div class="min-h-full flex items-center justify-center py-24 px-4 lg:pl-[calc(16rem+1rem)]">
+      <div class="min-h-full flex items-center justify-center pt-20 pb-4 sm:py-20 lg:py-24 px-4 lg:pl-[calc(16rem+1rem)]">
         <!-- Modal Container -->
         <div
           @click.stop
-          class="relative w-full max-w-2xl max-h-[calc(100vh-8rem)] flex flex-col rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl"
+          class="relative w-full max-w-2xl max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100vh-10rem)] flex flex-col rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl"
         >
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 px-4 sm:px-6 py-4 sm:py-5 bg-slate-50 dark:bg-slate-900/60 rounded-t-lg sm:rounded-t-xl">
@@ -187,24 +187,24 @@
         </div>
 
         <!-- Footer -->
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 border-t border-slate-200 dark:border-slate-700 px-4 sm:px-6 py-4 sm:py-5 bg-slate-50 dark:bg-slate-900/60 rounded-b-lg sm:rounded-b-xl">
+        <div class="flex flex-row gap-2 sm:gap-3 border-t border-slate-200 dark:border-slate-700 px-3 sm:px-6 py-3 sm:py-5 bg-slate-50 dark:bg-slate-900/60 rounded-b-lg sm:rounded-b-xl">
           <button
             @click="cancel"
-            class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
           >
-            <span class="flex items-center justify-center gap-2">
+            <span class="flex items-center justify-center gap-1 sm:gap-2">
               <span class="material-symbols-outlined text-base sm:text-lg">close</span>
-              {{ $t('common.cancel') }}
+              <span class="hidden xs:inline">{{ $t('common.cancel') }}</span>
             </span>
           </button>
           <button
             @click="apply"
             :disabled="selectedCount === 0"
-            class="flex-1 rounded-lg bg-slate-900 dark:bg-slate-100 px-4 py-2.5 text-sm font-semibold text-white dark:text-slate-900 hover:bg-black/80 dark:hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            class="flex-1 rounded-lg bg-slate-900 dark:bg-slate-100 px-2 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold text-white dark:text-slate-900 hover:bg-black/80 dark:hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
-            <span class="flex items-center justify-center gap-2">
+            <span class="flex items-center justify-center gap-1 sm:gap-2">
               <span class="material-symbols-outlined text-base sm:text-lg">check</span>
-              {{ $t('common.save') }} ({{ selectedCount }})
+              <span>{{ $t('common.save') }} ({{ selectedCount }})</span>
             </span>
           </button>
         </div>
