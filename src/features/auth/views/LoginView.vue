@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 dark:from-slate-950 dark:via-emerald-950 dark:to-teal-950 flex items-center justify-center px-4 py-6 relative overflow-hidden">
+  <div class="min-h-dvh bg-gradient-to-br from-emerald-900 via-teal-900 to-cyan-900 dark:from-slate-950 dark:via-emerald-950 dark:to-teal-950 flex items-center justify-center px-4 py-6 sm:py-12 relative overflow-hidden">
     <!-- Animated Background Shapes -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <div class="absolute top-10 left-5 w-64 h-64 bg-emerald-400/15 rounded-full blur-3xl animate-pulse"></div>
@@ -90,14 +90,9 @@
 
           <!-- Password Input -->
           <div>
-            <div class="flex items-center justify-between mb-1.5">
-              <label class="block text-xs font-bold text-emerald-100">
-                {{ t('auth.login.password') }}
-              </label>
-              <a href="#" class="text-xs font-bold text-emerald-300 hover:text-emerald-200 hover:underline">
-                {{ t('auth.login.forgotPassword') }}
-              </a>
-            </div>
+            <label class="block text-xs font-bold text-emerald-100 mb-1.5">
+              {{ t('auth.login.password') }}
+            </label>
             <input
               v-model="password"
               type="password"
@@ -111,17 +106,22 @@
             />
           </div>
 
-          <!-- Remember Me -->
-          <div class="flex items-center pt-1">
-            <input
-              v-model="rememberMe"
-              type="checkbox"
-              id="remember"
-              class="h-3.5 w-3.5 text-emerald-400 focus:ring-emerald-500 border-white/30 rounded cursor-pointer"
-            />
-            <label for="remember" class="ml-2 block text-xs text-emerald-100 cursor-pointer select-none">
-              {{ t('auth.login.rememberMe') }}
-            </label>
+          <!-- Remember Me & Forgot Password -->
+          <div class="flex items-center justify-between pt-1">
+            <div class="flex items-center">
+              <input
+                v-model="rememberMe"
+                type="checkbox"
+                id="remember"
+                class="h-3.5 w-3.5 text-emerald-400 focus:ring-emerald-500 border-white/30 rounded cursor-pointer"
+              />
+              <label for="remember" class="ml-2 block text-xs text-emerald-100 cursor-pointer select-none">
+                {{ t('auth.login.rememberMe') }}
+              </label>
+            </div>
+            <a href="#" class="text-xs font-bold text-emerald-300 hover:text-emerald-200 hover:underline whitespace-nowrap">
+              {{ t('auth.login.forgotPassword') }}
+            </a>
           </div>
 
           <!-- Sign In Button -->
