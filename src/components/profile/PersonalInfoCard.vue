@@ -10,12 +10,12 @@
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
               <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.firstName') }}</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">IndusMind</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">Manager</p>
             </div>
 
             <div>
               <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.lastName') }}</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">Manager</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">IndusMind</p>
             </div>
 
             <div>
@@ -29,17 +29,23 @@
 
             <div>
               <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.phone') }}</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">+1 (555) 123-4567</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">+33 1 45 67 89 00</p>
             </div>
 
             <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.bio') }}</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ t('profile.energyManagementAdmin') }}</p>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.position') }}</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">Manager</p>
+            </div>
+
+            <div>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.accessLevel') }}</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ t('profile.administrator') }}</p>
             </div>
           </div>
         </div>
 
-        <button class="edit-button" @click="isProfileInfoModal = true">
+        <!-- Edit button commented out - read-only view -->
+        <!-- <button class="edit-button" @click="isProfileInfoModal = true">
           <svg
             class="fill-current"
             width="18"
@@ -56,7 +62,7 @@
             />
           </svg>
           {{ t('common.edit') }}
-        </button>
+        </button> -->
       </div>
     </div>
     <Modal v-if="isProfileInfoModal" @close="isProfileInfoModal = false">
