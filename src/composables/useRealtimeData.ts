@@ -4,9 +4,9 @@
  */
 
 import { onMounted, onUnmounted, ref } from 'vue'
-import { useDashboardStore } from '../stores/useDashboardStore'
-import { useEquipmentStore } from '../stores/useEquipmentStore'
-import { useAlertsStore } from '../stores/useAlertsStore'
+import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
+import { useEquipmentStore } from '@/stores/useEquipmentStore'
+import { useAlertsStore } from '@/features/alerts/store/useAlertsStore'
 
 export function useRealtimeData() {
   const dashboardStore = useDashboardStore()

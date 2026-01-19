@@ -76,7 +76,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useAuthStore } from '@/stores/useAuthStore'
+import { useAuthStore } from '@/features/auth/store/useAuthStore'
 import { UserCircleIcon, ChevronDownIcon, LogoutIcon, SettingsIcon, SupportIcon } from '@/icons'
 
 const { t } = useI18n()
