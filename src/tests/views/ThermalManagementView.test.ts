@@ -1,70 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
 import ThermalManagementView from '@/views/ThermalManagementView.vue'
 import { useSensorsStore } from '@/stores/useSensorsStore'
 import { createMemoryHistory, createRouter } from 'vue-router'
-
-// Create minimal i18n for testing
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      thermal: {
-        pageTitle: 'Thermal Management',
-        subtitle: 'Monitor and control temperature zones',
-        currentTemp: 'Current Temperature',
-        zone: 'Zone {number}',
-        power: { on: 'ON', off: 'OFF' },
-        manual: 'Manual',
-        auto: 'Auto',
-        minTemp: 'Min Temp',
-        maxTemp: 'Max Temp',
-        controls: {
-          columns: 'Columns',
-          selectAll: 'Select All',
-          clear: 'Clear',
-          resetOrder: 'Reset Order',
-          sensorsLabel: 'Sensors',
-          zones: 'Zones',
-          orderHint: 'Drag cards to reorder'
-        },
-        chart: {
-          open: 'View 24h chart',
-          subtitle: '24-hour temperature history',
-          current: 'Current',
-          maxTarget: 'Max target',
-          minTarget: 'Min target',
-          active: 'Active',
-          inactive: 'Inactive',
-          temperature: 'Temperature',
-          annotationMax: 'Max',
-          annotationMin: 'Min'
-        },
-        status: {
-          active: 'Active Zones',
-          avgTemp: 'Avg. Temperature',
-          operational: 'Operational',
-          currentAverage: 'Current Average',
-          tempRange: 'Temperature Range',
-          minMax: 'Min — Max',
-          systemHealth: 'System Health',
-          withinTargets: 'Within Targets'
-        },
-        sections: {
-          zoneControl: 'Zone Control & Management',
-          monitoring: 'Temperature Monitoring'
-        },
-        charts: {
-          zoneTemps: { title: 'Zone Temperatures' },
-          minMax: { title: 'Min/Max Comparison', subtitle: 'Temperature limits' }
-        }
-      }
-    }
-  }
-})
+import { i18n } from '../setup'
 
 describe('ThermalManagementView', () => {
   let pinia: any

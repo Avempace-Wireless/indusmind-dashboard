@@ -1,21 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
 import EnergyHistorical from '@/views/EnergyHistorical.vue'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { createMemoryHistory, createRouter } from 'vue-router'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      energyHistory: { title: 'Energy History', subtitle: 'Historical energy consumption data' },
-      dashboard: { manageMeters: 'Manage Meters' }
-    }
-  }
-})
+import { i18n } from '../setup'
 
 describe('EnergyHistorical', () => {
   let pinia: any

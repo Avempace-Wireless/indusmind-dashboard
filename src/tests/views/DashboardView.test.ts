@@ -1,20 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
 import DashboardView from '@/views/DashboardView.vue'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { createMemoryHistory, createRouter } from 'vue-router'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      dashboard: { title: 'Dashboard', subtitle: 'Energy monitoring and analysis', manageMeters: 'Manage Meters' }
-    }
-  }
-})
+import { i18n } from '../setup'
 
 describe('DashboardView', () => {
   let pinia: any
