@@ -226,6 +226,12 @@
       "sevenDays": "7 days",
       "thirtyDays": "30 days"
     },
+    "chart": {
+      "noData": {
+        "title": "No data available",
+        "description": "No telemetry data found for the selected period"
+      }
+    },
     "equipment": {
       "title": "Equipment Status – Selected Meters",
       "columns": {

@@ -58,6 +58,23 @@
 
       <!-- Canvas for Chart.js -->
       <div class="relative w-full h-80">
+        <!-- Loading overlay -->
+        <div v-if="isLoadingChart" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg z-10">
+          <div class="flex flex-col items-center gap-3">
+            <span class="material-symbols-outlined animate-spin text-blue-600 dark:text-blue-400 text-4xl">progress_activity</span>
+            <p class="text-sm text-slate-600 dark:text-slate-400 font-medium">{{ $t('common.loading') }}...</p>
+          </div>
+        </div>
+
+        <!-- No data overlay -->
+        <div v-else-if="hasNoData" class="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+          <div class="flex flex-col items-center gap-3 text-center px-6">
+            <span class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-5xl">query_stats</span>
+            <p class="text-slate-900 dark:text-white font-semibold">{{ $t('dashboard.chart.noData.title') }}</p>
+            <p class="text-sm text-slate-600 dark:text-slate-400">{{ $t('dashboard.chart.noData.description') }}</p>
+          </div>
+        </div>
+
         <canvas ref="chartRef" class="w-full"></canvas>
       </div>
     </div>
@@ -69,6 +86,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Chart, LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler } from 'chart.js'
 import { getMeterColorByIndex } from '@/utils/meterColors'
+import { useTelemetry, TELEMETRY_KEYS } from '@/composables/useTelemetry'
 
 Chart.register(LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler)
 
@@ -78,6 +96,7 @@ type PeriodValue = 'today' | 'yesterday' | '7days' | '30days'
 interface Compteur {
   id: string
   name: string
+  deviceUUID?: string
   category: string
   color: 'red' | 'green' | 'blue' | 'yellow'
   instantaneous: number
@@ -99,6 +118,13 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+// Telemetry composable for real data
+const { fetchChartData, loading: telemetryLoading } = useTelemetry()
+const telemetryChartData = ref<any>(null)
+const useTelemetryData = ref(true) // Toggle to use real vs mock data
+const isLoadingChart = ref(false)
+const hasNoData = ref(false)
 
 const modes: ChartMode[] = ['energy', 'temperature']
 
@@ -297,20 +323,224 @@ const currentValue = computed(() => {
 
 // Watch for mode or period changes to update chart
 watch([() => props.mode, () => props.period, () => props.selectedCompteurs.length, () => props.selectedCompteurs.map(c => c.id).join(','), isDarkMode], () => {
-  renderChart()
+  if (useTelemetryData.value) {
+    loadTelemetryChartData()
+  } else {
+    renderChart()
+  }
 }, { immediate: false, flush: 'post' })
 
-onMounted(() => {
-  renderChart()
+/**
+ * Load real telemetry data for chart
+ */
+async function loadTelemetryChartData() {
+  const compteursWithUUID = props.selectedCompteurs.filter(c => c.deviceUUID)
 
-  // Watch for dark mode changes
-  const observer = new MutationObserver(() => {
+  if (compteursWithUUID.length === 0) {
+    console.warn('[UnifiedChart] No compteurs with deviceUUID')
+    hasNoData.value = true
+    return
+  }
+
+  isLoadingChart.value = true
+  hasNoData.value = false
+
+  try {
+    // Map period to API format
+    const periodMap: Record<PeriodValue, '1h' | '6h' | '24h' | '7d' | '30d'> = {
+      'today': '24h',
+      'yesterday': '24h',
+      '7days': '7d',
+      '30days': '30d'
+    }
+
+    const apiPeriod = periodMap[props.period]
+
+    // Determine keys based on mode and period
+    let keys: string[]
+    if (props.mode === 'energy') {
+      // Use hourly energy delta for shorter periods, daily delta for 7d/30d
+      keys = (apiPeriod === '7d' || apiPeriod === '30d')
+        ? [...TELEMETRY_KEYS.ENERGY_DELTA_DAY]
+        : [...TELEMETRY_KEYS.ENERGY_DELTA_HOUR]
+    } else {
+      keys = ['temperature']
+    }
+
+    // Fetch data for all compteurs in parallel
+    const promises = compteursWithUUID.map(async (compteur, index) => {
+      try {
+        const data = await fetchChartData(
+          compteur.deviceUUID!,
+          apiPeriod,
+          keys
+        )
+        return {
+          compteur,
+          data,
+          colorIndex: index
+        }
+      } catch (err) {
+        console.error(`[UnifiedChart] Failed to fetch data for ${compteur.name}:`, err)
+        return null
+      }
+    })
+
+    const results = (await Promise.all(promises)).filter(Boolean)
+
+    if (results.length === 0) {
+      console.warn('[UnifiedChart] No telemetry data available')
+      hasNoData.value = true
+      isLoadingChart.value = false
+      return
+    }
+
+    // Use first result's labels (all should have same timestamps)
+    const labels = results[0]!.data.labels || []
+
+    // Check if we have actual data
+    const hasData = results.some(r => r!.data.datasets.some((ds: any) => ds.data.some((v: number) => v > 0)))
+
+    if (!hasData || labels.length === 0) {
+      console.warn('[UnifiedChart] API returned empty data')
+      hasNoData.value = true
+      isLoadingChart.value = false
+      return
+    }
+
+    // Build datasets from telemetry data
+    const datasets = results.map((result) => {
+      if (!result) return null
+      const { compteur, data, colorIndex } = result
+      const colorConfig = getMeterColorByIndex(colorIndex)
+
+      // Get data for first key
+      const dataValues = data.datasets[0]?.data || []
+
+      return {
+        label: compteur.name,
+        data: dataValues,
+        backgroundColor: colorConfig.hex,
+        borderColor: colorConfig.border,
+        borderWidth: 2,
+        borderRadius: 4
+      }
+    }).filter((ds): ds is NonNullable<typeof ds> => ds !== null)
+
+    telemetryChartData.value = { labels, datasets }
+    hasNoData.value = false
+    renderTelemetryChart()
+  } catch (error) {
+    console.error('[UnifiedChart] Failed to load telemetry chart data:', error)
+    hasNoData.value = true
+  } finally {
+    isLoadingChart.value = false
+  }
+}
+
+/**
+ * Render chart with telemetry data
+ */
+function renderTelemetryChart() {
+  if (!chartRef.value || !telemetryChartData.value) return
+
+  const ctx = chartRef.value.getContext('2d')
+  if (!ctx) return
+
+  // Destroy existing chart
+  if (chartInstance) {
+    chartInstance.destroy()
+  }
+
+  chartInstance = new Chart(ctx, {
+    type: props.mode === 'energy' ? 'bar' : 'line',
+    data: telemetryChartData.value,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          onClick: (e: any, legendItem: any, legend: any) => {
+            const index = legendItem.datasetIndex
+            const chart = legend.chart
+            const meta = chart.getDatasetMeta(index)
+            meta.hidden = !meta.hidden
+            chart.update()
+          },
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+            color: isDarkMode.value ? '#cbd5e1' : '#64748b'
+          }
+        },
+        tooltip: {
+          backgroundColor: isDarkMode.value ? '#1e293b' : '#334155',
+          titleColor: '#f1f5f9',
+          bodyColor: '#f1f5f9',
+          borderColor: isDarkMode.value ? '#475569' : '#64748b',
+          borderWidth: 1,
+          callbacks: {
+            label: (context: any) => {
+              const y = context.parsed.y
+              const unit = props.mode === 'energy' ? 'kWh' : '°C'
+              return `${context.dataset.label}: ${typeof y === 'number' ? y.toFixed(1) : 0} ${unit}`
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: isDarkMode.value ? '#cbd5e1' : '#64748b'
+          },
+          grid: {
+            color: isDarkMode.value ? '#334155' : '#e2e8f0'
+          }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: isDarkMode.value ? '#cbd5e1' : '#64748b'
+          },
+          grid: {
+            color: isDarkMode.value ? '#334155' : '#e2e8f0'
+          }
+        }
+      }
+    }
+  })
+}
+
+onMounted(() => {
+  if (useTelemetryData.value) {
+    loadTelemetryChartData()
+  } else {
     renderChart()
+  }
+
+  // Watch for dark mode changes (only re-render, no API call)
+  const observer = new MutationObserver(() => {
+    if (useTelemetryData.value && telemetryChartData.value) {
+      renderTelemetryChart()
+    } else {
+      renderChart()
+    }
   })
   observer.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['class']
   })
+})
+
+// Watch period and mode changes to refetch data
+watch(() => [props.period, props.mode], () => {
+  if (useTelemetryData.value) {
+    loadTelemetryChartData()
+  } else {
+    renderChart()
+  }
 })
 
 function renderChart() {

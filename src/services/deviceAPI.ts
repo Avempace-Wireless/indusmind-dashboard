@@ -432,6 +432,8 @@ export async function searchSensors(query: string): Promise<Sensor[]> {
 export interface Compteur {
   id: string
   name: string
+  deviceUUID?: string // ThingsBoard device UUID for telemetry API
+  accessToken?: string // Device access token
   category: 'PM2200' | 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'
   subtitle: string
   color: 'red' | 'green' | 'blue' | 'yellow'
@@ -462,6 +464,7 @@ function mapMeterToCompteur(meter: Meter): Compteur {
   return {
     id: meter.id,
     name: meter.name, // Use full device name as display (e.g., "PM2200 - TGBT Principal")
+    deviceUUID: meter.deviceUUID, // ThingsBoard device UUID for telemetry API
     category: 'PM2200', // All PM2200 are same category
     subtitle: meter.label, // Use label as subtitle (e.g., "TGBT Principal", "Climatisation Hall")
     color, // Color varies by meter ID for dashboard cards

@@ -69,11 +69,12 @@
         </div>
 
         <CompteurWidget
-          v-for="(compteur, index) in selectedCompteurs"
+          v-for="(compteur, index) in enrichedCompteurs"
           :key="compteur.id"
           :compteur="compteur"
           :color-index="index"
           :current-mode="widgetModes[compteur.id]"
+          :is-loading="telemetryLoading"
           @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
         />
       </div>
@@ -86,7 +87,7 @@
             :mode="chartMode"
             :period="chartPeriod"
             :subtitle="unifiedChartSubtitle"
-            :selected-compteurs="selectedCompteurs"
+            :selected-compteurs="enrichedCompteurs"
             @update:mode="chartMode = $event"
             @update:period="chartPeriod = $event"
           />
@@ -128,7 +129,7 @@
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
               <!-- Energy Meters -->
-              <tr v-for="compteur in selectedCompteurs" :key="compteur.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              <tr v-for="compteur in enrichedCompteurs" :key="compteur.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                 <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ compteur.name }}</td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('dashboard.equipment.columns.energy') }}</td>
                 <td class="px-6 py-3">
@@ -159,7 +160,7 @@
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ zone.lastUpdate }}</td>
               </tr>
               <!-- Empty state -->
-              <tr v-if="selectedCompteurs.length === 0 && temperatureZones.length === 0">
+              <tr v-if="enrichedCompteurs.length === 0 && temperatureZones.length === 0">
                 <td colspan="6" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                   {{ $t('dashboard.equipment.noData') }}
                 </td>
@@ -185,6 +186,8 @@ import CompteurWidget from '@/components/dashboard/CompteurWidget.vue'
 import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
 import { useMetersStore } from '@/stores/useMetersStore'
+import { useTelemetry, TELEMETRY_KEYS } from '@/composables/useTelemetry'
+import { watch } from 'vue'
 
 // ============================================================================
 // COMPOSABLES & STORES
@@ -217,6 +220,18 @@ const {
   initialize: initializeCompteurSelection,
 } = useCompteurSelection()
 
+// Telemetry composable for real API data
+const {
+  fetchInstantaneous,
+  fetchTodayHourly,
+  fetchCurrentValue,
+  loading: telemetryLoading,
+  error: telemetryError,
+} = useTelemetry()
+
+// Telemetry data cache for widgets
+const telemetryCache = ref<Map<string, any>>(new Map())
+
 // ============================================================================
 // COMPUTED PROPERTIES
 // ============================================================================
@@ -231,7 +246,27 @@ const lastUpdateTime = computed(() => {
 
 const metrics = computed(() => dashboardStore.metrics)
 const isConnected = computed(() => dashboardStore.isConnected)
-const dashboardLoading = computed(() => dashboardStore.loading)
+const dashboardLoading = computed(() => dashboardStore.loading || telemetryLoading.value)
+
+/**
+ * Enriched compteurs with real telemetry data
+ */
+const enrichedCompteurs = computed(() => {
+  return selectedCompteurs.value.map(compteur => {
+    const telemetryData = telemetryCache.value.get(compteur.id)
+    if (telemetryData) {
+      return {
+        ...compteur,
+        instantaneous: telemetryData.currentPower || compteur.instantaneous,
+        today: telemetryData.todayEnergy || compteur.today,
+        yesterday: telemetryData.yesterdayEnergy || compteur.yesterday,
+        instantReadings: telemetryData.instantReadings || [],
+        todayReadings: telemetryData.todayReadings || [],
+      }
+    }
+    return compteur
+  })
+})
 
 /**
  * Unified chart subtitle
@@ -364,6 +399,85 @@ const gridLayoutClass = computed(() => {
 
 let timeInterval: number | null = null
 
+/**
+ * Fetch telemetry data for selected compteurs
+ */
+async function fetchTelemetryData() {
+  const compteursWithUUID = selectedCompteurs.value.filter(c => c.deviceUUID)
+
+  if (compteursWithUUID.length === 0) {
+    console.warn('[DashboardView] No compteurs with deviceUUID to fetch telemetry')
+    console.log('[DashboardView] Available compteurs:', selectedCompteurs.value.map(c => ({ id: c.id, name: c.name, deviceUUID: c.deviceUUID })))
+    return
+  }
+
+  console.log('[DashboardView] Fetching telemetry for', compteursWithUUID.length, 'devices')
+
+  try {
+    const promises = compteursWithUUID.map(async (compteur) => {
+      console.log(`[DashboardView] Fetching telemetry for device:`, {
+        id: compteur.id,
+        name: compteur.name,
+        deviceUUID: compteur.deviceUUID,
+      })
+
+      try {
+        // Fetch current power (use NONE agg to get latest value)
+        console.log(`[DashboardView] Calling fetchCurrentValue for ${compteur.deviceUUID}`)
+        const currentPower = await fetchCurrentValue(compteur.deviceUUID!, 'ActivePowerTotal')
+
+        // Fetch today's total energy (cumulative)
+        const todayEnergy = await fetchCurrentValue(compteur.deviceUUID!, 'AccumulatedActiveEnergyDelivered')
+
+        // Fetch instantaneous readings (last hour with 5-min intervals)
+        console.log(`[DashboardView] Calling fetchInstantaneous for ${compteur.deviceUUID}`)
+        const instantReadings = await fetchInstantaneous(compteur.deviceUUID!, ['ActivePowerTotal'])
+
+        // Fetch today's hourly readings (delta energy per hour)
+        console.log(`[DashboardView] Calling fetchTodayHourly for ${compteur.deviceUUID}`)
+        const todayReadings = await fetchTodayHourly(compteur.deviceUUID!, ['deltaHourEnergyConsumtion'])
+
+        console.log(`[DashboardView] Telemetry fetched for ${compteur.name}:`, {
+          currentPower,
+          todayEnergy,
+          instantReadingsCount: instantReadings.length,
+          todayReadingsCount: todayReadings.length,
+        })
+
+        return {
+          id: compteur.id,
+          currentPower,
+          todayEnergy,
+          yesterdayEnergy: 0, // Can fetch separately if needed
+          instantReadings,
+          todayReadings,
+        }
+      } catch (err) {
+        console.error(`[DashboardView] Failed to fetch telemetry for ${compteur.name}:`, err)
+        return {
+          id: compteur.id,
+          currentPower: compteur.instantaneous,
+          todayEnergy: compteur.today,
+          yesterdayEnergy: compteur.yesterday,
+          instantReadings: [],
+          todayReadings: [],
+        }
+      }
+    })
+
+    const results = await Promise.all(promises)
+
+    // Update cache
+    results.forEach(result => {
+      telemetryCache.value.set(result.id, result)
+    })
+
+    console.log('[DashboardView] Telemetry data fetched successfully for', results.length, 'devices')
+  } catch (error) {
+    console.error('[DashboardView] Failed to fetch telemetry data:', error)
+  }
+}
+
 onMounted(async () => {
   // Initialize compteur selection (for legacy widgets)
   initializeCompteurSelection()
@@ -393,11 +507,21 @@ onMounted(async () => {
     console.error('Failed to initialize real-time data:', error)
   }
 
-  // Static display - no automatic updates
-  // timeInterval = window.setInterval(() => {
-  //   currentTime.value = new Date()
-  // }, 10000)
+  // Fetch initial telemetry data
+  await fetchTelemetryData()
+
+  // Update time display every second (no API calls)
+  timeInterval = window.setInterval(() => {
+    currentTime.value = new Date()
+  }, 1000)
 })
+
+// Watch for compteur selection changes and fetch telemetry
+watch(selectedCompteurs, async (newCompteurs) => {
+  if (newCompteurs.length > 0) {
+    await fetchTelemetryData()
+  }
+}, { deep: true })
 
 onUnmounted(() => {
   // Stop real-time data updates

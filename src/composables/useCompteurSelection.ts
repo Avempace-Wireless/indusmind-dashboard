@@ -24,6 +24,8 @@ import { useEquipmentStore } from '@/stores/useEquipmentStore'
 export interface Compteur {
   id: string
   name: string
+  deviceUUID?: string // ThingsBoard device UUID for telemetry API
+  accessToken?: string // Device access token
   category: 'PM2200' | 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'
   subtitle: string
   color: 'red' | 'green' | 'blue' | 'yellow'
@@ -32,6 +34,9 @@ export interface Compteur {
   yesterday: number // kWh (yesterday total)
   linkedEquipment: string[] // Equipment IDs linked to this compteur
   translationKey?: string
+  // Telemetry data (optional, populated when real data is fetched)
+  instantReadings?: any[]
+  todayReadings?: any[]
 }
 
 export type CompteurMode = 'instantanée' | 'jour' | 'hier'
