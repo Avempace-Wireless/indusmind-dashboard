@@ -212,13 +212,13 @@ export const useDashboardStore = defineStore('dashboard', () => {
       } else {
         console.warn('Customer API returned no devices')
       }
-    } catch (error) {
-      console.error('Failed to load compteurs from API:', error)
-        error.value = error instanceof Error ? error.message : 'Failed to load compteurs'
+    } catch (err: unknown) {
+      console.error('Failed to load compteurs from API:', err)
+      error.value = err instanceof Error ? err.message : 'Failed to load compteurs'
       // Clear compteurs on error - don't show "Unknown" devices
       compteurs.value = []
-      } finally {
-        loading.value = false
+    } finally {
+      loading.value = false
     }
   }
 
