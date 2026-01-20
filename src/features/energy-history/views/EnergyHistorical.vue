@@ -25,7 +25,7 @@
 
     <!-- Controls Section - Compact Meter Selection -->
     <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-4 border-2 border-slate-300 dark:border-slate-600 mb-4">
-      <div v-if="selectedMeterIds.length > 0" class="space-y-3">
+      <div v-if="validSelectedMeterIds.length > 0" class="space-y-3">
         <!-- Header: Title + Manage Button -->
         <div class="flex items-center justify-between gap-3">
           <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
@@ -34,9 +34,9 @@
         </div>
 
         <!-- All Meters Pills - Grid Layout -->
-        <div v-if="selectedMeterIds.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div v-if="validSelectedMeterIds.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           <button
-            v-for="meterId in selectedMeterIds"
+            v-for="meterId in validSelectedMeterIds"
             :key="meterId"
             @click="toggleCompteurActive(meterId)"
             :class="[
@@ -72,13 +72,18 @@
     <CompteurSelector
       :is-open="showCompteurSelector"
       :all-compteurs="allCompteurs"
-      :selected-ids="selectedMeterIds"
+      :selected-ids="validSelectedMeterIds"
       @apply="handleCompteurSelection"
       @close="showCompteurSelector = false"
     />
 
     <!-- Main Content Grid: 70% Chart Area, 30% Controls -->
-    <div class="grid grid-cols-1 xl:grid-cols-10 gap-6">
+    <div v-if="dashboardLoading" class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex items-center justify-center text-slate-600 dark:text-slate-300 mb-6">
+      <span class="material-symbols-outlined animate-spin mr-3">progress_activity</span>
+      {{ t('common.loading') }}
+    </div>
+
+    <div v-else class="grid grid-cols-1 xl:grid-cols-10 gap-6">
       <!-- Left Panel: Chart Area (70%) -->
         <div class="xl:col-span-7 space-y-6">
 
@@ -219,7 +224,6 @@
           </div>
         </div>
       </div>
-
 
       <!-- Right Panel: Controls (30%) -->
       <div class="xl:col-span-3 space-y-6">
@@ -367,9 +371,7 @@
             </button>
           </div>
 
-
         </div>
-
 
       </div>
     </div>
@@ -443,12 +445,20 @@ const store = useEnergyHistoryStore()
 const metersStore = useMetersStore()
 const dashboardStore = useDashboardStore()
 const { selectedMeterIds } = storeToRefs(metersStore)
+const dashboardLoading = computed(() => dashboardStore.loading)
 
 // Use the same composable as DashboardView and PuissanceView for consistency
 const {
   availableCompteurs: allCompteurs,
   initialize: initializeCompteurSelection,
 } = useCompteurSelection()
+
+// Filter out any meter IDs that don't exist in allCompteurs (to avoid showing "Unknown")
+const validSelectedMeterIds = computed(() => {
+  return selectedMeterIds.value.filter(meterId => {
+    return allCompteurs.value.some(c => c.id === meterId)
+  })
+})
 
 // UI State for Meter Selection
 const showCompteurSelector = ref(false)
@@ -794,9 +804,22 @@ const hasValidData = computed(() => {
  * Check if chart has data to render
  */
 const hasChartData = computed(() => {
-  return hasValidData.value &&
-         chartData.value.datasets.length > 0 &&
-         chartData.value.labels.length > 0
+  const hasValid = hasValidData.value
+  const hasDatasets = chartData.value.datasets.length > 0
+  const hasLabels = chartData.value.labels.length > 0
+
+  console.log('hasChartData computed:', {
+    hasValidData: hasValid,
+    datasetsLength: chartData.value.datasets.length,
+    labelsLength: chartData.value.labels.length,
+    finalResult: hasValid && hasDatasets && hasLabels,
+    chartData: {
+      labels: chartData.value.labels?.length || 0,
+      datasets: chartData.value.datasets?.length || 0,
+    }
+  })
+
+  return hasValid && hasDatasets && hasLabels
 })
 
 /**
@@ -1039,14 +1062,29 @@ function removeDate(dateStr: string) {
 // Lifecycle Hooks
 // ===========================
 onMounted(async () => {
-  // Restore and clean up any invalid meter IDs from localStorage
-  metersStore.restoreSelection()
+  // Ensure compteurs are loaded (will set loading internally)
+  if (dashboardStore.compteurs.length === 0) {
+    await dashboardStore.loadCompteurs()
+  }
 
   // Initialize compteur selection (syncs with DashboardView and PuissanceView)
-  initializeCompteurSelection()
+  await initializeCompteurSelection()
 
-  // Note: restoreSelection() sets default to first 8 meters (or all if fewer available)
-  // No need to call selectAllMeters() - use restoreSelection for consistency across views
+  // Hydrate meters store from dashboard and restore selection
+  if (dashboardStore.compteurs.length > 0) {
+    metersStore.setAllMetersFromDashboard(dashboardStore.compteurs as any)
+  }
+  metersStore.restoreSelection()
+
+  // Auto-select first 8 meters if none are selected after restoration
+  if (selectedMeterIds.value.length === 0 && dashboardStore.compteurs.length > 0) {
+    const defaultSelection = dashboardStore.compteurs.slice(0, 8).map(c => c.id)
+    metersStore.setSelectedMeters(defaultSelection)
+    console.log('Auto-selected 8 meters for Energy Historical view:', defaultSelection)
+  } else if (selectedMeterIds.value.length > 0) {
+    console.log('Restored selected meters for Energy Historical view:', selectedMeterIds.value)
+  }
+
   selectedCategory.value = null // No specific category filter
 
   // Initialize with today's date
@@ -1055,23 +1093,97 @@ onMounted(async () => {
   // Wait for next tick to ensure all state is synchronized
   await nextTick()
 
+  // Ensure at least one metric is enabled (default: consumption)
+  if (enabledMetrics.value.filter(m => m.enabled).length === 0) {
+    const consumptionMetric = enabledMetrics.value.find(m => m.type === 'consumption')
+    if (consumptionMetric) consumptionMetric.enabled = true
+  }
+
   // Refresh data to populate charts (MUST await to ensure data is loaded)
+  console.log('Before refreshData:', {
+    selectedDates: selectedDates.value.length,
+    selectedMeterIds: selectedMeterIds.value.length,
+    visibleCompteurs: visibleCompteurs.value.length,
+    enabledMetrics: enabledMetrics.value.filter(m => m.enabled).length,
+  })
+
   await refreshData()
+
+  // Debug: log chart state
+  console.log('After refreshData:', {
+    hasChartData: hasChartData.value,
+    selectedDates: selectedDates.value.length,
+    visibleCompteurs: visibleCompteurs.value.length,
+    enabledMetrics: enabledMetrics.value.filter(m => m.enabled).length,
+    chartLabels: Array.isArray(chartData.value?.labels) ? chartData.value.labels.length : 0,
+    chartDatasets: Array.isArray(chartData.value?.datasets) ? chartData.value.datasets.length : 0,
+  })
 
   // Initialize chart after data is loaded
   // Multiple nextTick calls ensure DOM is fully ready
   await nextTick()
   await nextTick()
   await nextTick()
-  initChart()
+  if (hasChartData.value) {
+    initChart()
+  }
 
   // Force chart re-initialization if canvas still not ready
   setTimeout(() => {
     if (!chartInstance && hasChartData.value) {
+      console.log('Retrying chart initialization...')
       initChart()
     }
-  }, 100)
+  }, 500)
 })
+
+// Re-initialize chart whenever data becomes available after loading
+watch(
+  () => ({ ready: hasChartData.value, loading: dashboardStore.loading }),
+  async ({ ready, loading }) => {
+    if (!ready || loading) return
+    await nextTick()
+    if (!chartInstance) {
+      initChart()
+    }
+  },
+  { deep: true }
+)
+
+// Rebuild chart when chart data shape changes (labels/datasets)
+watch(
+  () => ({
+    labels: Array.isArray(chartData.value?.labels) ? chartData.value.labels.length : 0,
+    datasets: Array.isArray(chartData.value?.datasets) ? chartData.value.datasets.length : 0,
+    ready: hasChartData.value
+  }),
+  async ({ labels, datasets, ready }) => {
+    console.log('Chart data watcher triggered:', { labels, datasets, ready })
+    // Only initialize if data is ready AND not already initialized
+    if (!ready || (labels === 0 && datasets === 0) || chartInstance) return
+    await nextTick()
+    initChart()
+  },
+  { immediate: true } // Back to true, but with chartInstance guard
+)
+
+// When compteurs arrive later (e.g., after refresh), hydrate meters store and refresh
+watch(
+  () => dashboardStore.compteurs,
+  async (compteurs) => {
+    if (!compteurs || compteurs.length === 0) return
+    metersStore.setAllMetersFromDashboard(compteurs as any)
+    if (selectedMeterIds.value.length === 0) {
+      metersStore.setSelectedMeters(compteurs.slice(0, 8).map(c => c.id))
+    }
+    await nextTick()
+    await refreshData()
+    if (!chartInstance && hasChartData.value) {
+      initChart()
+    }
+  },
+  { deep: true }
+)
 
 onBeforeUnmount(() => {
   if (chartInstance) {

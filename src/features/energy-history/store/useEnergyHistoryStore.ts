@@ -102,7 +102,26 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
   // Single selected characteristic (metric type)
   const selectedMetric = computed(() => {
-    return enabledMetrics.value[0] || availableMetrics.value.find(m => m.type === 'consumption')!
+    const enabled = enabledMetrics.value[0]
+    if (!enabled) {
+      const fallback = availableMetrics.value.find(m => m.type === 'consumption')!
+      console.warn('No enabled metrics, using fallback consumption:', {
+        fallback: fallback?.type,
+        hasYAxisPosition: !!fallback?.yAxisPosition,
+      })
+      return fallback
+    }
+    console.log('selectedMetric computed:', {
+      type: enabled.type,
+      enabled: enabled.enabled,
+      yAxisPosition: enabled.yAxisPosition,
+      hasProperties: {
+        type: !!enabled.type,
+        yAxisPosition: !!enabled.yAxisPosition,
+        unit: !!enabled.unit,
+      },
+    })
+    return enabled
   })
 
   // ===========================
@@ -131,9 +150,16 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
    */
   const selectedCompteurs = computed(() => {
     // Get actual compteur data from dashboardStore filtered by centralized selection
-    return dashboardStore.compteurs.filter(c =>
+    const result = dashboardStore.compteurs.filter(c =>
       metersStore.selectedMeterIds.includes(c.id)
     )
+    console.log('selectedCompteurs computed:', {
+      dashboardCompteurs: dashboardStore.compteurs.length,
+      dashboardCompteurIds: dashboardStore.compteurs.map(c => c.id),
+      selectedMeterIds: metersStore.selectedMeterIds,
+      result: result.map(c => ({ id: c.id, name: c.name })),
+    })
+    return result
   })
 
   // User-selected active meters within selectedCompteurs
@@ -246,6 +272,18 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Chart Data
   // ===========================
   const chartData = computed(() => {
+    console.log('chartData computed fired:', {
+      visibleCount: visibleCompteurs.value.length,
+      visibleCompteurIds: visibleCompteurs.value.map(c => ({ id: c.id, name: c.name })),
+      selectedCompteurCount: selectedCompteurs.value.length,
+      selectedCompteurIds: selectedCompteurs.value.map(c => ({ id: c.id, name: c.name })),
+      activeCompteurIds: activeCompteurIds.value,
+      selectedMetric: selectedMetric.value?.type,
+      metricYAxis: selectedMetric.value?.yAxisPosition,
+      selectedDates: selectedDates.value.length,
+      resolution: effectiveResolution.value,
+    })
+
     const datasets: Array<{
       label: string
       data: number[]
@@ -263,12 +301,31 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       // Build series per active meter for the selected metric across the selected date (first selected date)
       const metric = selectedMetric.value
       const dateStr = selectedDates.value[0]
+
+      console.log('Hourly mode:', { metric: metric?.type, dateStr, hasDateStr: !!dateStr })
+
+      if (!metric) {
+        console.warn('No metric selected in chartData')
+        return { labels: [], datasets: [] }
+      }
+
+      console.log('Processing visibleCompteurs loop:', { count: visibleCompteurs.value.length })
       visibleCompteurs.value.forEach((compteur, idx) => {
+        console.log('Iteration:', { idx, compteurId: compteur.id, compteurName: compteur.name })
         const dayData = dateStr ? getMetricDataForDate(dateStr, metric.type, compteur.id) : null
+        console.log('Processing compteur result:', {
+          compteur: compteur.id,
+          hasData: !!dayData,
+          dayData: dayData ? {
+            hourlyLength: dayData.hourlyData?.length,
+            metricType: dayData.metricType
+          } : null
+        })
         if (dayData) {
           const filteredData = filterDataByHourRange(dayData.hourlyData)
+          console.log('Filtered data:', { count: filteredData.length, sample: filteredData.slice(0, 2) })
           const color = getMeterColor(compteur.id, idx)
-          datasets.push({
+          const dataset = {
             label: `${compteur.name}`,
             data: filteredData.map(d => d.value),
             borderColor: color,
@@ -276,18 +333,29 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
             yAxisID: metric.yAxisPosition === 'left' ? 'y' : 'y1',
             metricType: metric.type,
             date: dateStr,
-          })
+          }
+          console.log('Pushing dataset:', { label: dataset.label, dataLength: dataset.data.length })
+          datasets.push(dataset)
         }
       })
+      console.log('After forEach, datasets count:', datasets.length)
 
-      return {
+      const result = {
         labels: hours.map(h => `${h.toString().padStart(2, '0')}:00`),
         datasets,
       }
+      console.log('chartData returning (hourly):', { labelsLength: result.labels.length, datasetsLength: result.datasets.length })
+      return result
     } else {
       // Daily: show one dataset per metric with data points for each selected date
       // Build one dataset per meter for selected metric with points across selected dates
       const metric = selectedMetric.value
+
+      if (!metric) {
+        console.warn('No metric selected in chartData')
+        return { labels: [], datasets: [] }
+      }
+
       visibleCompteurs.value.forEach((compteur, idx) => {
         const dataPoints: number[] = []
         selectedDates.value.forEach(dateStr => {
@@ -306,10 +374,12 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         })
       })
 
-      return {
+      const result = {
         labels: selectedDates.value,
         datasets,
       }
+      console.log('chartData returning (daily):', { labelsLength: result.labels.length, datasetsLength: result.datasets.length })
+      return result
     }
   })
 
@@ -566,13 +636,25 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
       // Mock data generation for now
       const mockData = generateMockHistoricalData(query)
+      console.log('Generated mock historical data:', {
+        totalRecords: mockData.length,
+        firstRecord: mockData[0],
+        sample: mockData.slice(0, 3).map(d => ({ date: d.date, metricType: d.metricType, hourlyCount: d.hourlyData.length }))
+      })
 
       // Store data in cache (group by compteur ID from metricId)
+      historicalData.value.clear() // Clear old data first
       mockData.forEach(dailyData => {
         // Extract compteur ID from metricId (format: compteurId-metricType)
         const compteurId = dailyData.metricId.split('-')[0]
         const existing = historicalData.value.get(compteurId) || []
         historicalData.value.set(compteurId, [...existing, dailyData])
+      })
+
+      console.log('Stored historical data:', {
+        compteurCount: historicalData.value.size,
+        compteurIds: Array.from(historicalData.value.keys()),
+        firstCompteurData: Array.from(historicalData.value.entries())[0]?.[1].slice(0, 2).map(d => ({ date: d.date, metricType: d.metricType }))
       })
 
     } catch (err) {
@@ -584,9 +666,37 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   }
 
   async function refreshData() {
-    if (selectedDates.value.length === 0 || enabledMetrics.value.length === 0) {
+    // Check for required data
+    if (selectedDates.value.length === 0) {
+      console.warn('refreshData: No dates selected')
       return
     }
+
+    // Filter to only enabled metrics
+    const enabledMetricsOnly = enabledMetrics.value.filter(m => m.enabled)
+    if (enabledMetricsOnly.length === 0) {
+      console.warn('refreshData: No metrics enabled')
+      return
+    }
+
+    // Ensure we have selected meters; if not, auto-select from available compteurs
+    if (selectedCompteurs.value.length === 0 && dashboardStore.compteurs.length > 0) {
+      console.log('Auto-selecting 8 meters for refreshData')
+      const defaultIds = dashboardStore.compteurs.slice(0, 8).map(c => c.id)
+      metersStore.setSelectedMeters(defaultIds)
+    }
+
+    if (selectedCompteurs.value.length === 0) {
+      // No meters available; avoid calling API with empty selection
+      console.warn('refreshData: No meters available')
+      return
+    }
+
+    console.log('refreshData executing with:', {
+      dates: selectedDates.value.length,
+      meters: selectedCompteurs.value.length,
+      metrics: enabledMetricsOnly.length,
+    })
 
     const query: HistoricalDataQuery = {
       compteurIds: selectedCompteurs.value.map(c => c.id),
@@ -655,9 +765,24 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const compteurData = historicalData.value.get(compteurId) || []
 
     const found = compteurData.find(d => d.date === dateStr && d.metricType === metricType)
-    if (found) return found
+
+    console.log('getMetricDataForDate:', {
+      dateStr,
+      metricType,
+      compteurId,
+      compteurDataLength: compteurData.length,
+      found: !!found,
+      availableDates: compteurData.slice(0, 3).map(d => d.date),
+      availableMetrics: Array.from(new Set(compteurData.map(d => d.metricType))),
+    })
+
+    if (found) {
+      console.log('Found cached data with hourlyData:', found.hourlyData.length)
+      return found
+    }
 
     // Generate mock data if not found
+    console.warn('Falling back to mock data generation')
     return generateMockDailyData(dateStr, metricType, compteurId)
   }
 

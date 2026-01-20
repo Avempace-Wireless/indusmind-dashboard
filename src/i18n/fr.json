@@ -557,13 +557,13 @@
     },
     "meters": {
       "title": "Sélectionnez les compteurs à comparer",
-      "selected": "{count} mètres sélectionnés",
+      "selected": "{count, plural, one {# mètre sélectionné} other {# mètres sélectionnés}}",
       "all": "Tous les compteurs",
       "search": "Rechercher des compteurs..."
     },
     "periods": {
       "title": "Sélectionnez les périodes à comparer",
-      "selected": "{count} périodes sélectionnées",
+      "selected": "{count, plural, one {# période sélectionnée} other {# périodes sélectionnées}}",
       "presets": {
         "last7Days": "7 derniers jours",
         "last4Weeks": "4 dernières semaines",

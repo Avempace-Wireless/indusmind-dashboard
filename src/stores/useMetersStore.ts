@@ -41,24 +41,9 @@ export const useMetersStore = defineStore('meters', () => {
 
   /**
    * All available meters in the system
-   * Loaded from centralized data source
+   * Hydrated from API (dashboardStore) with fallback to mock if needed
    */
-  const allMeters = ref<MeterMetadata[]>(
-    MOCK_METERS.map(meter => ({
-      id: meter.id,
-      name: meter.name,
-      subtitle: meter.subtitle,
-      type: meter.type,
-      unit: meter.unit,
-      site: meter.site,
-      color: meter.color,
-      icon: meter.icon,
-      status: meter.status,
-      linkedEquipment: meter.linkedEquipment,
-      translationKey: meter.translationKey,
-      elements: meter.elements?.map(el => el.id) as any // Extract element IDs only
-    }))
-  )
+  const allMeters = ref<MeterMetadata[]>([])
 
   /**
    * Currently selected meter IDs
@@ -71,6 +56,29 @@ export const useMetersStore = defineStore('meters', () => {
    * Last update timestamp for reactivity
    */
   const lastModified = ref<Date | null>(null)
+
+  /**
+   * Hydrate meters list from dashboard API data
+   */
+  function setAllMetersFromDashboard(meters: Meter[]) {
+    allMeters.value = meters.map(meter => ({
+      id: meter.id,
+      name: meter.name,
+      subtitle: meter.subtitle,
+      type: meter.type,
+      unit: meter.unit,
+      site: meter.site,
+      color: meter.color,
+      icon: meter.icon,
+      status: meter.status,
+      linkedEquipment: meter.linkedEquipment,
+      translationKey: meter.translationKey,
+      elements: meter.elements?.map(el => el.id) as any
+    }))
+
+    // Update last modified to trigger reactivity
+    lastModified.value = new Date()
+  }
 
   // ===========================
   // ACTIONS - State Mutations
@@ -353,6 +361,7 @@ export const useMetersStore = defineStore('meters', () => {
     allMeters,
     selectedMeterIds,
     lastModified,
+    setAllMetersFromDashboard,
 
     // Actions
     toggleMeter,

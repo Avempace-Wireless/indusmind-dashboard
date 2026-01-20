@@ -27,14 +27,27 @@
 
     <!-- Content -->
     <div class="p-5">
-      <!-- Search Input -->
-      <div class="mb-4">
+      <!-- Actions Bar -->
+      <div class="flex gap-2 mb-4">
+        <!-- Search Input -->
         <input
           v-model="searchQuery"
           type="text"
           :placeholder="$t('common.search')"
-          class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
+
+        <!-- Fetch Customer Devices Button -->
+        <button
+          @click="fetchCustomerDevices"
+          :disabled="isLoadingCustomer"
+          class="px-3 py-2 text-sm rounded-lg border border-primary-500 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1.5"
+          :title="$t('devices.fetchCustomerDevices', 'Fetch Customer Devices')"
+        >
+          <span v-if="isLoadingCustomer" class="material-symbols-outlined text-base animate-spin">refresh</span>
+          <span v-else class="material-symbols-outlined text-base">cloud_download</span>
+          <span class="hidden sm:inline">{{ $t('devices.fetch', 'Fetch') }}</span>
+        </button>
       </div>
 
       <!-- Loading State -->
@@ -174,13 +187,15 @@ const metersStore = useMetersStore()
 const searchQuery = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
+const isLoadingCustomer = ref(false)
+const customerError = ref<string | null>(null)
 
 // Get constant
 const MAX_SELECTABLE_METERS = metersStore.MAX_SELECTABLE_METERS
 
 // Fetch meters on mount
 const isLoading = computed(() => metersStore.isLoading)
-const error = computed(() => metersStore.error)
+const error = computed(() => metersStore.error || customerError.value)
 
 // Filtered meters based on search
 const filteredMeters = computed(() => {
@@ -259,6 +274,23 @@ function nextPage() {
 function previousPage() {
   if (currentPage.value > 1) {
     currentPage.value--
+  }
+}
+
+/**
+ * Fetch customer devices from external API
+ */
+async function fetchCustomerDevices() {
+  try {
+    isLoadingCustomer.value = true
+    customerError.value = null
+    await metersStore.fetchIndusmindCustomerDevices()
+    // Success - meters are now in the store
+  } catch (err) {
+    customerError.value = err instanceof Error ? err.message : 'Failed to fetch customer devices'
+    console.error('Error fetching customer devices:', err)
+  } finally {
+    isLoadingCustomer.value = false
   }
 }
 

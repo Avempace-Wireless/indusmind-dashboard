@@ -10,14 +10,16 @@
 import { onMounted } from 'vue'
 import ThemeProvider from './components/layout/ThemeProvider.vue'
 import SidebarProvider from './components/layout/SidebarProvider.vue'
-import { useMetersStore } from './stores/useMetersStore'
+import { useMetersStore } from './stores/useDeviceMetersStore'
 
 const metersStore = useMetersStore()
 
-// On app startup, clean up invalid meter IDs from localStorage
-onMounted(() => {
-  // Clear and reinitialize with valid IDs
-  metersStore.clearPersisted()
+// On app startup, load meters from customer devices API and clean up localStorage
+onMounted(async () => {
+  // Fetch meters from API (now uses customer devices API)
+  await metersStore.fetchMeters()
+
+  // Clean up and restore selection
   metersStore.restoreSelection()
 })
 </script>

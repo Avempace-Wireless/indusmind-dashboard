@@ -25,7 +25,7 @@
 
     <!-- Controls Section - Compact Meter Selection -->
     <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-5 border-2 border-slate-300 dark:border-slate-600 mb-6">
-      <div v-if="metersStoreSelectedIds.length > 0" class="space-y-3">
+      <div v-if="validSelectedMeterIds.length > 0" class="space-y-3">
         <!-- Header: Title + Manage Button -->
         <div class="flex items-center justify-between gap-3">
           <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
@@ -35,9 +35,9 @@
         </div>
 
         <!-- All Meters Pills - Grid Layout -->
-        <div v-if="metersStoreSelectedIds.length > 0" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-x-5 gap-y-5">
+        <div v-if="validSelectedMeterIds.length > 0" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-x-5 gap-y-5">
           <button
-            v-for="meterId in metersStoreSelectedIds"
+            v-for="meterId in validSelectedMeterIds"
             :key="meterId"
             @click="toggleMeterVisibility(meterId)"
             :class="[
@@ -62,7 +62,7 @@
 
         <!-- Info: Selected Count -->
         <div class="text-xs text-slate-600 dark:text-slate-400 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-          {{ activeMeterIds.length === 0 ? metersStoreSelectedIds.length : activeMeterIds.length }} / {{ metersStoreSelectedIds.length }} {{ t('comparison.meters.selected', { count: metersStoreSelectedIds.length }) }}
+          {{ t('comparison.meters.selected', { count: activeMeterIds.length === 0 ? validSelectedMeterIds.length : activeMeterIds.length }) }}
         </div>
       </div>
 
@@ -77,7 +77,7 @@
     <CompteurSelector
       :is-open="showCompteurSelector"
       :all-compteurs="allCompteurs"
-      :selected-ids="metersStoreSelectedIds"
+      :selected-ids="validSelectedMeterIds"
       @apply="handleCompteurSelection"
       @close="showCompteurSelector = false"
     />
@@ -658,6 +658,13 @@ function getMeterName(meterId: string): string {
 
 const { selectedMeterIds: metersStoreSelectedIds } = storeToRefs(metersStore)
 
+// Filter out any meter IDs that don't exist in allCompteurs (to avoid showing "Unknown")
+const validSelectedMeterIds = computed(() => {
+  return metersStoreSelectedIds.value.filter(meterId => {
+    return allCompteurs.value.some(c => c.id === meterId)
+  })
+})
+
 const {
   comparisonMode,
   selectedMeterIds,
@@ -1019,12 +1026,12 @@ watch(activeMeterIds, () => {
   }
 }, { deep: true })
 
-onMounted(() => {
+onMounted(async () => {
   // Restore and clean up any invalid meter IDs from localStorage
   metersStore.restoreSelection()
 
   // Initialize compteur selection (syncs with all other views)
-  initializeCompteurSelection()
+  await initializeCompteurSelection()
 
   // Initialize store data if needed
   if (metersStoreSelectedIds.value.length === 0) {

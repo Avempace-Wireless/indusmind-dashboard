@@ -291,11 +291,23 @@ export function useCompteurSelection() {
 
   /**
    * Initialize composable on first use
+   * Loads compteurs from dashboard store if not already loaded
    */
-  function initialize() {
+  async function initialize() {
+    // Load compteurs from dashboard store (uses customer devices API)
+    if (dashboardStore.compteurs.length === 0) {
+      await dashboardStore.loadCompteurs()
+    }
+
+    // Hydrate meters store with API meters for consistent selection
+    if (dashboardStore.compteurs.length > 0) {
+      metersStore.setAllMetersFromDashboard(dashboardStore.compteurs as any)
+    }
+
     // Ensure all meters are selected if none are currently selected
-    if (selectedMeterIds.value.length === 0) {
-      metersStore.selectAllMeters()
+    if (selectedMeterIds.value.length === 0 && dashboardStore.compteurs.length > 0) {
+      const defaultSelection = dashboardStore.compteurs.slice(0, 8).map(c => c.id)
+      metersStore.setSelectedMeters(defaultSelection)
     }
 
     // Ensure widget modes are initialized for current selection

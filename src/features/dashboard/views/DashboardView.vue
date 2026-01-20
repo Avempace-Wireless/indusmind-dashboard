@@ -45,7 +45,11 @@
       />
 
       <!-- Meter Widgets Grid (Dynamic, responsive) -->
-      <div :class="[
+      <div v-if="dashboardLoading" class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex items-center justify-center text-slate-600 dark:text-slate-300">
+        <span class="material-symbols-outlined animate-spin mr-3">progress_activity</span>
+        {{ $t('common.loading') }}
+      </div>
+      <div v-else :class="[
         'grid gap-6',
         gridLayoutClass
       ]">
@@ -227,6 +231,7 @@ const lastUpdateTime = computed(() => {
 
 const metrics = computed(() => dashboardStore.metrics)
 const isConnected = computed(() => dashboardStore.isConnected)
+const dashboardLoading = computed(() => dashboardStore.loading)
 
 /**
  * Unified chart subtitle
