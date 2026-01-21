@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["scripts/**/*"],
+  "compilerOptions": {
+    "lib": ["ES2020"],
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noEmit": true
+  }
+}

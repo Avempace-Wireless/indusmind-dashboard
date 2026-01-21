@@ -1,4 +1,5 @@
 /// <reference types="node" />
+
 /**
  * Telemetry API Integration Test
  *
@@ -62,7 +63,7 @@ async function testFetchDevices(): Promise<Device[]> {
     throw new Error(`API error: ${response.status} ${response.statusText}`)
   }
 
-  const result = await response.json()
+  const result: any = await response.json()
   const devices: Device[] = result.data || result
 
   console.log(`✅ Fetched ${devices.length} devices`)
@@ -119,8 +120,7 @@ async function testFetchTelemetry(device: Device) {
     const errorText = await response.text()
     throw new Error(`API error: ${response.status} ${response.statusText}\n${errorText}`)
   }
-
-  const result: TelemetryResponse = await response.json()
+  const result: TelemetryResponse = await response.json() as TelemetryResponse
 
   console.log('\n📦 API Response:')
   console.log(`   Success: ${result.success}`)
@@ -261,7 +261,7 @@ async function testTimeRanges(device: Device) {
 
     try {
       const response = await fetch(`${API_BASE_URL}/telemetry/${device.deviceUUID}/timeseries?${params}`)
-      const result = await response.json()
+      const result: any = await response.json()
 
       if (result.success) {
         const dataPoints = result.data.ActivePowerTotal?.length || 0
@@ -293,21 +293,24 @@ async function runTests() {
     }
 
     // Find first PM2200 device
-    const testDevice = devices.find(d => d.name.includes('PM2200') && d.deviceUUID)
+    const testDevice: Device | undefined = devices.find(d => d.name.includes('PM2200') && d.deviceUUID)
 
     if (!testDevice) {
       console.error('\n❌ No PM2200 device with UUID found - cannot continue tests')
       process.exit(1)
     }
 
+    // Narrowed type assertion after null check
+    const device = testDevice!
+
     // Test 2: Fetch telemetry
-    const telemetryResponse = await testFetchTelemetry(testDevice)
+    const telemetryResponse = await testFetchTelemetry(device)
 
     // Test 3: Verify structure
     const isValid = testVerifyDataStructure(telemetryResponse)
 
     // Test 4: Test time ranges
-    await testTimeRanges(testDevice)
+    await testTimeRanges(device)
 
     // Final summary
     console.log('\n' + '='.repeat(60))
