@@ -59,13 +59,13 @@
           </span>
           <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">{{ $t('dashboard.noMetersSelected.title') }}</p>
           <p class="text-gray-600 dark:text-text-muted text-sm mb-6">{{ $t('dashboard.noMetersSelected.description') }}</p>
-          <button
-            @click="showCompteurSelector = true"
-            class="inline-flex items-center gap-2 rounded-lg bg-primary-500 hover:bg-primary-600 px-4 py-3 text-sm font-bold text-white transition-colors shadow-lg"
-          >
-            <span class="material-symbols-outlined text-lg">add</span>
-            {{ $t('dashboard.noMetersSelected.action') }}
-          </button>
+<button
+  @click="showCompteurSelector = true"
+  class="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-3 text-sm font-bold text-white transition-colors shadow-lg"
+>
+  <span class="material-symbols-outlined text-lg">add</span>
+  {{ $t('dashboard.noMetersSelected.action') }}
+</button>
         </div>
 
         <CompteurWidget
