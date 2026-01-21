@@ -3,7 +3,7 @@
  * Fetches timeseries data from ThingsBoard via backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 
 export interface TelemetryDataPoint {
   ts: number

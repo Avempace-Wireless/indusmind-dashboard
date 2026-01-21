@@ -4,7 +4,7 @@
  */
 
 // Base configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'
 
 // ⚡ MVP MODE: Using 100% static/mocked data - NO BACKEND REQUIRED ⚡
 const MOCK_DATA_ENABLED = true // Keep TRUE for MVP demo (no backend needed)

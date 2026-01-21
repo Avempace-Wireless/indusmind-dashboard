@@ -4,7 +4,7 @@
  * Supports PM2200 electrical meters and Indusmind_T_Sensor temperature sensors
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 const MOCK_DATA_ENABLED = true // Set to false when real API is ready
 
 /**
