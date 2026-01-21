@@ -162,7 +162,7 @@ VITE_API_URL=http://your-api.com/api
 ### Step 3: Update API Endpoints
 ```typescript
 // src/services/api.ts
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 ```
 
 ### Step 4: Ensure Backend Compatibility

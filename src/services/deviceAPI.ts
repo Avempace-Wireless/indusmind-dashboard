@@ -6,7 +6,7 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 const MOCK_DATA_ENABLED = true // Set to false when real API is ready
-
+console.log('deviceAPI.ts - Using API_BASE_URL:', API_BASE_URL)
 /**
  * Device interface matching API response structure
  */

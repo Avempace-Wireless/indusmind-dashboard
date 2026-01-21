@@ -18,7 +18,7 @@
 npm run dev
 ```
 
-Your frontend will connect to `http://localhost:4000/api`
+Your frontend will connect to `http://localhost:4000`
 
 ### Production Build (Uses Railway Backend)
 
