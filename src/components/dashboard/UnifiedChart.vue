@@ -86,6 +86,7 @@ import { useI18n } from 'vue-i18n'
 import { Chart, LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler } from 'chart.js'
 import { getMeterColorByIndex } from '@/utils/meterColors'
 import { useTelemetry, TELEMETRY_KEYS } from '@/composables/useTelemetry'
+import { useApiData, useHybridMode, useMockData } from '@/config/dataMode'
 
 Chart.register(LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler)
 
@@ -121,7 +122,10 @@ const { t } = useI18n()
 // Telemetry composable for real data
 const { fetchChartData, loading: telemetryLoading } = useTelemetry()
 const telemetryChartData = ref<any>(null)
-const useTelemetryData = ref(true) // Toggle to use real vs mock data
+
+// Disable telemetry calls in pure mock mode to avoid empty charts
+const shouldUseTelemetry = computed(() => useApiData() && props.selectedCompteurs.some(c => !!c.deviceUUID))
+const useTelemetryData = ref<boolean>(shouldUseTelemetry.value)
 const isLoadingChart = ref(false)
 const hasNoData = ref(false)
 
@@ -332,10 +336,29 @@ watch([() => props.mode, () => props.period, () => props.selectedCompteurs.lengt
 /**
  * Load real telemetry data for chart
  */
+function fallbackToMockChart(reason: string) {
+  console.info('[UnifiedChart] Falling back to mock chart data:', reason)
+  useTelemetryData.value = false
+  hasNoData.value = false
+  isLoadingChart.value = false
+  telemetryChartData.value = null
+  renderChart()
+}
+
 async function loadTelemetryChartData() {
+  // Skip telemetry entirely when we are in mock-only mode or no deviceUUID is available
+  if (!shouldUseTelemetry.value) {
+    fallbackToMockChart('telemetry disabled by data mode')
+    return
+  }
+
   const compteursWithUUID = props.selectedCompteurs.filter(c => c.deviceUUID)
 
   if (compteursWithUUID.length === 0) {
+    if (useMockData() || useHybridMode()) {
+      fallbackToMockChart('no compteurs expose deviceUUID')
+      return
+    }
     console.warn('[UnifiedChart] No compteurs with deviceUUID')
     hasNoData.value = true
     return
@@ -389,6 +412,10 @@ async function loadTelemetryChartData() {
 
     if (results.length === 0) {
       console.warn('[UnifiedChart] No telemetry data available')
+      if (useMockData() || useHybridMode()) {
+        fallbackToMockChart('telemetry returned empty results')
+        return
+      }
       hasNoData.value = true
       isLoadingChart.value = false
       return
@@ -402,6 +429,10 @@ async function loadTelemetryChartData() {
 
     if (!hasData || labels.length === 0) {
       console.warn('[UnifiedChart] API returned empty data')
+      if (useMockData() || useHybridMode()) {
+        fallbackToMockChart('telemetry payload missing data')
+        return
+      }
       hasNoData.value = true
       isLoadingChart.value = false
       return
@@ -431,7 +462,11 @@ async function loadTelemetryChartData() {
     renderTelemetryChart()
   } catch (error) {
     console.error('[UnifiedChart] Failed to load telemetry chart data:', error)
-    hasNoData.value = true
+    if (useMockData() || useHybridMode()) {
+      fallbackToMockChart('telemetry request failed')
+    } else {
+      hasNoData.value = true
+    }
   } finally {
     isLoadingChart.value = false
   }
@@ -532,6 +567,16 @@ onMounted(() => {
     attributeFilter: ['class']
   })
 })
+
+// Toggle between telemetry and mock rendering when data mode or devices change
+watch(shouldUseTelemetry, (shouldUse) => {
+  useTelemetryData.value = shouldUse
+  if (shouldUse) {
+    loadTelemetryChartData()
+  } else {
+    fallbackToMockChart('telemetry disabled after data mode change')
+  }
+}, { immediate: true })
 
 // Watch period and mode changes to refetch data
 watch(() => [props.period, props.mode], () => {
