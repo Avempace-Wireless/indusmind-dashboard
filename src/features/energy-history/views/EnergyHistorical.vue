@@ -430,6 +430,7 @@ import { useEnergyHistoryStore } from '@/features/energy-history/store/useEnergy
 import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
+import { useMockData } from '@/config/dataMode'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
@@ -445,6 +446,7 @@ const metersStore = useMetersStore()
 const dashboardStore = useDashboardStore()
 const { selectedMeterIds } = storeToRefs(metersStore)
 const dashboardLoading = computed(() => dashboardStore.loading)
+const mockMode = useMockData()
 
 // Use the same composable as DashboardView and PuissanceView for consistency
 const {
@@ -1108,6 +1110,11 @@ onMounted(async () => {
 
   await refreshData()
 
+  // Wait a bit longer to ensure computed properties fully recalculate after data arrives
+  await nextTick()
+  await nextTick()
+  await new Promise(resolve => setTimeout(resolve, 100))
+
   // Debug: log chart state
   console.log('After refreshData:', {
     hasChartData: hasChartData.value,
@@ -1119,21 +1126,28 @@ onMounted(async () => {
   })
 
   // Initialize chart after data is loaded
-  // Multiple nextTick calls ensure DOM is fully ready
-  await nextTick()
-  await nextTick()
-  await nextTick()
   if (hasChartData.value) {
     initChart()
+  } else {
+    // If we are in mock mode and telemetry is unavailable, retry once with mock data to avoid an empty chart on first load
+    if (mockMode) {
+      console.log('Chart has no data in mock mode, retrying refreshData...')
+      await refreshData()
+      await nextTick()
+      await new Promise(resolve => setTimeout(resolve, 100))
+      if (hasChartData.value) {
+        initChart()
+      }
+    }
   }
 
-  // Force chart re-initialization if canvas still not ready
+  // Force chart re-initialization if canvas still not ready after a delay
   setTimeout(() => {
     if (!chartInstance && hasChartData.value) {
-      console.log('Retrying chart initialization...')
+      console.log('Delayed chart initialization (canvas/data ready now)...')
       initChart()
     }
-  }, 500)
+  }, 300)
 })
 
 // Re-initialize chart whenever data becomes available after loading
@@ -1157,13 +1171,22 @@ watch(
     ready: hasChartData.value
   }),
   async ({ labels, datasets, ready }) => {
-    console.log('Chart data watcher triggered:', { labels, datasets, ready })
-    // Only initialize if data is ready AND not already initialized
-    if (!ready || (labels === 0 && datasets === 0) || chartInstance) return
+    console.log('Chart data watcher triggered:', { labels, datasets, ready, hasChartInstance: !!chartInstance })
+    // Skip if no data yet
+    if (!ready || (labels === 0 && datasets === 0)) return
+
+    // If chart exists, destroy it to force re-render with new data
+    if (chartInstance) {
+      console.log('Destroying existing chart to re-render with new data')
+      chartInstance.destroy()
+      chartInstance = null
+    }
+
+    // Re-initialize with fresh data
     await nextTick()
     initChart()
   },
-  { immediate: true } // Back to true, but with chartInstance guard
+  { immediate: false } // Don't run on initial setup, let onMounted handle it
 )
 
 // When compteurs arrive later (e.g., after refresh), hydrate meters store and refresh
