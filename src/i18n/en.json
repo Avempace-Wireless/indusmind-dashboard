@@ -564,7 +564,7 @@
     },
     "meters": {
       "title": "Select meters to compare",
-      "selected": "{count, plural, one {# meter selected} other {# meters selected}}",
+      "selected": "{count} meter selected | {count} meters selected",
       "all": "All meters",
       "search": "Search meters..."
     },

@@ -62,7 +62,7 @@
 
         <!-- Info: Selected Count -->
         <div class="text-xs text-slate-600 dark:text-slate-400 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-          {{ t('comparison.meters.selected', { count: activeMeterIds.length === 0 ? validSelectedMeterIds.length : activeMeterIds.length }) }}
+          {{ $t('comparison.meters.selected', { count: activeMeterIds.length === 0 ? validSelectedMeterIds.length : activeMeterIds.length }) }}
         </div>
       </div>
 

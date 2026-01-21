@@ -79,7 +79,6 @@
 
     <!-- Main Content Grid: 70% Chart Area, 30% Controls -->
     <div v-if="dashboardLoading" class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex items-center justify-center text-slate-600 dark:text-slate-300 mb-6">
-      <span class="material-symbols-outlined animate-spin mr-3">progress_activity</span>
       {{ t('common.loading') }}
     </div>
 

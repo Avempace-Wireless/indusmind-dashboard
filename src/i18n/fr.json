@@ -563,8 +563,8 @@
     },
     "meters": {
       "title": "Sélectionnez les compteurs à comparer",
-      "selected": "{count, plural, one {# mètre sélectionné} other {# mètres sélectionnés}}",
-      "all": "Tous les compteurs",
+      "selected": "{count} mètre sélectionné | {count} mètres sélectionnés",
+      "selectMeters": "Sélectionnez au moins un compteur",
       "search": "Rechercher des compteurs..."
     },
     "periods": {

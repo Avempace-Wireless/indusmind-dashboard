@@ -45,9 +45,8 @@
       />
 
       <!-- Meter Widgets Grid (Dynamic, responsive) -->
-      <div v-if="dashboardLoading" class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex items-center justify-center text-slate-600 dark:text-slate-300">
-        <span class="material-symbols-outlined animate-spin mr-3">progress_activity</span>
-        {{ $t('common.loading') }}
+      <div v-if="dashboardLoading" class="w-full h-96 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex flex-col items-center justify-center text-slate-600 dark:text-slate-300 gap-4">
+        <p class="text-lg font-medium">{{ $t('common.loading') }}</p>
       </div>
       <div v-else :class="[
         'grid gap-6',
@@ -77,36 +76,61 @@
           :is-loading="telemetryLoading"
           @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
         />
+
+        <!-- Skeleton loaders while loading -->
+        <CompteurWidgetSkeleton v-if="dashboardLoading" />
+        <CompteurWidgetSkeleton v-if="dashboardLoading && selectedCompteurs.length > 1" />
       </div>
 
       <!-- Unified Chart with Side Widgets -->
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <!-- Unified Chart (Energy & Temperature) - Takes 2 columns on XL -->
         <div class="xl:col-span-2">
-          <UnifiedChart
-            :mode="chartMode"
-            :period="chartPeriod"
-            :subtitle="unifiedChartSubtitle"
-            :selected-compteurs="enrichedCompteurs"
-            @update:mode="chartMode = $event"
-            @update:period="chartPeriod = $event"
-          />
+          <Suspense>
+            <template #default>
+              <UnifiedChart
+                :mode="chartMode"
+                :period="chartPeriod"
+                :subtitle="unifiedChartSubtitle"
+                :selected-compteurs="enrichedCompteurs"
+                @update:mode="chartMode = $event"
+                @update:period="chartPeriod = $event"
+              />
+            </template>
+            <template #fallback>
+              <ChartSkeleton />
+            </template>
+          </Suspense>
         </div>
 
         <!-- Side Widgets -->
         <div class="flex flex-col gap-6">
           <!-- Phase Balance Widget -->
-          <PhaseBalance
-            :title="$t('dashboard.phaseBalance.title')"
-            :phases="phaseBalanceData"
-          />
+          <Suspense>
+            <template #default>
+              <PhaseBalance
+                :title="$t('dashboard.phaseBalance.title')"
+                :phases="phaseBalanceData"
+              />
+            </template>
+            <template #fallback>
+              <ChartSkeleton />
+            </template>
+          </Suspense>
 
           <!-- Events Widget -->
-          <EventsWidget
-            :title="$t('dashboard.recentEvents.title')"
-            :action-label="$t('dashboard.recentEvents.viewAll')"
-            :events="recentEvents"
-          />
+          <Suspense>
+            <template #default>
+              <EventsWidget
+                :title="$t('dashboard.recentEvents.title')"
+                :action-label="$t('dashboard.recentEvents.viewAll')"
+                :events="recentEvents"
+              />
+            </template>
+            <template #fallback>
+              <ChartSkeleton />
+            </template>
+          </Suspense>
         </div>
       </div>
 
@@ -174,15 +198,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, defineAsyncComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
-import UnifiedChart from '@/components/dashboard/UnifiedChart.vue'
-import PhaseBalance from '@/components/dashboard/PhaseBalance.vue'
-import EventsWidget from '@/components/dashboard/EventsWidget.vue'
 import CompteurWidget from '@/components/dashboard/CompteurWidget.vue'
+import CompteurWidgetSkeleton from '@/components/skeletons/CompteurWidgetSkeleton.vue'
+import ChartSkeleton from '@/components/skeletons/ChartSkeleton.vue'
+
+// Lazy load heavy components to improve initial load time
+const UnifiedChart = defineAsyncComponent(() => import('@/components/dashboard/UnifiedChart.vue'))
+const PhaseBalance = defineAsyncComponent(() => import('@/components/dashboard/PhaseBalance.vue'))
+const EventsWidget = defineAsyncComponent(() => import('@/components/dashboard/EventsWidget.vue'))
+
 import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
 import { useMetersStore } from '@/stores/useMetersStore'

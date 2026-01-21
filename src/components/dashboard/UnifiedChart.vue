@@ -61,7 +61,6 @@
         <!-- Loading overlay -->
         <div v-if="isLoadingChart" class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-lg z-10">
           <div class="flex flex-col items-center gap-3">
-            <span class="material-symbols-outlined animate-spin text-blue-600 dark:text-blue-400 text-4xl">progress_activity</span>
             <p class="text-sm text-slate-600 dark:text-slate-400 font-medium">{{ $t('common.loading') }}...</p>
           </div>
         </div>
