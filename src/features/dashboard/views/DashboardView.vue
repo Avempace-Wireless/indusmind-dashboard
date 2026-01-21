@@ -161,7 +161,7 @@
                     {{ $t('dashboard.equipment.status.online') }}
                   </span>
                 </td>
-                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ compteur.instantaneous.toFixed(1) }}</td>
+                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ (compteur.instantaneous ?? 0).toFixed(1) }}</td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.unit.kw') }}</td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.justNow') }}</td>
               </tr>

@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import type { DashboardMetrics, EnergyReading } from '@/types'
 import { realtimeAPI } from '@/services/api'
 import { getAllCompteursFromPM2200, getAllCompteursFromCustomerDevices, type Compteur } from '@/services/deviceAPI'
+import { fetchWithFallback } from '@/utils/dataFetch'
+import { MOCK_METERS } from '@/data/mockData'
 
 export const useDashboardStore = defineStore('dashboard', () => {
   // State
@@ -195,27 +197,46 @@ export const useDashboardStore = defineStore('dashboard', () => {
   }
 
   /**
-   * Load compteurs from customer devices API
-   * Only uses API data - no mock fallback
+   * Load compteurs from customer devices API with mock fallback
+   * Uses data mode configuration to determine behavior
    */
   const loadCompteurs = async () => {
     loading.value = true
     error.value = null
     try {
-      // Load from customer devices API
-      const customerCompteurs = await getAllCompteursFromCustomerDevices()
+      // Use fetchWithFallback to handle API/mock/hybrid modes
+      const customerCompteurs = await fetchWithFallback(
+        // Try API first
+        () => getAllCompteursFromCustomerDevices(),
+        // Fallback to mock meters converted to Compteur format
+        () => MOCK_METERS.map((meter, index) => ({
+          id: meter.id,
+          name: meter.name,
+          deviceUUID: `mock-uuid-${meter.id}`,
+          accessToken: `mock-token-${meter.id}`,
+          category: 'PM2200' as const,
+          subtitle: meter.subtitle || meter.name,
+          color: (['red', 'blue', 'green', 'yellow'][index % 4]) as 'red' | 'blue' | 'green' | 'yellow',
+          instantaneous: Math.random() * 5000 + 1000,
+          today: Math.random() * 3000 + 500,
+          yesterday: Math.random() * 3000 + 500,
+          linkedEquipment: meter.linkedEquipment || [],
+          translationKey: meter.translationKey
+        })),
+        { logErrors: true }
+      )
 
       compteurs.value = customerCompteurs
 
       if (customerCompteurs.length > 0) {
-        console.log(`Loaded ${customerCompteurs.length} compteurs from customer devices API`)
+        console.log(`Loaded ${customerCompteurs.length} compteurs`)
       } else {
-        console.warn('Customer API returned no devices')
+        console.warn('No compteurs available')
       }
     } catch (err: unknown) {
-      console.error('Failed to load compteurs from API:', err)
+      console.error('Failed to load compteurs:', err)
       error.value = err instanceof Error ? err.message : 'Failed to load compteurs'
-      // Clear compteurs on error - don't show "Unknown" devices
+      // In API-only mode, clear compteurs on error
       compteurs.value = []
     } finally {
       loading.value = false
