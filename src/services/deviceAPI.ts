@@ -4,9 +4,9 @@
  * Supports PM2200 electrical meters and Indusmind_T_Sensor temperature sensors
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 const MOCK_DATA_ENABLED = true // Set to false when real API is ready
-
+console.log('deviceAPI.ts - Using API_BASE_URL:', API_BASE_URL)
 /**
  * Device interface matching API response structure
  */
@@ -432,6 +432,8 @@ export async function searchSensors(query: string): Promise<Sensor[]> {
 export interface Compteur {
   id: string
   name: string
+  deviceUUID?: string // ThingsBoard device UUID for telemetry API
+  accessToken?: string // Device access token
   category: 'PM2200' | 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage'
   subtitle: string
   color: 'red' | 'green' | 'blue' | 'yellow'
@@ -462,6 +464,7 @@ function mapMeterToCompteur(meter: Meter): Compteur {
   return {
     id: meter.id,
     name: meter.name, // Use full device name as display (e.g., "PM2200 - TGBT Principal")
+    deviceUUID: meter.deviceUUID, // ThingsBoard device UUID for telemetry API
     category: 'PM2200', // All PM2200 are same category
     subtitle: meter.label, // Use label as subtitle (e.g., "TGBT Principal", "Climatisation Hall")
     color, // Color varies by meter ID for dashboard cards
@@ -481,3 +484,43 @@ export async function getAllCompteursFromPM2200(): Promise<Compteur[]> {
   return meters.map(mapMeterToCompteur)
 }
 
+/**
+ * Get all compteurs from Indusmind customer devices API
+ * Fetches from server API and converts to Compteur format
+ */
+export async function getAllCompteursFromCustomerDevices(): Promise<Compteur[]> {
+  try {
+    const customerDevices = await getAllIndusmindCustomerDevices()
+    const meters = filterMeters(customerDevices)
+    return meters.map(mapMeterToCompteur)
+  } catch (error) {
+    console.error('Failed to fetch compteurs from customer devices:', error)
+    return []
+  }
+}
+
+/**
+ * Fetch all Indusmind customer devices from local server API
+ * Server will proxy the request to external Indusmind API
+ * Endpoint: GET /customer/devices
+ */
+export async function getAllIndusmindCustomerDevices(): Promise<Device[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/customer/devices`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    return data.data || data
+  } catch (error) {
+    console.error('Failed to fetch Indusmind customer devices:', error)
+    throw error
+  }
+}

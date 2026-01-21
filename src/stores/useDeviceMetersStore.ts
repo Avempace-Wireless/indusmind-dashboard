@@ -60,18 +60,32 @@ export const useMetersStore = defineStore('meters', () => {
 
   /**
    * Fetch all available meters from API
-   * Called on app startup or when data refresh is needed
+   * Only uses customer devices API - no mock data fallback
    */
   async function fetchMeters() {
     try {
       isLoading.value = true
       error.value = null
-      allMeters.value = await deviceAPI.getAllMeters()
+
+      // Fetch from customer devices API
+      const customerDevices = await deviceAPI.getAllIndusmindCustomerDevices()
+      const customerMeters = deviceAPI.filterMeters(customerDevices)
+
+      allMeters.value = customerMeters
+
+      if (customerMeters.length > 0) {
+        console.log(`Loaded ${customerMeters.length} meters from customer devices API`)
+      } else {
+        console.warn('Customer API returned no devices')
+      }
+
       // Restore previously selected meters if available
       restoreSelection()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch meters'
-      console.error('Error fetching meters:', err)
+      console.error('Error fetching meters from API:', err)
+      // Clear meters on error - don't show "Unknown" meters
+      allMeters.value = []
     } finally {
       isLoading.value = false
     }
@@ -193,6 +207,32 @@ export const useMetersStore = defineStore('meters', () => {
     return deviceAPI.searchMeters(query)
   }
 
+  /**
+   * Fetch all Indusmind customer devices from server API
+   * Merges with existing meters, avoiding duplicates
+   */
+  async function fetchIndusmindCustomerDevices() {
+    try {
+      isLoading.value = true
+      error.value = null
+      const customerDevices = await deviceAPI.getAllIndusmindCustomerDevices()
+      // Filter and merge customer devices with existing meters
+      const customerMeters = deviceAPI.filterMeters(customerDevices)
+      // Merge with existing meters, avoiding duplicates
+      const existingIds = new Set(allMeters.value.map(m => m.id))
+      const newMeters = customerMeters.filter(m => !existingIds.has(m.id))
+      allMeters.value = [...allMeters.value, ...newMeters]
+      lastModified.value = new Date()
+      return customerDevices
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch customer devices'
+      console.error('Error fetching Indusmind customer devices:', err)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // ===========================
   // GETTERS
   // ===========================
@@ -275,6 +315,7 @@ export const useMetersStore = defineStore('meters', () => {
 
     // Actions
     fetchMeters,
+    fetchIndusmindCustomerDevices,
     setSelectedMeters,
     toggleMeter,
     clearSelection,

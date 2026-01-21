@@ -226,6 +226,12 @@
       "sevenDays": "7 days",
       "thirtyDays": "30 days"
     },
+    "chart": {
+      "noData": {
+        "title": "No data available",
+        "description": "No telemetry data found for the selected period"
+      }
+    },
     "equipment": {
       "title": "Equipment Status – Selected Meters",
       "columns": {
@@ -558,13 +564,13 @@
     },
     "meters": {
       "title": "Select meters to compare",
-      "selected": "{count} meters selected",
+      "selected": "{count} meter selected | {count} meters selected",
       "all": "All meters",
       "search": "Search meters..."
     },
     "periods": {
       "title": "Select periods to compare",
-      "selected": "{count} periods selected",
+      "selected": "{count, plural, one {# period selected} other {# periods selected}}",
       "presets": {
         "last7Days": "Last 7 days",
         "last4Weeks": "Last 4 weeks",

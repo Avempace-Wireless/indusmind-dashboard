@@ -2,99 +2,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { DashboardMetrics, EnergyReading } from '@/types'
 import { realtimeAPI } from '@/services/api'
-import { getAllCompteursFromPM2200, type Compteur } from '@/services/deviceAPI'
-
-// Mock compteur data (fallback) - matches PM2200 devices from deviceAPI
-const mockCompteurs: Compteur[] = [
-  {
-    id: '8',
-    name: 'PM2200 - TGBT Principal',
-    category: 'PM2200',
-    subtitle: 'TGBT Principal',
-    color: 'red',
-    instantaneous: 6479.5,
-    today: 6366,
-    yesterday: 5890,
-    linkedEquipment: []
-  },
-  {
-    id: '3',
-    name: 'PM2200 - Climatisation Hall',
-    category: 'PM2200',
-    subtitle: 'Climatisation Hall',
-    color: 'blue',
-    instantaneous: 3785.5,
-    today: 2134.5,
-    yesterday: 2050,
-    linkedEquipment: []
-  },
-  {
-    id: '4',
-    name: 'PM2200 - Compresseur Zone A',
-    category: 'PM2200',
-    subtitle: 'Compresseur Zone A',
-    color: 'green',
-    instantaneous: 4605,
-    today: 4085.2,
-    yesterday: 3950,
-    linkedEquipment: []
-  },
-  {
-    id: '5',
-    name: 'PM2200 - TGBT Secondaire',
-    category: 'PM2200',
-    subtitle: 'TGBT Secondaire',
-    color: 'yellow',
-    instantaneous: 3387.8,
-    today: 3039.6,
-    yesterday: 2980,
-    linkedEquipment: []
-  },
-  {
-    id: '9',
-    name: 'PM2200 - Éclairage Général',
-    category: 'PM2200',
-    subtitle: 'Éclairage Général',
-    color: 'yellow',
-    instantaneous: 2150.3,
-    today: 1890.5,
-    yesterday: 1820,
-    linkedEquipment: []
-  },
-  {
-    id: '10',
-    name: 'PM2200 - Compresseur Zone B',
-    category: 'PM2200',
-    subtitle: 'Compresseur Zone B',
-    color: 'green',
-    instantaneous: 3920.1,
-    today: 3450.8,
-    yesterday: 3380,
-    linkedEquipment: []
-  },
-  {
-    id: '11',
-    name: 'PM2200 - CVC Bureaux',
-    category: 'PM2200',
-    subtitle: 'CVC Bureaux',
-    color: 'blue',
-    instantaneous: 2890.5,
-    today: 2560.2,
-    yesterday: 2490,
-    linkedEquipment: []
-  },
-  {
-    id: '12',
-    name: 'PM2200 - Ligne Production',
-    category: 'PM2200',
-    subtitle: 'Ligne Production',
-    color: 'red',
-    instantaneous: 5240.8,
-    today: 4980.5,
-    yesterday: 4850,
-    linkedEquipment: []
-  }
-]
+import { getAllCompteursFromPM2200, getAllCompteursFromCustomerDevices, type Compteur } from '@/services/deviceAPI'
+import { fetchWithFallback } from '@/utils/dataFetch'
+import { MOCK_METERS } from '@/data/mockData'
 
 export const useDashboardStore = defineStore('dashboard', () => {
   // State
@@ -105,7 +15,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
   const autoRefreshInterval = ref<number | null>(null)
-  const compteurs = ref<Compteur[]>(mockCompteurs)
+  const compteurs = ref<Compteur[]>([])
   let unsubscribeRealtimeUpdates: (() => void) | null = null
 
   // Computed
@@ -287,21 +197,49 @@ export const useDashboardStore = defineStore('dashboard', () => {
   }
 
   /**
-   * Load compteurs from PM2200 devices API
+   * Load compteurs from customer devices API with mock fallback
+   * Uses data mode configuration to determine behavior
    */
   const loadCompteurs = async () => {
+    loading.value = true
+    error.value = null
     try {
-      const apiCompteurs = await getAllCompteursFromPM2200()
-      if (apiCompteurs.length > 0) {
-        compteurs.value = apiCompteurs
+      // Use fetchWithFallback to handle API/mock/hybrid modes
+      const customerCompteurs = await fetchWithFallback(
+        // Try API first
+        () => getAllCompteursFromCustomerDevices(),
+        // Fallback to mock meters converted to Compteur format
+        () => MOCK_METERS.map((meter, index) => ({
+          id: meter.id,
+          name: meter.name,
+          deviceUUID: `mock-uuid-${meter.id}`,
+          accessToken: `mock-token-${meter.id}`,
+          category: 'PM2200' as const,
+          subtitle: meter.subtitle || meter.name,
+          color: (['red', 'blue', 'green', 'yellow'][index % 4]) as 'red' | 'blue' | 'green' | 'yellow',
+          instantaneous: Math.random() * 5000 + 1000,
+          today: Math.random() * 3000 + 500,
+          yesterday: Math.random() * 3000 + 500,
+          linkedEquipment: meter.linkedEquipment || [],
+          translationKey: meter.translationKey
+        })),
+        { logErrors: true }
+      )
+
+      compteurs.value = customerCompteurs
+
+      if (customerCompteurs.length > 0) {
+        console.log(`Loaded ${customerCompteurs.length} compteurs`)
       } else {
-        // Fallback to mock data if API returns empty
-        compteurs.value = mockCompteurs
+        console.warn('No compteurs available')
       }
-    } catch (error) {
-      console.error('Failed to load compteurs from API:', error)
-      // Use mock data on error
-      compteurs.value = mockCompteurs
+    } catch (err: unknown) {
+      console.error('Failed to load compteurs:', err)
+      error.value = err instanceof Error ? err.message : 'Failed to load compteurs'
+      // In API-only mode, clear compteurs on error
+      compteurs.value = []
+    } finally {
+      loading.value = false
     }
   }
 

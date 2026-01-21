@@ -32,7 +32,7 @@
 
       <!-- Controls Section - Compact Meter Selection -->
       <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-4 border-2 border-slate-300 dark:border-slate-600 mb-4">
-        <div v-if="selectedMeterIds.length > 0 && currentMeterId" class="space-y-3">
+        <div v-if="validSelectedMeterIds.length > 0 && currentMeterId" class="space-y-3">
           <!-- Header: Title + Manage Button -->
           <div class="flex items-center justify-between gap-3">
             <h3 class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
@@ -41,9 +41,9 @@
           </div>
 
           <!-- All Meters Pills - Grid Layout -->
-          <div v-if="selectedMeterIds.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          <div v-if="validSelectedMeterIds.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             <button
-              v-for="(meterId, index) in selectedMeterIds"
+              v-for="(meterId, index) in validSelectedMeterIds"
               :key="meterId"
               @click="selectMeter(index)"
               :class="[
@@ -77,7 +77,7 @@
     </div>
 
     <!-- Loading State - Improved with current meter info -->
-    <div v-if="!isMeterDataReady && selectedMeterIds.length > 0" class="flex items-center justify-center py-16">
+    <div v-if="!isMeterDataReady && validSelectedMeterIds.length > 0" class="flex items-center justify-center py-16">
       <div class="text-center">
         <div class="inline-block mb-4">
           <div class="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 dark:border-slate-700 border-t-teal-600"></div>
@@ -86,7 +86,7 @@
         <p class="text-sm text-slate-600 dark:text-slate-400">{{ $t('puissance.labels.fetchingData') }}</p>
         <div class="mt-4 flex items-center justify-center gap-2">
           <div class="w-2 h-2 rounded-full bg-teal-600 animate-pulse"></div>
-          <span class="text-xs text-slate-500 dark:text-slate-500">{{ $t('common.meter') }} {{ currentMeterIndex + 1 }} {{ $t('common.of') }} {{ selectedMeterIds.length }}</span>
+          <span class="text-xs text-slate-500 dark:text-slate-500">{{ $t('common.meter') }} {{ currentMeterIndex + 1 }} {{ $t('common.of') }} {{ validSelectedMeterIds.length }}</span>
         </div>
       </div>
     </div>
@@ -477,12 +477,19 @@ const {
 // Get selected meter IDs as a reactive computed
 const selectedMeterIds = computed(() => selectedCompteurIds.value)
 
+// Filter out any meter IDs that don't exist in allCompteurs (to avoid showing "Unknown")
+const validSelectedMeterIds = computed(() => {
+  return selectedMeterIds.value.filter(meterId => {
+    return allCompteurs.value.some(c => c.id === meterId)
+  })
+})
+
 // Create a separate ref that tracks the array for prop passing
 const selectedMeterIdsArray = computed(() => [...selectedMeterIds.value])
 
 // ✅ TRACK CURRENTLY DISPLAYED METER
 const currentMeterIndex = ref(0)
-const currentMeterId = computed(() => selectedMeterIds.value[currentMeterIndex.value] || null)
+const currentMeterId = computed(() => validSelectedMeterIds.value[currentMeterIndex.value] || null)
 
 // Functions to navigate between selected meters
 function selectMeter(index: number) {
@@ -501,8 +508,8 @@ function nextMeter() {
   }
 }
 
-// Watch for changes in selectedMeterIds to keep index valid
-watch(selectedMeterIds, (newIds) => {
+// Watch for changes in validSelectedMeterIds to keep index valid
+watch(validSelectedMeterIds, (newIds) => {
   if (currentMeterIndex.value >= newIds.length && newIds.length > 0) {
     currentMeterIndex.value = newIds.length - 1
   } else if (newIds.length === 0) {
@@ -547,9 +554,9 @@ function getDetailButtonClasses(meterColor: string): string {
 // ===========================
 // AUTO-SELECT 8 METERS ON MOUNT
 // ===========================
-onMounted(() => {
+onMounted(async () => {
   // Initialize compteur selection (syncs with DashboardView)
-  initializeCompteurSelection()
+  await initializeCompteurSelection()
 
   // Restore and clean up any invalid meter IDs from localStorage
   metersStore.restoreSelection()
