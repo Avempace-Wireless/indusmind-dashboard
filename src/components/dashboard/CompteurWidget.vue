@@ -29,14 +29,27 @@
       </button>
     </div>
 
+    <!-- No Data Available State (API-only mode) -->
+    <div v-if="showNoDataState" class="px-4 py-12 flex flex-col items-center justify-center text-center">
+      <span class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-5xl mb-3">
+        hourglass_empty
+      </span>
+      <p class="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">
+        {{ $t('common.noData') }}
+      </p>
+      <p class="text-xs text-slate-500 dark:text-slate-500">
+        {{ $t('common.noDataAvailable') }}
+      </p>
+    </div>
+
     <!-- Single KPI Display -->
-    <div class="px-4 py-6">
+    <div v-else class="px-4 py-6">
       <div class="flex items-baseline justify-between mb-3">
         <span class="text-xs font-medium text-slate-600 dark:text-slate-400">{{ modeLabel }}</span>
         <span class="text-xs text-slate-500 dark:text-slate-500">{{ timestamp }}</span>
       </div>
       <div class="flex items-baseline gap-2 mb-3">
-        <span :class="['text-4xl font-bold', currentMode === 'instantanée' ? colorClasses.text : 'text-slate-900 dark:text-slate-100']">
+        <span :class="['text-4xl font-bold', colorClasses.text]">
           {{ formatValue(currentValue) }}
         </span>
         <span class="text-base font-medium text-slate-600 dark:text-slate-400">{{ unitForMode }}</span>
@@ -46,7 +59,10 @@
       <div class="mt-3">
         <!-- Bar Chart for Instantaneous (Recent readings) -->
         <div v-if="currentMode === 'instantanée'" class="space-y-1">
-          <div class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-end gap-px px-1 relative group">
+          <div v-if="instantaneousReadings.length === 0" class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center">
+            <span class="text-xs text-slate-400 dark:text-slate-500">{{ $t('common.noData') }}</span>
+          </div>
+          <div v-else class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-end gap-px px-1 relative group">
             <div
               v-for="(reading, index) in instantaneousReadings"
               :key="index"
@@ -74,7 +90,10 @@
 
         <!-- Bar Chart for Today (Hourly) -->
         <div v-else-if="currentMode === 'jour'" class="space-y-1">
-          <div class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-end gap-px px-1 relative group">
+          <div v-if="todayHourlyReadings.length === 0" class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center">
+            <span class="text-xs text-slate-400 dark:text-slate-500">{{ $t('common.noData') }}</span>
+          </div>
+          <div v-else class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-end gap-px px-1 relative group">
             <div
               v-for="(reading, index) in todayHourlyReadings"
               :key="index"
@@ -93,17 +112,16 @@
             </div>
           </div>
           <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
-            <span>{{ $t('compteur.time.h0') }}</span>
-            <span>{{ $t('compteur.time.h6') }}</span>
-            <span>{{ $t('compteur.time.h12') }}</span>
-            <span>{{ $t('compteur.time.h18') }}</span>
-            <span>{{ $t('compteur.time.now') }}</span>
+            <span v-for="labelInfo in todayChartLabels" :key="labelInfo.index">{{ labelInfo.label }}</span>
           </div>
         </div>
 
         <!-- Bar Chart for Yesterday (Full Day) -->
         <div v-else-if="currentMode === 'hier'" class="space-y-1">
-          <div class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-end gap-px px-1 relative group">
+          <div v-if="yesterdayHourlyReadings.length === 0" class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-center justify-center">
+            <span class="text-xs text-slate-400 dark:text-slate-500">{{ $t('common.noData') }}</span>
+          </div>
+          <div v-else class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-end gap-px px-1 relative group">
             <div
               v-for="(reading, index) in yesterdayHourlyReadings"
               :key="index"
@@ -146,6 +164,8 @@ import { computed, ref, watch, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Compteur, CompteurMode } from '@/composables/useCompteurSelection'
 import { getMeterColorByIndex } from '@/utils/meterColors'
+import { DEFAULT_WIDGET_CONFIG, getKeyConfig, formatTelemetryValue } from '@/config/telemetryConfig'
+import { useApiOnly } from '@/config/dataMode'
 
 // ============================================================================
 // PROPS & EMITS
@@ -187,6 +207,17 @@ const tooltip = ref({
   text: '',
   x: 0,
 })
+
+// Watch for compteur data changes to ensure reactivity
+watch(() => props.compteur, (newCompteur, oldCompteur) => {
+  console.log('[CompteurWidget] Compteur data changed:', {
+    name: newCompteur.name,
+    instantaneous: newCompteur.instantaneous,
+    today: newCompteur.today,
+    hasData: (newCompteur as any).hasData,
+    isApiError: (newCompteur as any).isApiError
+  })
+}, { deep: true })
 
 // ============================================================================
 // COMPUTED
@@ -237,30 +268,81 @@ const colorClasses = computed(() => {
 })
 
 /**
- * Get current value based on mode
+ * Check if should show "no data available" state
+ * In API-only mode, show this when data is missing or API error occurred
+ * Also handles undefined/null values gracefully
+ */
+const showNoDataState = computed(() => {
+  // Check if compteur has an API error flag (set by DashboardView)
+  if ((props.compteur as any).isApiError) {
+    console.log('[CompteurWidget] Showing no-data state: API error flag detected')
+    return true
+  }
+
+  // Check if explicitly marked as no data
+  if ((props.compteur as any).hasData === false) {
+    console.log('[CompteurWidget] Showing no-data state: hasData flag is false')
+    return true
+  }
+
+  // In API-only mode, check if current mode has actual data
+  if (useApiOnly()) {
+    const currentVal = currentValue.value
+    const hasData = currentVal !== null && currentVal !== undefined && currentVal > 0
+
+    if (!hasData) {
+      console.log('[CompteurWidget] Showing no-data state in API-only mode: no value for', currentMode.value, 'value:', currentVal)
+      return true
+    }
+  }
+
+  return false
+})
+
+/**
+ * Get current value based on mode with null safety
  */
 const currentValue = computed(() => {
+  const value = (() => {
+    switch (currentMode.value) {
+      case 'instantanée':
+        return props.compteur.instantaneous ?? 0
+      case 'jour':
+        return props.compteur.today ?? 0
+      case 'hier':
+        return props.compteur.yesterday ?? 0
+      default:
+        return 0
+    }
+  })()
+
+  // Log the computed value for debugging
+  if (value > 0) {
+    console.log(`[CompteurWidget] ${props.compteur.name} ${currentMode.value}: ${value}`)
+  }
+
+  return value
+})
+
+/**
+ * Get key configuration based on current mode (DYNAMIC from telemetryConfig)
+ */
+const keyConfig = computed(() => {
   switch (currentMode.value) {
     case 'instantanée':
-      return props.compteur.instantaneous
+      return DEFAULT_WIDGET_CONFIG.instantaneous
     case 'jour':
-      return props.compteur.today
+      return DEFAULT_WIDGET_CONFIG.daily
     case 'hier':
-      return props.compteur.yesterday
+      return DEFAULT_WIDGET_CONFIG.yesterday || DEFAULT_WIDGET_CONFIG.daily // Fallback to daily if no yesterday config
   }
 })
 
 /**
- * Get unit label based on mode
+ * Get unit label based on mode (DYNAMIC from key config)
  */
 const unitForMode = computed(() => {
-  switch (currentMode.value) {
-    case 'instantanée':
-      return 'kW'
-    case 'jour':
-    case 'hier':
-      return 'kWh'
-  }
+  return keyConfig.value.unit
 })
 
 /**
@@ -306,11 +388,55 @@ const timestamp = computed(() => {
 })
 
 /**
- * Mock hourly data for today (24 bars)
+ * Hourly data for today (up to 24 bars)
  * Represents consumption distribution throughout the current day
+ * Returns empty array if no data available
  */
 const todayHourlyReadings = computed(() => {
-  const baseValue = props.compteur.today / 24 // Average per hour
+  // Try to use real API data first
+  const apiReadings = props.compteur.todayReadings || []
+  console.log('[CompteurWidget] todayHourlyReadings - API readings:', {
+    name: props.compteur.name,
+    apiReadingsLength: apiReadings.length,
+    apiReadings: apiReadings.slice(0, 5),
+    fullApiReadings: apiReadings
+  })
+
+  if (apiReadings.length > 0) {
+    // Use all API readings - they're already aggregated at 1-hour intervals by the backend
+    // Transform hourly data points to bar chart format
+    const values = apiReadings.map(d => d.value || 0)
+    const maxValue = Math.max(...values, 1) // Avoid division by zero
+
+    console.log('[CompteurWidget] Processing hourly readings:', {
+      name: props.compteur.name,
+      count: apiReadings.length,
+      maxValue,
+      values: values.slice(0, 5)
+    })
+
+    return apiReadings.map((reading, index) => {
+      const height = (reading.value / maxValue) * 100
+      const date = new Date(reading.ts)
+      const hours = date.getHours()
+      const minutes = date.getMinutes()
+      const timeLabel = minutes === 0 ? `${hours}:00` : `${hours}:${minutes.toString().padStart(2, '0')}`
+
+      return {
+        height: Math.max(5, height), // Minimum 5% for visibility
+        value: reading.value.toFixed(1),
+        label: `${hours}h`,
+        text: `${timeLabel} - ${reading.value.toFixed(1)} kWh`,
+        ts: reading.ts
+      }
+    })
+  }
+
+  // Fallback to mock data if no API data
+  const todayValue = props.compteur.today ?? 0
+  if (todayValue === 0) return []
+
+  const baseValue = todayValue / 24 // Average per hour
   const pattern = [
     20, 15, 12, 10, 15, 25, // 0-5h (night/early morning)
     40, 55, 70, 80, 85, 90, // 6-11h (morning ramp-up)
@@ -327,11 +453,43 @@ const todayHourlyReadings = computed(() => {
 })
 
 /**
+ * Dynamic x-axis labels for today chart based on actual data
+ */
+const todayChartLabels = computed(() => {
+  const readings = todayHourlyReadings.value
+  if (readings.length === 0) return []
+
+  // For small datasets (< 5 points), show all labels
+  if (readings.length <= 5) {
+    return readings.map((r, idx) => ({ index: idx, label: r.label }))
+  }
+
+  // For larger datasets, show evenly spaced labels (first, quartiles, last)
+  const indices = [
+    0, // First
+    Math.floor(readings.length * 0.25), // 25%
+    Math.floor(readings.length * 0.5), // 50%
+    Math.floor(readings.length * 0.75), // 75%
+    readings.length - 1 // Last
+  ]
+
+  return indices.map(idx => ({ index: idx, label: readings[idx].label }))
+})
+
+/**
  * Mock hourly data for yesterday (24 bars)
  * Represents full day consumption pattern
+ * Returns empty array if no data available
  */
 const yesterdayHourlyReadings = computed(() => {
-  const baseValue = props.compteur.yesterday / 24 // Average per hour
+  // Note: Yesterday data is not yet available from API
+  // This currently uses mock data fallback
+  // Will be populated when API provides yesterday's historical data
+
+  const yesterdayValue = props.compteur.yesterday ?? 0
+  if (yesterdayValue === 0) return []
+
+  const baseValue = yesterdayValue / 24 // Average per hour
   const pattern = [
     18, 14, 11, 12, 18, 28, // 0-5h
     45, 60, 75, 82, 88, 92, // 6-11h
@@ -350,9 +508,42 @@ const yesterdayHourlyReadings = computed(() => {
 /**
  * Mock instantaneous readings (last 30 minutes, every minute = 30 bars)
  * Shows recent power variations
+ * Returns empty array if no data available
  */
 const instantaneousReadings = computed(() => {
-  const baseValue = props.compteur.instantaneous
+  // Try to use real API data first
+  const apiReadings = props.compteur.instantReadings || []
+  console.log('[CompteurWidget] instantaneousReadings - API readings:', {
+    name: props.compteur.name,
+    apiReadingsLength: apiReadings.length,
+    apiReadings: apiReadings.slice(0, 5),
+    fullApiReadings: apiReadings
+  })
+
+  if (apiReadings.length > 0) {
+    // Transform API data points to bar chart format
+    const values = apiReadings.map(d => d.value || 0)
+    const maxValue = Math.max(...values, 1) // Avoid division by zero
+
+    return apiReadings.map((reading, index) => {
+      const height = (reading.value / maxValue) * 100
+      const minutesAgo = apiReadings.length - index
+
+      return {
+        height: Math.max(5, height), // Minimum 5% for visibility
+        value: reading.value.toFixed(1),
+        label: `-${minutesAgo}min`,
+        text: `-${minutesAgo}min: ${reading.value.toFixed(1)} kW`,
+        ts: reading.ts
+      }
+    })
+  }
+
+  // Fallback to mock data if no API data
+  const instantValue = props.compteur.instantaneous ?? 0
+  if (instantValue === 0) return []
+
+  const baseValue = instantValue
   // Generate 30 data points (1 per minute) with realistic variations
   const readings = []
   for (let i = 0; i < 30; i++) {
@@ -399,10 +590,14 @@ function hideTooltip() {
 }
 
 /**
- * Format value for display (1 decimal place)
+ * Format value for display using dynamic key config
+ * Handles null/undefined values gracefully
  */
-function formatValue(value: number): string {
-  return value.toFixed(1)
+function formatValue(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '0'
+  }
+  return formatTelemetryValue(value, keyConfig.value)
 }
 
 /**

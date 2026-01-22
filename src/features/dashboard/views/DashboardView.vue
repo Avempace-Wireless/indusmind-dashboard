@@ -157,13 +157,20 @@
                 <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ compteur.name }}</td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('dashboard.equipment.columns.energy') }}</td>
                 <td class="px-6 py-3">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-200">
-                    {{ $t('dashboard.equipment.status.online') }}
+                  <span :class="[
+                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                    getCompteurStatus(compteur) === 'online'
+                      ? 'bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-200'
+                      : getCompteurStatus(compteur) === 'error'
+                      ? 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                  ]">
+                    {{ getCompteurStatusLabel(compteur) }}
                   </span>
                 </td>
                 <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ (compteur.instantaneous ?? 0).toFixed(1) }}</td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.unit.kw') }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.justNow') }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ getCompteurLastUpdate(compteur) }}</td>
               </tr>
               <!-- Temperature Zones -->
               <tr v-for="zone in temperatureZones" :key="zone.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
@@ -172,16 +179,18 @@
                 <td class="px-6 py-3">
                   <span :class="[
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                    zone.status === 'Normal'
+                    getTemperatureStatus(zone) === 'normal'
                       ? 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-200'
-                      : 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200'
+                      : getTemperatureStatus(zone) === 'alert'
+                      ? 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                   ]">
-                    {{ zone.status }}
+                    {{ getTemperatureStatusLabel(zone) }}
                   </span>
                 </td>
                 <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ zone.value.toFixed(1) }}</td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.unit.celsius') }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ zone.lastUpdate }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ getTemperatureLastUpdate(zone) }}</td>
               </tr>
               <!-- Empty state -->
               <tr v-if="enrichedCompteurs.length === 0 && temperatureZones.length === 0">
@@ -215,7 +224,9 @@ const EventsWidget = defineAsyncComponent(() => import('@/components/dashboard/E
 import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
 import { useMetersStore } from '@/stores/useMetersStore'
-import { useTelemetry, TELEMETRY_KEYS } from '@/composables/useTelemetry'
+import { useTelemetryDynamic } from '@/composables/useTelemetryDynamic'
+import { DEFAULT_WIDGET_CONFIG, getTimeRange } from '@/config/telemetryConfig'
+import { useApiOnly } from '@/config/dataMode'
 import { watch } from 'vue'
 
 // ============================================================================
@@ -251,15 +262,31 @@ const {
 
 // Telemetry composable for real API data
 const {
-  fetchInstantaneous,
-  fetchTodayHourly,
+  fetchBatchTelemetry,
   fetchCurrentValue,
   loading: telemetryLoading,
   error: telemetryError,
-} = useTelemetry()
+} = useTelemetryDynamic()
 
-// Telemetry data cache for widgets
-const telemetryCache = ref<Map<string, any>>(new Map())
+// Telemetry data cache for widgets - use reactive object instead of Map for Vue reactivity
+const telemetryCache = ref<Record<string, any>>({})
+
+// Temperature telemetry cache
+const temperatureTelemetryCache = ref<Map<string, any>>(new Map())
+
+// Temperature zone device mapping
+// Maps zone IDs to their corresponding sensor device UUIDs
+const TEMPERATURE_ZONE_DEVICES = {
+  'zone-1': { deviceUUID: 'c44ae4c0-2f7f-11f0-81a4-050c01ec03ef', sensorId: '2' },  // Zone 1 (ZAP 1&3)
+  'zone-4': { deviceUUID: 'fc1ce190-3030-11f0-81a4-050c01ec03ef', sensorId: '13' }, // Zone 4 (ZAP2 EM)
+  'zone-6': { deviceUUID: 'd5054c70-348e-11f0-ba36-29b3a8b296dd', sensorId: '15' }  // Zone 6 (ZAP2 SLS / Chaufferie)
+}
+
+// Track if we're in API-only mode
+const isApiOnlyMode = computed(() => useApiOnly())
+
+// Track telemetry fetch status
+const telemetryFetchStatus = ref<'idle' | 'loading' | 'success' | 'failed' | 'no-devices' | 'no-data'>('idle')
 
 // ============================================================================
 // COMPUTED PROPERTIES
@@ -279,20 +306,54 @@ const dashboardLoading = computed(() => dashboardStore.loading || telemetryLoadi
 
 /**
  * Enriched compteurs with real telemetry data
+ * In API-only mode, ONLY use API data (never fall back to mock)
+ * In hybrid mode, fall back to mock data if API data is unavailable
  */
 const enrichedCompteurs = computed(() => {
   return selectedCompteurs.value.map(compteur => {
-    const telemetryData = telemetryCache.value.get(compteur.id)
+    const telemetryData = telemetryCache.value[compteur.id]
+
     if (telemetryData) {
+      // In API-only mode, use API data exclusively (even if 0)
+      if (isApiOnlyMode.value) {
+        return {
+          ...compteur,
+          instantaneous: telemetryData.currentPower ?? 0,
+          today: telemetryData.todayEnergy ?? 0,
+          yesterday: telemetryData.yesterdayEnergy ?? 0,
+          instantReadings: telemetryData.instantReadings || [],
+          todayReadings: telemetryData.todayReadings || [],
+          hasData: telemetryData.hasData,
+          isApiError: telemetryData.isApiError
+        }
+      }
+
+      // In hybrid mode, fall back to mock if API returns nothing
       return {
         ...compteur,
-        instantaneous: telemetryData.currentPower || compteur.instantaneous,
-        today: telemetryData.todayEnergy || compteur.today,
-        yesterday: telemetryData.yesterdayEnergy || compteur.yesterday,
+        instantaneous: telemetryData.currentPower ?? compteur.instantaneous,
+        today: telemetryData.todayEnergy ?? compteur.today,
+        yesterday: telemetryData.yesterdayEnergy ?? compteur.yesterday,
         instantReadings: telemetryData.instantReadings || [],
         todayReadings: telemetryData.todayReadings || [],
       }
     }
+
+    // No telemetry data cached - in API-only mode, show no data
+    if (isApiOnlyMode.value) {
+      return {
+        ...compteur,
+        instantaneous: 0,
+        today: 0,
+        yesterday: 0,
+        instantReadings: [],
+        todayReadings: [],
+        hasData: false,
+        isApiError: false
+      }
+    }
+
+    // In hybrid/mock mode, use original mock data
     return compteur
   })
 })
@@ -306,13 +367,48 @@ const unifiedChartSubtitle = computed(() => {
 
 /**
  * Temperature zones data for equipment table
+ * Dynamically fetched from API or uses fallback data
  */
 const temperatureZones = computed(() => {
-  return [
-    { id: 'zone-6', name: t('temperature.zones.zone6'), value: 48.6, status: 'Normal', lastUpdate: t('common.justNow') },
-    { id: 'zone-4', name: t('temperature.zones.zone4'), value: -17.2, status: t('dashboard.equipment.status.alert'), lastUpdate: '1 min ago' },
-    { id: 'zone-1', name: t('temperature.zones.zone1'), value: 56.3, status: 'Normal', lastUpdate: t('common.justNow') }
-  ]
+  // If in API-only mode and no cached data, return empty or show no-data state
+  if (isApiOnlyMode.value && temperatureTelemetryCache.value.size === 0) {
+    return []
+  }
+
+  // Use cached temperature data if available
+  const zones = []
+
+  // Zone 6 (ZAP2 SLS)
+  const zone6Data = temperatureTelemetryCache.value.get('zone-6')
+  zones.push({
+    id: 'zone-6',
+    name: t('temperature.zones.zone6'),
+    value: zone6Data?.value ?? (isApiOnlyMode.value ? 0 : 48.6),
+    status: zone6Data?.status ?? 'Normal',
+    lastUpdate: zone6Data?.lastUpdate ?? t('common.justNow')
+  })
+
+  // Zone 4 (ZAP2 EM)
+  const zone4Data = temperatureTelemetryCache.value.get('zone-4')
+  zones.push({
+    id: 'zone-4',
+    name: t('temperature.zones.zone4'),
+    value: zone4Data?.value ?? (isApiOnlyMode.value ? 0 : -17.2),
+    status: zone4Data?.status ?? (isApiOnlyMode.value ? t('common.noData') : t('dashboard.equipment.status.alert')),
+    lastUpdate: zone4Data?.lastUpdate ?? (isApiOnlyMode.value ? t('common.noData') : '1 min ago')
+  })
+
+  // Zone 1 (ZAP 1&3)
+  const zone1Data = temperatureTelemetryCache.value.get('zone-1')
+  zones.push({
+    id: 'zone-1',
+    name: t('temperature.zones.zone1'),
+    value: zone1Data?.value ?? (isApiOnlyMode.value ? 0 : 56.3),
+    status: zone1Data?.status ?? 'Normal',
+    lastUpdate: zone1Data?.lastUpdate ?? t('common.justNow')
+  })
+
+  return zones
 })
 
 const recentEvents = computed(() => {
@@ -429,82 +525,260 @@ const gridLayoutClass = computed(() => {
 let timeInterval: number | null = null
 
 /**
- * Fetch telemetry data for selected compteurs
+ * Fetch telemetry data for selected compteurs using dynamic batch fetching
+ * In API-only mode, shows "no data" if API fails - does NOT fall back to mock
  */
 async function fetchTelemetryData() {
   const compteursWithUUID = selectedCompteurs.value.filter(c => c.deviceUUID)
 
   if (compteursWithUUID.length === 0) {
+    telemetryFetchStatus.value = 'no-devices'
     console.warn('[DashboardView] No compteurs with deviceUUID to fetch telemetry')
-    console.log('[DashboardView] Available compteurs:', selectedCompteurs.value.map(c => ({ id: c.id, name: c.name, deviceUUID: c.deviceUUID })))
     return
   }
 
-  console.log('[DashboardView] Fetching telemetry for', compteursWithUUID.length, 'devices')
+  telemetryFetchStatus.value = 'loading'
+  console.log('[DashboardView] Fetching telemetry for', compteursWithUUID.length, 'devices using DYNAMIC batch fetch')
+  console.log('[DashboardView] API-only mode:', isApiOnlyMode.value)
 
   try {
-    const promises = compteursWithUUID.map(async (compteur) => {
-      console.log(`[DashboardView] Fetching telemetry for device:`, {
-        id: compteur.id,
-        name: compteur.name,
-        deviceUUID: compteur.deviceUUID,
-      })
+    // Get instantaneous config from telemetryConfig
+    const instantConfig = DEFAULT_WIDGET_CONFIG.instantaneousReadings
+    const dailyConfig = DEFAULT_WIDGET_CONFIG.dailyReadings
 
-      try {
-        // Fetch current power (use NONE agg to get latest value)
-        console.log(`[DashboardView] Calling fetchCurrentValue for ${compteur.deviceUUID}`)
-        const currentPower = await fetchCurrentValue(compteur.deviceUUID!, 'ActivePowerTotal')
+    // Calculate time ranges
+    const now = Date.now()
+    const { startTs: todayStart, endTs: todayEnd } = getTimeRange('today')
 
-        // Fetch today's total energy (cumulative)
-        const todayEnergy = await fetchCurrentValue(compteur.deviceUUID!, 'AccumulatedActiveEnergyDelivered')
-
-        // Fetch instantaneous readings (last hour with 5-min intervals)
-        console.log(`[DashboardView] Calling fetchInstantaneous for ${compteur.deviceUUID}`)
-        const instantReadings = await fetchInstantaneous(compteur.deviceUUID!, ['ActivePowerTotal'])
-
-        // Fetch today's hourly readings (delta energy per hour)
-        console.log(`[DashboardView] Calling fetchTodayHourly for ${compteur.deviceUUID}`)
-        const todayReadings = await fetchTodayHourly(compteur.deviceUUID!, ['deltaHourEnergyConsumtion'])
-
-        console.log(`[DashboardView] Telemetry fetched for ${compteur.name}:`, {
-          currentPower,
-          todayEnergy,
-          instantReadingsCount: instantReadings.length,
-          todayReadingsCount: todayReadings.length,
-        })
-
-        return {
-          id: compteur.id,
-          currentPower,
-          todayEnergy,
-          yesterdayEnergy: 0, // Can fetch separately if needed
-          instantReadings,
-          todayReadings,
+    // Build batch requests - fully dynamic from config
+    const batchRequests = compteursWithUUID.flatMap(compteur => [
+      // Current value (latest single value) - need time range even with limit=1
+      {
+        deviceUUID: compteur.deviceUUID!,
+        config: {
+          keys: [DEFAULT_WIDGET_CONFIG.instantaneous.key],
+          startTs: now - 24 * 60 * 60 * 1000, // Last 24 hours
+          endTs: now,
+          limit: 1,
+          agg: 'NONE' as const
         }
-      } catch (err) {
-        console.error(`[DashboardView] Failed to fetch telemetry for ${compteur.name}:`, err)
-        return {
-          id: compteur.id,
-          currentPower: compteur.instantaneous,
-          todayEnergy: compteur.today,
-          yesterdayEnergy: compteur.yesterday,
-          instantReadings: [],
-          todayReadings: [],
+      },
+      // Today's cumulative energy - need time range
+      {
+        deviceUUID: compteur.deviceUUID!,
+        config: {
+          keys: [DEFAULT_WIDGET_CONFIG.daily.key],
+          startTs: todayStart,
+          endTs: todayEnd,
+          limit: 1,
+          agg: 'NONE' as const
+        }
+      },
+      // Instantaneous readings (time-series chart data)
+      {
+        deviceUUID: compteur.deviceUUID!,
+        config: {
+          keys: instantConfig.keys,
+          startTs: now - instantConfig.timeRange,
+          endTs: now,
+          interval: instantConfig.interval,
+          agg: instantConfig.agg
+        }
+      },
+      // Daily hourly readings (today's hourly breakdown)
+      {
+        deviceUUID: compteur.deviceUUID!,
+        config: {
+          keys: dailyConfig.keys,
+          startTs: todayStart,
+          endTs: todayEnd,
+          interval: dailyConfig.interval,
+          agg: dailyConfig.agg
         }
       }
+    ])
+
+    console.log(`[DashboardView] Batch fetching ${batchRequests.length} requests for ${compteursWithUUID.length} devices`)
+
+    // Execute batch fetch (parallel, with caching & deduplication)
+    const results = await fetchBatchTelemetry(batchRequests)
+
+    console.log('[DashboardView] Raw batch results from fetchBatchTelemetry:', results)
+    console.log('[DashboardView] Results type:', typeof results, 'isMap:', results instanceof Map)
+
+    // Process results and update cache
+    let hasAnyData = false
+    compteursWithUUID.forEach(compteur => {
+      const deviceData = results.get(compteur.deviceUUID!) || []
+
+      console.log(`[DashboardView] Processing ${compteur.name} (${compteur.deviceUUID}):`, {
+        deviceDataLength: deviceData.length,
+        deviceDataSample: deviceData.length > 0 ? deviceData.slice(0, 3) : 'empty',
+        allDeviceData: deviceData
+      })
+
+      if (deviceData.length > 0) {
+        hasAnyData = true
+      }
+
+      // Extract values by key
+      const currentPowerData = deviceData.filter(d => d.key === DEFAULT_WIDGET_CONFIG.instantaneous.key)
+      const todayEnergyData = deviceData.filter(d => d.key === DEFAULT_WIDGET_CONFIG.daily.key)
+      const instantReadings = deviceData.filter(d => instantConfig.keys.includes(d.key))
+      const todayReadings = deviceData.filter(d => dailyConfig.keys.includes(d.key))
+
+      console.log(`[DashboardView] Extracted data for ${compteur.name}:`, {
+        currentPowerKey: DEFAULT_WIDGET_CONFIG.instantaneous.key,
+        currentPowerDataFound: currentPowerData.length,
+        currentPowerValue: currentPowerData.length > 0 ? currentPowerData[0].value : 'NOT FOUND',
+        todayEnergyKey: DEFAULT_WIDGET_CONFIG.daily.key,
+        todayEnergyDataFound: todayEnergyData.length,
+        todayEnergyValue: todayEnergyData.length > 0 ? todayEnergyData[0].value : 'NOT FOUND',
+        instantReadingsCount: instantReadings.length,
+        todayReadingsCount: todayReadings.length,
+        allInstantConfigKeys: instantConfig.keys,
+        allDailyConfigKeys: dailyConfig.keys
+      })
+
+      const telemetryData = {
+        id: compteur.id,
+        currentPower: currentPowerData.length > 0 ? currentPowerData[0].value : 0,
+        todayEnergy: todayEnergyData.length > 0 ? todayEnergyData[0].value : 0,
+        yesterdayEnergy: 0,
+        instantReadings,
+        todayReadings,
+        hasData: deviceData.length > 0
+      }
+
+      telemetryCache.value[compteur.id] = telemetryData
+
+      console.log(`[DashboardView] ✓ Telemetry cached for ${compteur.name}:`, {
+        currentPower: telemetryData.currentPower,
+        todayEnergy: telemetryData.todayEnergy,
+        instantReadingsCount: instantReadings.length,
+        todayReadingsCount: todayReadings.length,
+        hasData: hasAnyData,
+        fullTelemetryData: telemetryData
+      })
     })
 
-    const results = await Promise.all(promises)
-
-    // Update cache
-    results.forEach(result => {
-      telemetryCache.value.set(result.id, result)
-    })
-
-    console.log('[DashboardView] Telemetry data fetched successfully for', results.length, 'devices')
+    // Set status based on whether we got any data
+    telemetryFetchStatus.value = hasAnyData ? 'success' : 'no-data'
+    console.log('[DashboardView] ✓ Batch telemetry fetch complete, status:', telemetryFetchStatus.value)
   } catch (error) {
-    console.error('[DashboardView] Failed to fetch telemetry data:', error)
+    // In API-only mode, don't fall back - show error state
+    if (isApiOnlyMode.value) {
+      console.error('[DashboardView] API-only mode: Failed to fetch telemetry data (no fallback):', error)
+      telemetryFetchStatus.value = 'no-data'
+
+      // Clear cache when in API-only mode and API fails
+      telemetryCache.value.clear()
+
+      // Don't use mock data - show "no data available"
+      selectedCompteurs.value.forEach(compteur => {
+        telemetryCache.value[compteur.id] = {
+          id: compteur.id,
+          currentPower: 0,
+          todayEnergy: 0,
+          yesterdayEnergy: 0,
+          instantReadings: [],
+          todayReadings: [],
+          hasData: false,
+          isApiError: true
+        };
+      })
+    } else {
+      // In hybrid mode, we might have partial data
+      console.error('[DashboardView] Failed to fetch telemetry data:', error)
+      telemetryFetchStatus.value = 'failed'
+    }
   }
+}
+
+/**
+ * Fetch temperature telemetry data for temperature zones
+ * NOTE: Currently temperature sensors are not available in the API
+ * This function is ready for when the API includes Indusmind_T_Sensor devices
+ */
+async function fetchTemperatureData() {
+  console.log('[DashboardView] Temperature sensors not yet available in API')
+  console.log('[DashboardView] Temperature zones will use mock data until API is updated')
+
+  // Clear cache in API-only mode since sensors aren't in API yet
+  if (isApiOnlyMode.value) {
+    temperatureTelemetryCache.value.clear()
+    console.log('[DashboardView] API-only mode: No temperature sensors available')
+    return
+  }
+
+  // When temperature sensors are added to the API, uncomment this code:
+  /*
+  try {
+    // Build batch requests for temperature sensors
+    const batchRequests = Object.entries(TEMPERATURE_ZONE_DEVICES).map(([zoneId, device]) => ({
+      deviceUUID: device.deviceUUID,
+      config: {
+        keys: ['temperature'],
+        limit: 1,
+        agg: 'NONE' as const
+      }
+    }))
+
+    console.log(`[DashboardView] Batch fetching ${batchRequests.length} temperature requests`)
+
+    // Execute batch fetch
+    const results = await fetchBatchTelemetry(batchRequests)
+
+    // Process results and update temperature cache
+    let hasAnyData = false
+    Object.entries(TEMPERATURE_ZONE_DEVICES).forEach(([zoneId, device]) => {
+      const deviceData = results.get(device.deviceUUID) || []
+
+      if (deviceData.length > 0) {
+        hasAnyData = true
+      }
+
+      // Extract temperature value
+      const tempData = deviceData.filter(d => d.key === 'temperature')
+      const tempValue = tempData.length > 0 ? tempData[0].value : null
+
+      // Determine status based on temperature thresholds
+      let status = 'Normal'
+      if (tempValue !== null) {
+        if (tempValue < 0 || tempValue > 40) {
+          status = t('dashboard.equipment.status.alert')
+        }
+      } else {
+        status = t('common.noData')
+      }
+
+      const temperatureData = {
+        zoneId,
+        value: tempValue ?? 0,
+        status,
+        lastUpdate: deviceData.length > 0 ? t('common.justNow') : t('common.noData'),
+        hasData: deviceData.length > 0
+      }
+
+      temperatureTelemetryCache.value.set(zoneId, temperatureData)
+
+      console.log(`[DashboardView] ✓ Temperature cached for ${zoneId}:`, {
+        value: temperatureData.value,
+        status: temperatureData.status,
+        hasData: temperatureData.hasData
+      })
+    })
+
+    console.log('[DashboardView] ✓ Temperature fetch complete, has data:', hasAnyData)
+  } catch (error) {
+    console.error('[DashboardView] Failed to fetch temperature data:', error)
+
+    if (isApiOnlyMode.value) {
+      // In API-only mode, clear cache and show no data
+      temperatureTelemetryCache.value.clear()
+    }
+  }
+  */
 }
 
 onMounted(async () => {
@@ -538,6 +812,9 @@ onMounted(async () => {
 
   // Fetch initial telemetry data
   await fetchTelemetryData()
+
+  // Fetch initial temperature data
+  await fetchTemperatureData()
 
   // Update time display every second (no API calls)
   timeInterval = window.setInterval(() => {
@@ -581,5 +858,97 @@ function handleCompteurSelection(selectedIds: string[]) {
  */
 function setWidgetMode(compteurId: string, mode: CompteurMode) {
   setCompteurMode(compteurId, mode)
+}
+
+/**
+ * Get dynamic status for a compteur based on telemetry data
+ */
+function getCompteurStatus(compteur: any): 'online' | 'offline' | 'error' {
+  if (compteur.isApiError) return 'error'
+  if (compteur.hasData === false) return 'offline'
+  if ((compteur.instantaneous ?? 0) > 0) return 'online'
+  return 'offline'
+}
+
+/**
+ * Get localized status label for a compteur
+ */
+function getCompteurStatusLabel(compteur: any): string {
+  const status = getCompteurStatus(compteur)
+  switch (status) {
+    case 'online':
+      return t('dashboard.equipment.status.online')
+    case 'error':
+      return isApiOnlyMode.value ? t('common.noData') : t('dashboard.equipment.status.offline')
+    case 'offline':
+      return t('dashboard.equipment.status.offline')
+  }
+}
+
+/**
+ * Get last update time for a compteur
+ */
+function getCompteurLastUpdate(compteur: any): string {
+  const telemetryData = telemetryCache.value[compteur.id]
+
+  if (!telemetryData || telemetryData.isApiError) {
+    return isApiOnlyMode.value ? t('common.noData') : t('dashboard.equipment.status.offline')
+  }
+
+  // If we have recent data, show "just now"
+  if (telemetryData.hasData && telemetryData.currentPower !== undefined) {
+    return t('common.justNow')
+  }
+
+  return t('dashboard.equipment.status.offline')
+}
+
+/**
+ * Get dynamic status for a temperature zone
+ * Uses the status from zone data (from API or computed)
+ */
+function getTemperatureStatus(zone: any): 'normal' | 'alert' | 'offline' {
+  // Check if we have valid data
+  if (!zone.value || zone.value === 0) return 'offline'
+
+  // Use the status from the zone data
+  // The status can be 'Normal', a translation key, or 'Alert'
+  const zoneStatus = zone.status
+  if (typeof zoneStatus === 'string') {
+    const statusLower = zoneStatus.toLowerCase()
+    if (statusLower.includes('alert') || statusLower.includes('alerte')) {
+      return 'alert'
+    }
+  }
+
+  return 'normal'
+}
+
+/**
+ * Get localized status label for a temperature zone
+ */
+function getTemperatureStatusLabel(zone: any): string {
+  const status = getTemperatureStatus(zone)
+  switch (status) {
+    case 'normal':
+      return 'Normal'
+    case 'alert':
+      return zone.status // Return the original status (already translated)
+    case 'offline':
+      return isApiOnlyMode.value ? t('common.noData') : t('dashboard.equipment.status.offline')
+  }
+}
+
+/**
+ * Get last update time for a temperature zone
+ */
+function getTemperatureLastUpdate(zone: any): string {
+  // For temperature zones, use the lastUpdate from zone data
+  // In API-only mode, check if data is available
+  if (isApiOnlyMode.value && (!zone.value || zone.value === 0)) {
+    return t('common.noData')
+  }
+
+  return zone.lastUpdate || t('common.justNow')
 }
 </script>

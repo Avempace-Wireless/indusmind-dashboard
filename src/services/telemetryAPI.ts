@@ -102,7 +102,7 @@ export function getTimeRange(period: '1h' | '6h' | '24h' | '7d' | '30d'): { star
     '1h': { ms: 60 * 60 * 1000, interval: 5 * 60 * 1000 }, // 5min intervals
     '6h': { ms: 6 * 60 * 60 * 1000, interval: 15 * 60 * 1000 }, // 15min intervals
     '24h': { ms: 24 * 60 * 60 * 1000, interval: 60 * 60 * 1000 }, // 1h intervals
-    '7d': { ms: 7 * 24 * 60 * 60 * 1000, interval: 6 * 60 * 60 * 1000 }, // 6h intervals
+    '7d': { ms: 7 * 24 * 60 * 60 * 1000, interval: 24 * 60 * 60 * 1000 }, // 1d intervals (daily aggregation)
     '30d': { ms: 30 * 24 * 60 * 60 * 1000, interval: 24 * 60 * 60 * 1000 }, // 1d intervals
   }
 
@@ -116,20 +116,44 @@ export function getTimeRange(period: '1h' | '6h' | '24h' | '7d' | '30d'): { star
 
 /**
  * Transform telemetry response to chart-friendly format
+ * Fills in missing time points with zero values for complete time series
  *
  * @param telemetryData - Raw telemetry data from API
+ * @param startTs - Optional start timestamp to fill from
+ * @param endTs - Optional end timestamp to fill to
+ * @param interval - Optional interval in milliseconds
  * @returns Array of { timestamp, [key]: value } for charting libraries
  */
 export function transformTelemetryForChart(
-  telemetryData: Record<string, TelemetryDataPoint[]>
+  telemetryData: Record<string, TelemetryDataPoint[]>,
+  startTs?: number,
+  endTs?: number,
+  interval?: number
 ): Array<Record<string, number | string>> {
-  // Collect all unique timestamps
+  // Collect all unique timestamps from actual data
   const timestampSet = new Set<number>()
   Object.values(telemetryData).forEach((dataPoints) => {
     dataPoints.forEach((dp) => timestampSet.add(dp.ts))
   })
 
-  const sortedTimestamps = Array.from(timestampSet).sort((a, b) => a - b)
+  let sortedTimestamps = Array.from(timestampSet).sort((a, b) => a - b)
+
+  // If we have range and interval, fill in missing time points
+  if (startTs && endTs && interval) {
+    const completeTimestamps: number[] = []
+
+    // Generate all expected timestamps in the range
+    for (let ts = startTs; ts <= endTs; ts += interval) {
+      completeTimestamps.push(ts)
+    }
+
+    // Use complete timestamp array
+    sortedTimestamps = completeTimestamps
+    console.log(`[transformTelemetryForChart] Filled ${completeTimestamps.length} time points (had ${timestampSet.size} data points)`)
+  } else if (sortedTimestamps.length === 0) {
+    // No data at all - return empty array
+    return []
+  }
 
   // Build chart data points
   return sortedTimestamps.map((ts) => {
@@ -138,9 +162,11 @@ export function transformTelemetryForChart(
       time: new Date(ts).toLocaleString(), // Human-readable time
     }
 
-    // Add each key's value at this timestamp
+    // Add each key's value at this timestamp (0 if no data)
     Object.entries(telemetryData).forEach(([key, dataPoints]) => {
-      const point = dataPoints.find((dp) => dp.ts === ts)
+      // Use larger tolerance for matching - especially important for daily aggregations
+      const tolerance = interval ? interval * 0.6 : 60000 // 60% of interval or 1 minute default
+      const point = dataPoints.find((dp) => Math.abs(dp.ts - ts) <= tolerance)
       dataPoint[key] = point ? parseFloat(String(point.value)) : 0
     })
 

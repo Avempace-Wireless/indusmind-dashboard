@@ -197,8 +197,8 @@ export function useTelemetry() {
         orderBy: 'ASC',
       })
 
-      // Transform to chart-friendly format
-      const chartData = transformTelemetryForChart(response.data)
+      // Transform to chart-friendly format, filling missing time points with zeros
+      const chartData = transformTelemetryForChart(response.data, startTs, endTs, interval)
 
       // Format labels based on period
       const labels = chartData.map((dp) => {
@@ -207,8 +207,12 @@ export function useTelemetry() {
         switch (period) {
           case '1h':
           case '6h':
-          case '24h':
             return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          case '24h':
+            // For 24h period, round to nearest hour and show only hours
+            const roundedHour = Math.round(d.getHours() + d.getMinutes() / 60)
+            const finalHour = roundedHour === 24 ? 0 : roundedHour
+            return `${finalHour.toString().padStart(2, '0')}:00`
           case '7d':
             return d.toLocaleDateString([], { weekday: 'short' })
           case '30d':

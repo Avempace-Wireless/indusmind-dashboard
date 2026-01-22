@@ -12,6 +12,9 @@
     "export": "Export",
     "import": "Import",
     "loading": "Loading...",
+    "noData": "No Data Available",
+    "noDataAvailable": "No data available from the energy monitoring system",
+    "retry": "Retry",
     "meterData": "meter data",
     "error": "Error",
     "success": "Success",
@@ -231,6 +234,12 @@
         "title": "No data available",
         "description": "No telemetry data found for the selected period"
       }
+    },
+    "telemetry": {
+      "loading": "Fetching real-time telemetry data from API...",
+      "unavailable": "API telemetry data unavailable",
+      "showingMockData": "Displaying mock data for demonstration purposes",
+      "noDevices": "No devices configured with API access"
     },
     "equipment": {
       "title": "Equipment Status – Selected Meters",
