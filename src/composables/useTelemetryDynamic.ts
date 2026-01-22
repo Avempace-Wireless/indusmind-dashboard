@@ -152,11 +152,36 @@ export function useTelemetryDynamic() {
 
       const apiData = await response.json()
 
+      console.log(`[useTelemetryDynamic] Raw API response:`, {
+        status: response.ok,
+        statusCode: response.status,
+        hasData: !!apiData.data,
+        apiDataKeys: Object.keys(apiData),
+        fullResponse: apiData
+      })
+
       // Transform ThingsBoard response to normalized format
       const dataPoints: TelemetryDataPoint[] = []
 
+      // Handle wrapped response from backend (data key) vs direct ThingsBoard response
+      const responseData = apiData.data || apiData
+
+      console.log(`[useTelemetryDynamic] Processing response data:`, {
+        isWrapped: !!apiData.data,
+        responseDataType: typeof responseData,
+        responseDataKeys: typeof responseData === 'object' ? Object.keys(responseData) : 'not-object',
+        requestedKeys: config.keys,
+        fullResponseData: responseData
+      })
+
       for (const key of config.keys) {
-        const keyData = apiData[key] || []
+        const keyData = responseData[key] || []
+        console.log(`[useTelemetryDynamic] Processing key "${key}":`, {
+          keyDataLength: keyData.length,
+          keyDataSample: keyData.length > 0 ? keyData.slice(0, 2) : 'empty',
+          fullKeyData: keyData
+        })
+
         for (const point of keyData) {
           dataPoints.push({
             ts: point.ts,
@@ -168,6 +193,11 @@ export function useTelemetryDynamic() {
 
       // Sort by timestamp ascending
       dataPoints.sort((a, b) => a.ts - b.ts)
+
+      console.log(`[useTelemetryDynamic] ✓ Transformed to ${dataPoints.length} data points:`, {
+        dataPoints: dataPoints.slice(0, 5),
+        allDataPoints: dataPoints
+      })
 
       // Update cache
       telemetryCache.set(cacheKey, {
@@ -294,7 +324,12 @@ export function useTelemetryDynamic() {
   async function fetchBatchTelemetry(
     requests: Array<{ deviceUUID: string; config: TelemetryFetchConfig }>
   ): Promise<Map<string, TelemetryDataPoint[]>> {
-    console.log(`[useTelemetryDynamic] Batch fetching for ${requests.length} requests`)
+    console.log(`[useTelemetryDynamic] Batch fetching for ${requests.length} requests`, {
+      requests: requests.map(r => ({
+        deviceUUID: r.deviceUUID.substring(0, 20) + '...',
+        keys: r.config.keys
+      }))
+    })
 
     const results = new Map<string, TelemetryDataPoint[]>()
 
@@ -313,8 +348,13 @@ export function useTelemetryDynamic() {
     const promises = Array.from(uniqueRequests.values()).map(async ({ deviceUUID, config }) => {
       try {
         const data = await fetchTelemetry(deviceUUID, config)
+        console.log(`[useTelemetryDynamic] ✓ Batch result for ${deviceUUID.substring(0, 20)}...: ${data.length} points`, {
+          data: data.slice(0, 3),
+          fullData: data
+        })
         return { deviceUUID, data, error: null }
       } catch (err) {
+        console.error(`[useTelemetryDynamic] ✗ Batch fetch error for ${deviceUUID.substring(0, 20)}...`, err)
         return { deviceUUID, data: [], error: err as Error }
       }
     })
@@ -324,12 +364,24 @@ export function useTelemetryDynamic() {
     for (const result of settled) {
       // Merge results for same deviceUUID
       const existing = results.get(result.deviceUUID) || []
-      results.set(result.deviceUUID, [...existing, ...result.data])
+      const merged = [...existing, ...result.data]
+      results.set(result.deviceUUID, merged)
+
+      console.log(`[useTelemetryDynamic] Merged results for ${result.deviceUUID.substring(0, 20)}...: ${merged.length} total points`)
 
       if (result.error) {
         console.warn(`[useTelemetryDynamic] Failed for ${result.deviceUUID}:`, result.error.message)
       }
     }
+
+    console.log(`[useTelemetryDynamic] ✓ Batch complete. Final results:`, {
+      deviceCount: results.size,
+      resultsPerDevice: Array.from(results.entries()).map(([uuid, data]) => ({
+        device: uuid.substring(0, 20) + '...',
+        pointCount: data.length
+      })),
+      fullResults: results
+    })
 
     return results
   }

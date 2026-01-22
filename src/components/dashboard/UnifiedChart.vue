@@ -421,6 +421,50 @@ async function loadTelemetryChartData() {
       return
     }
 
+    // Filter data to only include hourly boundaries for today/yesterday periods
+    const shouldFilterHourly = (props.period === 'today' || props.period === 'yesterday')
+
+    if (shouldFilterHourly && results[0]!.data.labels) {
+      // Get timestamps from labels (assuming labels contain formatted time strings)
+      // We need to filter based on actual data timestamps
+      const firstDataset = results[0]!.data.datasets[0]
+      if (firstDataset && firstDataset.data) {
+        // Filter to only include data points at exact hour boundaries
+        const hourlyIndices: number[] = []
+        results[0]!.data.labels.forEach((label: string, index: number) => {
+          // Check if label represents an exact hour (e.g., "14:00" not "14:18")
+          // Match patterns like "14:00", "14h00", or just "14h"
+          if (label.includes(':00') || /^\d{1,2}h$/.test(label) || label.endsWith('h00')) {
+            hourlyIndices.push(index)
+          }
+        })
+
+        console.log('[UnifiedChart] Filtering to hourly boundaries:', {
+          originalCount: results[0]!.data.labels.length,
+          filteredCount: hourlyIndices.length,
+          originalLabels: results[0]!.data.labels,
+          filteredLabels: hourlyIndices.map(i => results[0]!.data.labels[i])
+        })
+
+        // If we have hourly data, filter all results
+        if (hourlyIndices.length > 0) {
+          results.forEach(result => {
+            if (result && result.data.labels && result.data.datasets) {
+              // Filter labels
+              result.data.labels = hourlyIndices.map(i => result.data.labels[i])
+
+              // Filter all datasets
+              result.data.datasets.forEach((dataset: any) => {
+                if (dataset.data) {
+                  dataset.data = hourlyIndices.map(i => dataset.data[i])
+                }
+              })
+            }
+          })
+        }
+      }
+    }
+
     // Use first result's labels (all should have same timestamps)
     const labels = results[0]!.data.labels || []
 
@@ -446,7 +490,7 @@ async function loadTelemetryChartData() {
 
       // Get data for first key
       const dataValues = data.datasets[0]?.data || []
-
+      console.log('dataValues for', compteur.name, dataValues);
       return {
         label: compteur.name,
         data: dataValues,
@@ -458,6 +502,7 @@ async function loadTelemetryChartData() {
     }).filter((ds): ds is NonNullable<typeof ds> => ds !== null)
 
     telemetryChartData.value = { labels, datasets }
+    console.log('[UnifiedChart] Loaded telemetry chart data:', telemetryChartData.value)
     hasNoData.value = false
     renderTelemetryChart()
   } catch (error) {
@@ -607,6 +652,7 @@ function renderChart() {
       const colorConfig = getMeterColorByIndex(index)
 
       const dataValues = data.data[compteur.name] || []
+      console.log('dataValues for', compteur.name, dataValues);
 
       return {
         label: compteur.name,

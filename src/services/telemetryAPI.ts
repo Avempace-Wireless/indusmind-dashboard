@@ -102,7 +102,7 @@ export function getTimeRange(period: '1h' | '6h' | '24h' | '7d' | '30d'): { star
     '1h': { ms: 60 * 60 * 1000, interval: 5 * 60 * 1000 }, // 5min intervals
     '6h': { ms: 6 * 60 * 60 * 1000, interval: 15 * 60 * 1000 }, // 15min intervals
     '24h': { ms: 24 * 60 * 60 * 1000, interval: 60 * 60 * 1000 }, // 1h intervals
-    '7d': { ms: 7 * 24 * 60 * 60 * 1000, interval: 6 * 60 * 60 * 1000 }, // 6h intervals
+    '7d': { ms: 7 * 24 * 60 * 60 * 1000, interval: 24 * 60 * 60 * 1000 }, // 1d intervals (daily aggregation)
     '30d': { ms: 30 * 24 * 60 * 60 * 1000, interval: 24 * 60 * 60 * 1000 }, // 1d intervals
   }
 

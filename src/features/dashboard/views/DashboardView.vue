@@ -268,8 +268,8 @@ const {
   error: telemetryError,
 } = useTelemetryDynamic()
 
-// Telemetry data cache for widgets
-const telemetryCache = ref<Map<string, any>>(new Map())
+// Telemetry data cache for widgets - use reactive object instead of Map for Vue reactivity
+const telemetryCache = ref<Record<string, any>>({})
 
 // Temperature telemetry cache
 const temperatureTelemetryCache = ref<Map<string, any>>(new Map())
@@ -311,7 +311,7 @@ const dashboardLoading = computed(() => dashboardStore.loading || telemetryLoadi
  */
 const enrichedCompteurs = computed(() => {
   return selectedCompteurs.value.map(compteur => {
-    const telemetryData = telemetryCache.value.get(compteur.id)
+    const telemetryData = telemetryCache.value[compteur.id]
 
     if (telemetryData) {
       // In API-only mode, use API data exclusively (even if 0)
@@ -603,10 +603,19 @@ async function fetchTelemetryData() {
     // Execute batch fetch (parallel, with caching & deduplication)
     const results = await fetchBatchTelemetry(batchRequests)
 
+    console.log('[DashboardView] Raw batch results from fetchBatchTelemetry:', results)
+    console.log('[DashboardView] Results type:', typeof results, 'isMap:', results instanceof Map)
+
     // Process results and update cache
     let hasAnyData = false
     compteursWithUUID.forEach(compteur => {
       const deviceData = results.get(compteur.deviceUUID!) || []
+
+      console.log(`[DashboardView] Processing ${compteur.name} (${compteur.deviceUUID}):`, {
+        deviceDataLength: deviceData.length,
+        deviceDataSample: deviceData.length > 0 ? deviceData.slice(0, 3) : 'empty',
+        allDeviceData: deviceData
+      })
 
       if (deviceData.length > 0) {
         hasAnyData = true
@@ -618,6 +627,19 @@ async function fetchTelemetryData() {
       const instantReadings = deviceData.filter(d => instantConfig.keys.includes(d.key))
       const todayReadings = deviceData.filter(d => dailyConfig.keys.includes(d.key))
 
+      console.log(`[DashboardView] Extracted data for ${compteur.name}:`, {
+        currentPowerKey: DEFAULT_WIDGET_CONFIG.instantaneous.key,
+        currentPowerDataFound: currentPowerData.length,
+        currentPowerValue: currentPowerData.length > 0 ? currentPowerData[0].value : 'NOT FOUND',
+        todayEnergyKey: DEFAULT_WIDGET_CONFIG.daily.key,
+        todayEnergyDataFound: todayEnergyData.length,
+        todayEnergyValue: todayEnergyData.length > 0 ? todayEnergyData[0].value : 'NOT FOUND',
+        instantReadingsCount: instantReadings.length,
+        todayReadingsCount: todayReadings.length,
+        allInstantConfigKeys: instantConfig.keys,
+        allDailyConfigKeys: dailyConfig.keys
+      })
+
       const telemetryData = {
         id: compteur.id,
         currentPower: currentPowerData.length > 0 ? currentPowerData[0].value : 0,
@@ -628,14 +650,15 @@ async function fetchTelemetryData() {
         hasData: deviceData.length > 0
       }
 
-      telemetryCache.value.set(compteur.id, telemetryData)
+      telemetryCache.value[compteur.id] = telemetryData
 
       console.log(`[DashboardView] ✓ Telemetry cached for ${compteur.name}:`, {
         currentPower: telemetryData.currentPower,
         todayEnergy: telemetryData.todayEnergy,
         instantReadingsCount: instantReadings.length,
         todayReadingsCount: todayReadings.length,
-        hasData: hasAnyData
+        hasData: hasAnyData,
+        fullTelemetryData: telemetryData
       })
     })
 
@@ -653,7 +676,7 @@ async function fetchTelemetryData() {
 
       // Don't use mock data - show "no data available"
       selectedCompteurs.value.forEach(compteur => {
-        telemetryCache.value.set(compteur.id, {
+        telemetryCache.value[compteur.id] = {
           id: compteur.id,
           currentPower: 0,
           todayEnergy: 0,
@@ -662,7 +685,7 @@ async function fetchTelemetryData() {
           todayReadings: [],
           hasData: false,
           isApiError: true
-        })
+        };
       })
     } else {
       // In hybrid mode, we might have partial data
@@ -866,7 +889,7 @@ function getCompteurStatusLabel(compteur: any): string {
  * Get last update time for a compteur
  */
 function getCompteurLastUpdate(compteur: any): string {
-  const telemetryData = telemetryCache.value.get(compteur.id)
+  const telemetryData = telemetryCache.value[compteur.id]
 
   if (!telemetryData || telemetryData.isApiError) {
     return isApiOnlyMode.value ? t('common.noData') : t('dashboard.equipment.status.offline')

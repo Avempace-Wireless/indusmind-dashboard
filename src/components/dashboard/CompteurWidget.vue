@@ -49,7 +49,7 @@
         <span class="text-xs text-slate-500 dark:text-slate-500">{{ timestamp }}</span>
       </div>
       <div class="flex items-baseline gap-2 mb-3">
-        <span :class="['text-4xl font-bold', currentMode === 'instantanée' ? colorClasses.text : 'text-slate-900 dark:text-slate-100']">
+        <span :class="['text-4xl font-bold', colorClasses.text]">
           {{ formatValue(currentValue) }}
         </span>
         <span class="text-base font-medium text-slate-600 dark:text-slate-400">{{ unitForMode }}</span>
@@ -112,11 +112,7 @@
             </div>
           </div>
           <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
-            <span>{{ $t('compteur.time.h0') }}</span>
-            <span>{{ $t('compteur.time.h6') }}</span>
-            <span>{{ $t('compteur.time.h12') }}</span>
-            <span>{{ $t('compteur.time.h18') }}</span>
-            <span>{{ $t('compteur.time.now') }}</span>
+            <span v-for="labelInfo in todayChartLabels" :key="labelInfo.index">{{ labelInfo.label }}</span>
           </div>
         </div>
 
@@ -212,6 +208,17 @@ const tooltip = ref({
   x: 0,
 })
 
+// Watch for compteur data changes to ensure reactivity
+watch(() => props.compteur, (newCompteur, oldCompteur) => {
+  console.log('[CompteurWidget] Compteur data changed:', {
+    name: newCompteur.name,
+    instantaneous: newCompteur.instantaneous,
+    today: newCompteur.today,
+    hasData: (newCompteur as any).hasData,
+    isApiError: (newCompteur as any).isApiError
+  })
+}, { deep: true })
+
 // ============================================================================
 // COMPUTED
 // ============================================================================
@@ -271,24 +278,24 @@ const showNoDataState = computed(() => {
     console.log('[CompteurWidget] Showing no-data state: API error flag detected')
     return true
   }
-  
+
   // Check if explicitly marked as no data
   if ((props.compteur as any).hasData === false) {
     console.log('[CompteurWidget] Showing no-data state: hasData flag is false')
     return true
   }
-  
+
   // In API-only mode, check if current mode has actual data
   if (useApiOnly()) {
     const currentVal = currentValue.value
     const hasData = currentVal !== null && currentVal !== undefined && currentVal > 0
-    
+
     if (!hasData) {
       console.log('[CompteurWidget] Showing no-data state in API-only mode: no value for', currentMode.value, 'value:', currentVal)
       return true
     }
   }
-  
+
   return false
 })
 
@@ -296,16 +303,25 @@ const showNoDataState = computed(() => {
  * Get current value based on mode with null safety
  */
 const currentValue = computed(() => {
-  switch (currentMode.value) {
-    case 'instantanée':
-      return props.compteur.instantaneous ?? 0
-    case 'jour':
-      return props.compteur.today ?? 0
-    case 'hier':
-      return props.compteur.yesterday ?? 0
-    default:
-      return 0
+  const value = (() => {
+    switch (currentMode.value) {
+      case 'instantanée':
+        return props.compteur.instantaneous ?? 0
+      case 'jour':
+        return props.compteur.today ?? 0
+      case 'hier':
+        return props.compteur.yesterday ?? 0
+      default:
+        return 0
+    }
+  })()
+
+  // Log the computed value for debugging
+  if (value > 0) {
+    console.log(`[CompteurWidget] ${props.compteur.name} ${currentMode.value}: ${value}`)
   }
+
+  return value
 })
 
 /**
@@ -372,14 +388,54 @@ const timestamp = computed(() => {
 })
 
 /**
- * Mock hourly data for today (24 bars)
+ * Hourly data for today (up to 24 bars)
  * Represents consumption distribution throughout the current day
  * Returns empty array if no data available
  */
 const todayHourlyReadings = computed(() => {
+  // Try to use real API data first
+  const apiReadings = props.compteur.todayReadings || []
+  console.log('[CompteurWidget] todayHourlyReadings - API readings:', {
+    name: props.compteur.name,
+    apiReadingsLength: apiReadings.length,
+    apiReadings: apiReadings.slice(0, 5),
+    fullApiReadings: apiReadings
+  })
+
+  if (apiReadings.length > 0) {
+    // Use all API readings - they're already aggregated at 1-hour intervals by the backend
+    // Transform hourly data points to bar chart format
+    const values = apiReadings.map(d => d.value || 0)
+    const maxValue = Math.max(...values, 1) // Avoid division by zero
+
+    console.log('[CompteurWidget] Processing hourly readings:', {
+      name: props.compteur.name,
+      count: apiReadings.length,
+      maxValue,
+      values: values.slice(0, 5)
+    })
+
+    return apiReadings.map((reading, index) => {
+      const height = (reading.value / maxValue) * 100
+      const date = new Date(reading.ts)
+      const hours = date.getHours()
+      const minutes = date.getMinutes()
+      const timeLabel = minutes === 0 ? `${hours}:00` : `${hours}:${minutes.toString().padStart(2, '0')}`
+
+      return {
+        height: Math.max(5, height), // Minimum 5% for visibility
+        value: reading.value.toFixed(1),
+        label: `${hours}h`,
+        text: `${timeLabel} - ${reading.value.toFixed(1)} kWh`,
+        ts: reading.ts
+      }
+    })
+  }
+
+  // Fallback to mock data if no API data
   const todayValue = props.compteur.today ?? 0
   if (todayValue === 0) return []
-  
+
   const baseValue = todayValue / 24 // Average per hour
   const pattern = [
     20, 15, 12, 10, 15, 25, // 0-5h (night/early morning)
@@ -397,14 +453,42 @@ const todayHourlyReadings = computed(() => {
 })
 
 /**
+ * Dynamic x-axis labels for today chart based on actual data
+ */
+const todayChartLabels = computed(() => {
+  const readings = todayHourlyReadings.value
+  if (readings.length === 0) return []
+
+  // For small datasets (< 5 points), show all labels
+  if (readings.length <= 5) {
+    return readings.map((r, idx) => ({ index: idx, label: r.label }))
+  }
+
+  // For larger datasets, show evenly spaced labels (first, quartiles, last)
+  const indices = [
+    0, // First
+    Math.floor(readings.length * 0.25), // 25%
+    Math.floor(readings.length * 0.5), // 50%
+    Math.floor(readings.length * 0.75), // 75%
+    readings.length - 1 // Last
+  ]
+
+  return indices.map(idx => ({ index: idx, label: readings[idx].label }))
+})
+
+/**
  * Mock hourly data for yesterday (24 bars)
  * Represents full day consumption pattern
  * Returns empty array if no data available
  */
 const yesterdayHourlyReadings = computed(() => {
+  // Note: Yesterday data is not yet available from API
+  // This currently uses mock data fallback
+  // Will be populated when API provides yesterday's historical data
+
   const yesterdayValue = props.compteur.yesterday ?? 0
   if (yesterdayValue === 0) return []
-  
+
   const baseValue = yesterdayValue / 24 // Average per hour
   const pattern = [
     18, 14, 11, 12, 18, 28, // 0-5h
@@ -427,9 +511,38 @@ const yesterdayHourlyReadings = computed(() => {
  * Returns empty array if no data available
  */
 const instantaneousReadings = computed(() => {
+  // Try to use real API data first
+  const apiReadings = props.compteur.instantReadings || []
+  console.log('[CompteurWidget] instantaneousReadings - API readings:', {
+    name: props.compteur.name,
+    apiReadingsLength: apiReadings.length,
+    apiReadings: apiReadings.slice(0, 5),
+    fullApiReadings: apiReadings
+  })
+
+  if (apiReadings.length > 0) {
+    // Transform API data points to bar chart format
+    const values = apiReadings.map(d => d.value || 0)
+    const maxValue = Math.max(...values, 1) // Avoid division by zero
+
+    return apiReadings.map((reading, index) => {
+      const height = (reading.value / maxValue) * 100
+      const minutesAgo = apiReadings.length - index
+
+      return {
+        height: Math.max(5, height), // Minimum 5% for visibility
+        value: reading.value.toFixed(1),
+        label: `-${minutesAgo}min`,
+        text: `-${minutesAgo}min: ${reading.value.toFixed(1)} kW`,
+        ts: reading.ts
+      }
+    })
+  }
+
+  // Fallback to mock data if no API data
   const instantValue = props.compteur.instantaneous ?? 0
   if (instantValue === 0) return []
-  
+
   const baseValue = instantValue
   // Generate 30 data points (1 per minute) with realistic variations
   const readings = []
