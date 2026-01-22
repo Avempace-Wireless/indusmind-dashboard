@@ -99,28 +99,43 @@ export function useTelemetryDynamic() {
     error.value = null
 
     try {
-      const baseUrl = import.meta.env.VITE_THINGSBOARD_URL || 'http://localhost:8080'
+      // Call backend proxy instead of ThingsBoard directly (avoids CORS issues)
+      const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
       const params = new URLSearchParams()
 
-      // Build query parameters
+      // Build query parameters - keys is ALWAYS required
+      if (!config.keys || config.keys.length === 0) {
+        throw new Error('No keys provided in telemetry config')
+      }
       params.append('keys', config.keys.join(','))
-      if (config.startTs !== undefined) params.append('startTs', config.startTs.toString())
-      if (config.endTs !== undefined) params.append('endTs', config.endTs.toString())
+
+      // startTs and endTs are ALWAYS required by backend
+      if (config.startTs === undefined || config.endTs === undefined) {
+        throw new Error(`Missing time range: startTs=${config.startTs}, endTs=${config.endTs}`)
+      }
+      params.append('startTs', config.startTs.toString())
+      params.append('endTs', config.endTs.toString())
+
+      // Optional parameters
       if (config.interval !== undefined) params.append('interval', config.interval.toString())
       if (config.agg) params.append('agg', config.agg)
       if (config.limit !== undefined) params.append('limit', config.limit.toString())
       params.append('orderBy', 'ASC')
 
-      const url = `${baseUrl}/api/plugins/telemetry/DEVICE/${deviceUUID}/values/timeseries?${params.toString()}`
+      const url = `${backendUrl}/telemetry/${deviceUUID}/timeseries?${params.toString()}`
 
       console.log(`[useTelemetryDynamic] → Fetching:`, {
         device: deviceUUID.substring(0, 20) + '...',
         keys: config.keys,
+        startTs: config.startTs ? new Date(config.startTs).toISOString() : 'MISSING',
+        endTs: config.endTs ? new Date(config.endTs).toISOString() : 'MISSING',
         timeRange: config.startTs && config.endTs
           ? `${new Date(config.startTs).toLocaleString()} to ${new Date(config.endTs).toLocaleString()}`
-          : 'latest',
-        interval: config.interval ? `${config.interval / 1000}s` : 'raw',
-        agg: config.agg || 'NONE'
+          : 'INVALID',
+        interval: config.interval ? `${config.interval / 1000}s` : 'none',
+        agg: config.agg || 'NONE',
+        limit: config.limit || 'none',
+        url: url
       })
 
       const response = await fetch(url, {

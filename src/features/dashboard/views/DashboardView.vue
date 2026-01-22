@@ -552,20 +552,24 @@ async function fetchTelemetryData() {
 
     // Build batch requests - fully dynamic from config
     const batchRequests = compteursWithUUID.flatMap(compteur => [
-      // Current value (latest single value)
+      // Current value (latest single value) - need time range even with limit=1
       {
         deviceUUID: compteur.deviceUUID!,
         config: {
           keys: [DEFAULT_WIDGET_CONFIG.instantaneous.key],
+          startTs: now - 24 * 60 * 60 * 1000, // Last 24 hours
+          endTs: now,
           limit: 1,
           agg: 'NONE' as const
         }
       },
-      // Today's cumulative energy
+      // Today's cumulative energy - need time range
       {
         deviceUUID: compteur.deviceUUID!,
         config: {
           keys: [DEFAULT_WIDGET_CONFIG.daily.key],
+          startTs: todayStart,
+          endTs: todayEnd,
           limit: 1,
           agg: 'NONE' as const
         }
