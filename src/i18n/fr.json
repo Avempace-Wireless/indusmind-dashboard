@@ -12,6 +12,9 @@
     "export": "Exporter",
     "import": "Importer",
     "loading": "Chargement...",
+    "noData": "Aucune donnée disponible",
+    "noDataAvailable": "Aucune donnée disponible du système de suivi énergétique",
+    "retry": "Réessayer",
     "meterData": "données du compteur",
     "error": "Erreur",
     "success": "Succès",
@@ -231,6 +234,12 @@
         "title": "Aucune donnée disponible",
         "description": "Aucune donnée de télémétrie trouvée pour la période sélectionnée"
       }
+    },
+    "telemetry": {
+      "loading": "Récupération des données de télémétrie en temps réel depuis l'API...",
+      "unavailable": "Données de télémétrie API non disponibles",
+      "showingMockData": "Affichage des données de démonstration",
+      "noDevices": "Aucun appareil configuré avec accès API"
     },
     "equipment": {
       "title": "État des Équipements – Compteurs Sélectionnés",

@@ -197,8 +197,8 @@ export function useTelemetry() {
         orderBy: 'ASC',
       })
 
-      // Transform to chart-friendly format
-      const chartData = transformTelemetryForChart(response.data)
+      // Transform to chart-friendly format, filling missing time points with zeros
+      const chartData = transformTelemetryForChart(response.data, startTs, endTs, interval)
 
       // Format labels based on period
       const labels = chartData.map((dp) => {
