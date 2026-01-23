@@ -323,6 +323,7 @@ const enrichedCompteurs = computed(() => {
           yesterday: telemetryData.yesterdayEnergy ?? 0,
           instantReadings: telemetryData.instantReadings || [],
           todayReadings: telemetryData.todayReadings || [],
+          yesterdayReadings: telemetryData.yesterdayReadings || [],
           hasData: telemetryData.hasData,
           isApiError: telemetryData.isApiError
         }
@@ -336,6 +337,7 @@ const enrichedCompteurs = computed(() => {
         yesterday: telemetryData.yesterdayEnergy ?? compteur.yesterday,
         instantReadings: telemetryData.instantReadings || [],
         todayReadings: telemetryData.todayReadings || [],
+        yesterdayReadings: telemetryData.yesterdayReadings || [],
       }
     }
 
@@ -549,6 +551,8 @@ async function fetchTelemetryData() {
     // Calculate time ranges
     const now = Date.now()
     const { startTs: todayStart, endTs: todayEnd } = getTimeRange('today')
+    const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
+    const yesterdayEnd = todayStart - 1
 
     // Build batch requests - fully dynamic from config
     const batchRequests = compteursWithUUID.flatMap(compteur => [
@@ -560,7 +564,8 @@ async function fetchTelemetryData() {
           startTs: now - 24 * 60 * 60 * 1000, // Last 24 hours
           endTs: now,
           limit: 1,
-          agg: 'NONE' as const
+          agg: 'NONE' as const,
+          orderBy: 'DESC' as const
         }
       },
       // Today's cumulative energy - need time range
@@ -571,7 +576,19 @@ async function fetchTelemetryData() {
           startTs: todayStart,
           endTs: todayEnd,
           limit: 1,
-          agg: 'NONE' as const
+          agg: 'NONE' as const,
+          orderBy: 'DESC' as const
+        }
+      },
+      // Yesterday's hourly readings (yesterday's breakdown)
+      {
+        deviceUUID: compteur.deviceUUID!,
+        config: {
+          keys: [DEFAULT_WIDGET_CONFIG.dailyReadings.keys[0]], // Use deltaHourEnergyConsumtion for hourly
+          startTs: yesterdayStart,
+          endTs: yesterdayEnd,
+          interval: 60 * 60 * 1000, // 1 hour
+          agg: 'SUM' as const
         }
       },
       // Instantaneous readings (time-series chart data)
@@ -621,32 +638,70 @@ async function fetchTelemetryData() {
         hasAnyData = true
       }
 
-      // Extract values by key
-      const currentPowerData = deviceData.filter(d => d.key === DEFAULT_WIDGET_CONFIG.instantaneous.key)
-      const todayEnergyData = deviceData.filter(d => d.key === DEFAULT_WIDGET_CONFIG.daily.key)
-      const instantReadings = deviceData.filter(d => instantConfig.keys.includes(d.key))
-      const todayReadings = deviceData.filter(d => dailyConfig.keys.includes(d.key))
+      // Extract values by key - separate by purpose
+      // Latest instantaneous power (single value from last 24h, most recent)
+      const currentPowerData = deviceData
+        .filter(d => d.key === DEFAULT_WIDGET_CONFIG.instantaneous.key)
+        .sort((a, b) => b.ts - a.ts)
+        .slice(0, 1)
+
+      // Today's cumulative energy (single latest value from today)
+      // Request had limit=1, so take the first/only result
+      const todayEnergyData = deviceData
+        .filter(d => d.key === DEFAULT_WIDGET_CONFIG.daily.key && d.ts >= todayStart && d.ts < todayEnd)
+        .sort((a, b) => b.ts - a.ts)
+        .slice(0, 1)
+
+      // Yesterday's hourly readings (from yesterday with hourly intervals)
+      const yesterdayReadings = deviceData
+        .filter(d => d.key === DEFAULT_WIDGET_CONFIG.dailyReadings.keys[0] && d.ts >= yesterdayStart && d.ts < todayStart)
+        .sort((a, b) => a.ts - b.ts) // oldest first for charts
+
+      // Instantaneous readings (last hour, 5-min intervals, ActivePowerTotal)
+      const instantReadings = deviceData
+        .filter(d => instantConfig.keys.includes(d.key) && d.ts > now - instantConfig.timeRange)
+        .sort((a, b) => a.ts - b.ts)
+
+      // Today's hourly readings (today, hourly intervals, SUM aggregation)
+      const todayReadings = deviceData
+        .filter(d => dailyConfig.keys.includes(d.key) && d.ts >= todayStart && d.ts < todayEnd)
+        .sort((a, b) => a.ts - b.ts)
+
+      // Calculate total yesterday energy consumption
+      const yesterdayEnergyTotal = yesterdayReadings.length > 0
+        ? yesterdayReadings.reduce((sum, d) => sum + d.value, 0)
+        : 0
 
       console.log(`[DashboardView] Extracted data for ${compteur.name}:`, {
         currentPowerKey: DEFAULT_WIDGET_CONFIG.instantaneous.key,
-        currentPowerDataFound: currentPowerData.length,
+        currentPowerDataCount: currentPowerData.length,
         currentPowerValue: currentPowerData.length > 0 ? currentPowerData[0].value : 'NOT FOUND',
         todayEnergyKey: DEFAULT_WIDGET_CONFIG.daily.key,
-        todayEnergyDataFound: todayEnergyData.length,
+        todayEnergyDataCount: todayEnergyData.length,
         todayEnergyValue: todayEnergyData.length > 0 ? todayEnergyData[0].value : 'NOT FOUND',
+        yesterdayReadingsCount: yesterdayReadings.length,
+        yesterdayEnergyTotal: yesterdayEnergyTotal,
         instantReadingsCount: instantReadings.length,
         todayReadingsCount: todayReadings.length,
-        allInstantConfigKeys: instantConfig.keys,
-        allDailyConfigKeys: dailyConfig.keys
+        totalDataPoints: deviceData.length,
+        uniqueKeys: [...new Set(deviceData.map(d => d.key))],
+        timeRanges: {
+          todayStart: new Date(todayStart).toISOString(),
+          todayEnd: new Date(todayEnd).toISOString(),
+          yesterdayStart: new Date(yesterdayStart).toISOString(),
+          yesterdayEnd: new Date(yesterdayEnd).toISOString(),
+          now: new Date(now).toISOString()
+        }
       })
 
       const telemetryData = {
         id: compteur.id,
         currentPower: currentPowerData.length > 0 ? currentPowerData[0].value : 0,
         todayEnergy: todayEnergyData.length > 0 ? todayEnergyData[0].value : 0,
-        yesterdayEnergy: 0,
+        yesterdayEnergy: yesterdayEnergyTotal,
         instantReadings,
         todayReadings,
+        yesterdayReadings,
         hasData: deviceData.length > 0
       }
 
@@ -655,7 +710,9 @@ async function fetchTelemetryData() {
       console.log(`[DashboardView] ✓ Telemetry cached for ${compteur.name}:`, {
         currentPower: telemetryData.currentPower,
         todayEnergy: telemetryData.todayEnergy,
+        yesterdayEnergy: telemetryData.yesterdayEnergy,
         instantReadingsCount: instantReadings.length,
+        yesterdayReadingsCount: yesterdayReadings.length,
         todayReadingsCount: todayReadings.length,
         hasData: hasAnyData,
         fullTelemetryData: telemetryData

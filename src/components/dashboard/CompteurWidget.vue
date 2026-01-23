@@ -140,11 +140,7 @@
             </div>
           </div>
           <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 px-1">
-            <span>{{ $t('compteur.time.h0') }}</span>
-            <span>{{ $t('compteur.time.h6') }}</span>
-            <span>{{ $t('compteur.time.h12') }}</span>
-            <span>{{ $t('compteur.time.h18') }}</span>
-            <span>{{ $t('compteur.time.h24') }}</span>
+            <span v-for="labelInfo in yesterdayChartLabels" :key="labelInfo.index">{{ labelInfo.label }}</span>
           </div>
         </div>
       </div>
@@ -403,31 +399,59 @@ const todayHourlyReadings = computed(() => {
   })
 
   if (apiReadings.length > 0) {
-    // Use all API readings - they're already aggregated at 1-hour intervals by the backend
-    // Transform hourly data points to bar chart format
-    const values = apiReadings.map(d => d.value || 0)
-    const maxValue = Math.max(...values, 1) // Avoid division by zero
+    // Group readings by hour of day (0-23) to ensure proper alignment
+    const hourlyMap = new Map<number, number>()
+
+    // Aggregate readings by hour using UTC to avoid timezone offset
+    apiReadings.forEach((reading: any) => {
+      if (reading.ts) {
+        const date = new Date(reading.ts)
+        const hour = date.getUTCHours() // Use UTC hours for consistent alignment
+        const value = reading.value || 0
+
+        // Sum values for the same hour (in case of duplicates)
+        const existing = hourlyMap.get(hour) || 0
+        hourlyMap.set(hour, existing + value)
+      }
+    })
+
+    // Create array with data for each hour 0-23, but keep all hours to maintain alignment
+    const hourlyData = Array.from({ length: 24 }, (_, index) => {
+      const value = hourlyMap.get(index) || 0
+      return {
+        hour: index,
+        value: value,
+        ts: new Date().setUTCHours(index, 0, 0, 0),
+        hasData: hourlyMap.has(index)
+      }
+    })
+
+    // Find max value for scaling (only from hours with actual data)
+    const valuesWithData = hourlyData.filter(d => d.hasData).map(d => d.value)
+    const maxValue = valuesWithData.length > 0 ? Math.max(...valuesWithData) : 1
 
     console.log('[CompteurWidget] Processing hourly readings:', {
       name: props.compteur.name,
-      count: apiReadings.length,
+      hourlyDataLength: hourlyData.length,
+      hoursWithData: Array.from(hourlyMap.entries()).sort((a, b) => a[0] - b[0]),
       maxValue,
-      values: values.slice(0, 5)
+      firstDataHour: hourlyMap.size > 0 ? Math.min(...Array.from(hourlyMap.keys())) : 'none',
+      lastDataHour: hourlyMap.size > 0 ? Math.max(...Array.from(hourlyMap.keys())) : 'none'
     })
 
-    return apiReadings.map((reading, index) => {
-      const height = (reading.value / maxValue) * 100
-      const date = new Date(reading.ts)
-      const hours = date.getHours()
-      const minutes = date.getMinutes()
-      const timeLabel = minutes === 0 ? `${hours}:00` : `${hours}:${minutes.toString().padStart(2, '0')}`
+    // Transform to bar chart format - show all 24 hours for alignment with full chart
+    // For hours without data, show minimal bar (0) to maintain grid alignment
+    return hourlyData.map((data: any) => {
+      const height = data.hasData ? (data.value / maxValue) * 100 : 0
+      const hourLabel = `${data.hour}h`
 
       return {
-        height: Math.max(5, height), // Minimum 5% for visibility
-        value: reading.value.toFixed(1),
-        label: `${hours}h`,
-        text: `${timeLabel} - ${reading.value.toFixed(1)} kWh`,
-        ts: reading.ts
+        height: data.hasData ? Math.max(5, height) : 0, // Only show bar if data exists
+        value: data.value.toFixed(1),
+        label: hourLabel,
+        text: data.hasData ? `${hourLabel}: ${data.value.toFixed(1)} kWh` : `${hourLabel}: no data`,
+        ts: data.ts,
+        hasData: data.hasData
       }
     })
   }
@@ -461,7 +485,7 @@ const todayChartLabels = computed(() => {
 
   // For small datasets (< 5 points), show all labels
   if (readings.length <= 5) {
-    return readings.map((r, idx) => ({ index: idx, label: r.label }))
+    return readings.map((r: any, idx: number) => ({ index: idx, label: r.label }))
   }
 
   // For larger datasets, show evenly spaced labels (first, quartiles, last)
@@ -476,20 +500,108 @@ const todayChartLabels = computed(() => {
   return indices.map(idx => ({ index: idx, label: readings[idx].label }))
 })
 
+const yesterdayChartLabels = computed(() => {
+  const readings = yesterdayHourlyReadings.value
+  if (readings.length === 0) return []
+
+  // For 24-hour data, show labels at specific hours: 0h, 6h, 12h, 18h, 23h
+  if (readings.length === 24) {
+    return [
+      { index: 0, label: '0h' },
+      { index: 6, label: '6h' },
+      { index: 12, label: '12h' },
+      { index: 18, label: '18h' },
+      { index: 23, label: '23h' }
+    ]
+  }
+
+  // For smaller datasets, show all labels
+  if (readings.length <= 5) {
+    return readings.map((r: any, idx: number) => ({ index: idx, label: r.label }))
+  }
+
+  // For other datasets, show evenly spaced labels
+  const indices = [
+    0,
+    Math.floor(readings.length * 0.25),
+    Math.floor(readings.length * 0.5),
+    Math.floor(readings.length * 0.75),
+    readings.length - 1
+  ]
+
+  return indices.map((idx: number) => ({ index: idx, label: readings[idx].label }))
+})
+
 /**
- * Mock hourly data for yesterday (24 bars)
- * Represents full day consumption pattern
+ * Yesterday hourly data (24 bars, one per hour)
+ * Shows yesterday's energy consumption pattern
  * Returns empty array if no data available
  */
 const yesterdayHourlyReadings = computed(() => {
-  // Note: Yesterday data is not yet available from API
-  // This currently uses mock data fallback
-  // Will be populated when API provides yesterday's historical data
+  // Try to use real API data first
+  const apiReadings = (props.compteur as any).yesterdayReadings || []
 
+  console.log('[CompteurWidget] yesterdayHourlyReadings - API readings:', {
+    name: props.compteur.name,
+    apiReadingsLength: apiReadings.length,
+    apiReadings: apiReadings.slice(0, 5),
+    fullApiReadings: apiReadings
+  })
+
+  if (apiReadings.length > 0) {
+    // Group readings by hour of day (0-23) to ensure proper alignment
+    const hourlyMap = new Map<number, number>()
+
+    // Aggregate readings by hour using UTC to avoid timezone offset
+    apiReadings.forEach((reading: any) => {
+      if (reading.ts) {
+        const date = new Date(reading.ts)
+        const hour = date.getUTCHours() // Use UTC hours for consistent alignment
+        const value = reading.value || 0
+
+        // Sum values for the same hour (in case of duplicates)
+        const existing = hourlyMap.get(hour) || 0
+        hourlyMap.set(hour, existing + value)
+      }
+    })
+
+    // Create array with data for each hour 0-23, but keep all hours to maintain alignment
+    const hourlyData = Array.from({ length: 24 }, (_, index) => {
+      const value = hourlyMap.get(index) || 0
+      return {
+        hour: index,
+        value: value,
+        ts: new Date().setUTCHours(index, 0, 0, 0),
+        hasData: hourlyMap.has(index)
+      }
+    })
+
+    // Find max value for scaling (only from hours with actual data)
+    const valuesWithData = hourlyData.filter(d => d.hasData).map(d => d.value)
+    const maxValue = valuesWithData.length > 0 ? Math.max(...valuesWithData) : 1
+
+    // Transform to bar chart format - show all 24 hours for alignment with full chart
+    // For hours without data, show minimal bar (0) to maintain grid alignment
+    return hourlyData.map((data: any) => {
+      const height = data.hasData ? (data.value / maxValue) * 100 : 0
+      const hourLabel = `${data.hour}h`
+
+      return {
+        height: data.hasData ? Math.max(1, height) : 0, // Only show bar if data exists
+        value: data.value.toFixed(2),
+        label: hourLabel,
+        text: data.hasData ? `${hourLabel}: ${data.value.toFixed(2)} kWh` : `${hourLabel}: no data`,
+        hasData: data.hasData
+      }
+    })
+  }
+
+  // Fallback: Use yesterday total value if available
   const yesterdayValue = props.compteur.yesterday ?? 0
   if (yesterdayValue === 0) return []
 
-  const baseValue = yesterdayValue / 24 // Average per hour
+  // Generate mock pattern for demonstration
+  const baseValue = yesterdayValue / 24
   const pattern = [
     18, 14, 11, 12, 18, 28, // 0-5h
     45, 60, 75, 82, 88, 92, // 6-11h
@@ -499,9 +611,9 @@ const yesterdayHourlyReadings = computed(() => {
 
   return pattern.map((height, index) => ({
     height,
-    value: (baseValue * height / 50).toFixed(1),
+    value: (baseValue * height / 50).toFixed(2),
     label: `${index}h`,
-    text: `${index}h: ${(baseValue * height / 50).toFixed(1)} kWh`
+    text: `${index}h: ${(baseValue * height / 50).toFixed(2)} kWh`
   }))
 })
 
