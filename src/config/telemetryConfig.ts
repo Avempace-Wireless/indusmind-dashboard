@@ -23,6 +23,7 @@ export interface TelemetryFetchConfig {
   interval?: number
   agg?: AggregationType
   limit?: number
+  orderBy?: 'ASC' | 'DESC'
 }
 
 export interface WidgetDataConfig {

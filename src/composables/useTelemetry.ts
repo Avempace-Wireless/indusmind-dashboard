@@ -290,6 +290,70 @@ export function useTelemetry() {
     return colors[index % colors.length]
   }
 
+  /**
+   * Fetch calculated KPI values from backend
+   * Calls: GET /api/telemetry/:deviceUUID/kpis
+   */
+  async function fetchCalculatedKPIs(
+    deviceUUID: string,
+    startTs: number,
+    endTs: number,
+    includeDebug: boolean = false
+  ): Promise<{
+    instantaneousConsumption: number
+    consumedThisHour: number
+    consumedToday: number
+    consumedYesterday: number
+    consumedDayBeforeYesterday: number
+    consumedThisMonth: number
+    consumedLastMonth: number
+    timestamp: number
+  } | null> {
+    try {
+      loading.value = true
+      error.value = null
+
+      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/telemetry/${deviceUUID}/kpis`
+      const params = new URLSearchParams()
+      params.append('startTs', startTs.toString())
+      params.append('endTs', endTs.toString())
+      if (includeDebug) {
+        params.append('debug', 'true')
+      }
+
+      console.log(`[useTelemetry] 📊 Fetching calculated KPIs from backend:`, {
+        url: apiUrl,
+        deviceUUID,
+        startTs: new Date(startTs).toISOString(),
+        endTs: new Date(endTs).toISOString(),
+      })
+
+      const response = await fetch(`${apiUrl}?${params.toString()}`)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.success || !data.kpis) {
+        throw new Error('Invalid response format')
+      }
+
+      console.log(`[useTelemetry] ✅ KPIs fetched successfully:`, data.kpis)
+
+      return data.kpis
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch KPIs'
+      error.value = errorMsg
+      console.error('[useTelemetry] KPI fetch error:', errorMsg)
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading: computed(() => loading.value),
     error: computed(() => error.value),
@@ -298,6 +362,7 @@ export function useTelemetry() {
     fetchYesterdayHourly,
     fetchChartData,
     fetchCurrentValue,
+    fetchCalculatedKPIs,
     TELEMETRY_KEYS,
   }
 }

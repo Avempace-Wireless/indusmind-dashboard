@@ -21,16 +21,27 @@ export interface TimeSeriesData {
 }
 
 export interface KPIValues {
-  current: number
-  peak: number
-  average: number
-  total: number
-  avgPowerLastMonth: number
-  avgPowerThisMonth: number
-  avgPowerYesterday: number
-  avgPowerToday: number
-  avgPowerBeforeYesterday: number
-  instantaneousPower: number
+  // Legacy power KPIs (kW)
+  current: number | null
+  peak: number | null
+  average: number | null
+  total: number | null
+  avgPowerLastMonth: number | null
+  avgPowerThisMonth: number | null
+  avgPowerYesterday: number | null
+  avgPowerToday: number | null
+  avgPowerBeforeYesterday: number | null
+  instantaneousPower: number | null
+  // Energy consumption KPIs (kWh)
+  instantaneousConsumption?: number | null  // Current power consumption (kW) - same as instantaneousPower but named for clarity
+  consumedThisHour?: number | null
+  consumedToday?: number | null
+  consumedYesterday?: number | null
+  consumedDayBeforeYesterday?: number | null
+  consumedThisMonth?: number | null
+  consumedLastMonth?: number | null
+  realtimeCurrentYear?: number | null
+  realtimeCurrentMonth?: number | null
 }
 
 export interface MeterMetrics {
