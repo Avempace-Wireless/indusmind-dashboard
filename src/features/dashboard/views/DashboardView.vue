@@ -67,9 +67,22 @@
 </button>
         </div>
 
-        <CompteurWidget
+        <!-- New Widget System (V2) - Feature Flagged -->
+        <CompteurWidgetV2
+          v-if="useNewWidgetSystem"
           v-for="(compteur, index) in enrichedCompteurs"
-          :key="compteur.id"
+          :key="`v2-${compteur.id}`"
+          :compteur="compteur"
+          :color-index="index"
+          :current-mode="widgetModes[compteur.id]"
+          @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
+        />
+
+        <!-- Legacy Widget System (V1) -->
+        <CompteurWidget
+          v-else
+          v-for="(compteur, index) in enrichedCompteurs"
+          :key="`v1-${compteur.id}`"
           :compteur="compteur"
           :color-index="index"
           :current-mode="widgetModes[compteur.id]"
@@ -213,6 +226,7 @@ import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import CompteurWidget from '@/components/dashboard/CompteurWidget.vue'
+import CompteurWidgetV2 from '@/components/dashboard/CompteurWidgetV2.vue'
 import CompteurWidgetSkeleton from '@/components/skeletons/CompteurWidgetSkeleton.vue'
 import ChartSkeleton from '@/components/skeletons/ChartSkeleton.vue'
 
@@ -227,7 +241,15 @@ import { useMetersStore } from '@/stores/useMetersStore'
 import { useTelemetryDynamic } from '@/composables/useTelemetryDynamic'
 import { DEFAULT_WIDGET_CONFIG, getTimeRange } from '@/config/telemetryConfig'
 import { useApiOnly } from '@/config/dataMode'
+import { isFeatureEnabled } from '@/config/featureFlags'
 import { watch } from 'vue'
+
+// ============================================================================
+// FEATURE FLAGS
+// ============================================================================
+
+const useNewWidgetSystem = ref(isFeatureEnabled('useNewWidgetSystem'))
+console.log('[DashboardView] Using new widget system:', useNewWidgetSystem.value)
 
 // ============================================================================
 // COMPOSABLES & STORES
@@ -696,7 +718,7 @@ async function fetchTelemetryData() {
 
       const telemetryData = {
         id: compteur.id,
-        currentPower: currentPowerData.length > 0 ? currentPowerData[0].value : 0,
+        currentPower: currentPowerData.length > 0 ? currentPowerData[0].value : 0,  // Already in kW
         todayEnergy: todayEnergyData.length > 0 ? todayEnergyData[0].value : 0,
         yesterdayEnergy: yesterdayEnergyTotal,
         instantReadings,
@@ -708,9 +730,9 @@ async function fetchTelemetryData() {
       telemetryCache.value[compteur.id] = telemetryData
 
       console.log(`[DashboardView] ✓ Telemetry cached for ${compteur.name}:`, {
-        currentPower: telemetryData.currentPower,
-        todayEnergy: telemetryData.todayEnergy,
-        yesterdayEnergy: telemetryData.yesterdayEnergy,
+        currentPower: telemetryData.currentPower.toFixed(2),
+        todayEnergy: telemetryData.todayEnergy.toFixed(2),
+        yesterdayEnergy: telemetryData.yesterdayEnergy.toFixed(2),
         instantReadingsCount: instantReadings.length,
         yesterdayReadingsCount: yesterdayReadings.length,
         todayReadingsCount: todayReadings.length,

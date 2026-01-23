@@ -402,11 +402,11 @@ const todayHourlyReadings = computed(() => {
     // Group readings by hour of day (0-23) to ensure proper alignment
     const hourlyMap = new Map<number, number>()
 
-    // Aggregate readings by hour using UTC to avoid timezone offset
+    // Aggregate readings by hour using LOCAL time (not UTC)
     apiReadings.forEach((reading: any) => {
       if (reading.ts) {
         const date = new Date(reading.ts)
-        const hour = date.getUTCHours() // Use UTC hours for consistent alignment
+        const hour = date.getHours() // Use local hours to match user's timezone
         const value = reading.value || 0
 
         // Sum values for the same hour (in case of duplicates)
@@ -415,8 +415,12 @@ const todayHourlyReadings = computed(() => {
       }
     })
 
-    // Create array with data for each hour 0-23, but keep all hours to maintain alignment
-    const hourlyData = Array.from({ length: 24 }, (_, index) => {
+    // For today's data, only show hours up to current hour (not future hours)
+    const now = new Date()
+    const currentHour = now.getHours()
+
+    // Create array with data for each hour 0 to currentHour (not all 24 hours)
+    const hourlyData = Array.from({ length: currentHour + 1 }, (_, index) => {
       const value = hourlyMap.get(index) || 0
       return {
         hour: index,
@@ -552,11 +556,11 @@ const yesterdayHourlyReadings = computed(() => {
     // Group readings by hour of day (0-23) to ensure proper alignment
     const hourlyMap = new Map<number, number>()
 
-    // Aggregate readings by hour using UTC to avoid timezone offset
+    // Aggregate readings by hour using LOCAL time (not UTC)
     apiReadings.forEach((reading: any) => {
       if (reading.ts) {
         const date = new Date(reading.ts)
-        const hour = date.getUTCHours() // Use UTC hours for consistent alignment
+        const hour = date.getHours() // Use local hours to match user's timezone
         const value = reading.value || 0
 
         // Sum values for the same hour (in case of duplicates)
@@ -565,13 +569,13 @@ const yesterdayHourlyReadings = computed(() => {
       }
     })
 
-    // Create array with data for each hour 0-23, but keep all hours to maintain alignment
+    // Create array with data for each hour 0-23, showing all hours for yesterday
     const hourlyData = Array.from({ length: 24 }, (_, index) => {
       const value = hourlyMap.get(index) || 0
       return {
         hour: index,
         value: value,
-        ts: new Date().setUTCHours(index, 0, 0, 0),
+        ts: new Date().setHours(index, 0, 0, 0),
         hasData: hourlyMap.has(index)
       }
     })
