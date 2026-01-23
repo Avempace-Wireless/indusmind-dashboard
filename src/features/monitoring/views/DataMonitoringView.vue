@@ -25,8 +25,8 @@
         class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
       >
         <option value="">-- Select a device --</option>
-        <option v-for="meter in availableMeters" :key="meter.id" :value="meter.deviceUUID || ''">
-          {{ meter.name }} ({{ meter.deviceUUID?.substring(0, 8) }}...)
+        <option v-for="meter in availableMeters" :key="meter.id" :value="meter.id">
+          {{ meter.name }} ({{ meter.id.substring(0, 8) }}...)
         </option>
       </select>
     </div>
@@ -56,7 +56,7 @@
       <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Widget Status</h2>
 
       <div
-        v-for="(validation, widgetId) in widgetValidations"
+        v-for="[widgetId, validation] in Array.from(widgetValidations.entries())"
         :key="widgetId"
         class="bg-white dark:bg-slate-800 rounded-lg border-l-4 p-6"
         :class="[

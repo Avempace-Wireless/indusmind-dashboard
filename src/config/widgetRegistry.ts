@@ -389,7 +389,9 @@ export const METER_WIDGET_REGISTRY: WidgetRegistry = {
         id: 'currentValue',
         telemetryKeys: ['deltaDayEnergyConsumtion'],
         timeRange: {
-          type: 'today'
+          type: 'relative',
+          value: 0,
+          unit: 'days'
         },
         limit: 1,
         orderBy: 'DESC',
@@ -399,7 +401,9 @@ export const METER_WIDGET_REGISTRY: WidgetRegistry = {
         id: 'previousValue',
         telemetryKeys: ['deltaDayEnergyConsumtion'],
         timeRange: {
-          type: 'yesterday'
+          type: 'relative',
+          value: -1,
+          unit: 'days'
         },
         limit: 1,
         orderBy: 'DESC',
@@ -424,7 +428,7 @@ export const METER_WIDGET_REGISTRY: WidgetRegistry = {
     label: 'Courant Moyen',
     description: 'Courant électrique moyen',
     component: StatCard,
-    category: 'electrical',
+    category: 'power',
     requiresDevice: true,
 
     dataRequirements: [
