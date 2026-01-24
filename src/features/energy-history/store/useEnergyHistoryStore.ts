@@ -285,11 +285,12 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
     const datasets: Array<{
       label: string
-      data: number[]
+      data: (number | null)[]
       borderColor: string
       backgroundColor: string
       yAxisID: string
       metricType: MetricType
+      spanGaps?: boolean
       date?: string
     }> = []
 
@@ -449,7 +450,10 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       let sumTotal = 0
       dates.forEach(dateStr => {
         const data = getMetricDataForDate(dateStr, metric.type, compteur.id)
-        sumTotal += data ? calculateFilteredTotal(data.hourlyData) : 0
+        if (data && data.hourlyData) {
+          const total = calculateFilteredTotal(data.hourlyData)
+          sumTotal += total ?? 0 // Use 0 if total is null
+        }
       })
 
       // Calculate average when multiple days selected

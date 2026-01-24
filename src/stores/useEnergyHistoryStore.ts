@@ -247,11 +247,12 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   const chartData = computed(() => {
     const datasets: Array<{
       label: string
-      data: number[]
+      data: (number | null)[]
       borderColor: string
       backgroundColor: string
       yAxisID: string
       metricType: MetricType
+      spanGaps?: boolean
       date?: string
     }> = []
 
@@ -793,11 +794,26 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
           // Check if this date+metric already exists
           const exists = existing.some(d => d.date === dateStr && d.metricType === metricType as MetricType)
           if (!exists) {
+            // Calculate aggregated values
+            const values = hourlyData.map(h => h.value).filter(v => v !== null && v !== undefined)
+            const totalValue = values.reduce((sum, val) => sum + (val || 0), 0)
+            const averageValue = values.length > 0 ? totalValue / values.length : 0
+            const peakValue = values.length > 0 ? Math.max(...values) : 0
+            const minValue = values.length > 0 ? Math.min(...values) : 0
+            const peakHour = hourlyData.findIndex(h => h.value === peakValue)
+            const minHour = hourlyData.findIndex(h => h.value === minValue)
+
             existing.push({
               metricId: `${compteurId}-${metricType}`,
               date: dateStr,
               metricType: metricType as MetricType,
               hourlyData,
+              totalValue,
+              averageValue,
+              peakValue,
+              peakHour: peakHour >= 0 ? peakHour : 0,
+              minValue,
+              minHour: minHour >= 0 ? minHour : 0,
             })
           }
         })
