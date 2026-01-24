@@ -76,6 +76,29 @@
       </div>
     </div>
 
+    <!-- Loading Banner for Energy Data Fetching -->
+    <div v-if="isLoadingTelemetry && isMeterDataReady" class="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-cyan-900 rounded-xl p-4 shadow-md animate-fadeIn">
+      <div class="flex items-center gap-4">
+        <div class="flex-shrink-0">
+          <div class="animate-spin rounded-full h-8 w-8 border-3 border-blue-200 dark:border-cyan-700 border-t-blue-600 dark:border-t-cyan-400"></div>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="material-symbols-outlined text-blue-600 dark:text-cyan-400 text-lg">cloud_download</span>
+            <h3 class="text-sm font-semibold text-blue-900 dark:text-cyan-100">Chargement des données de consommation énergétique...</h3>
+          </div>
+          <p class="text-xs text-blue-700 dark:text-cyan-300">Récupération des données : cette heure, aujourd'hui, hier, ce mois-ci...</p>
+        </div>
+        <div class="flex-shrink-0">
+          <div class="flex items-center gap-1">
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 0ms"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 150ms"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 300ms"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Loading State - Improved with current meter info -->
     <div v-if="!isMeterDataReady && validSelectedMeterIds.length > 0" class="flex items-center justify-center py-16">
       <div class="text-center">
@@ -102,6 +125,38 @@
         <p class="text-xs text-slate-500 dark:text-slate-500">
           {{ $t('puissance.labels.tryDifferentMeter') }}
         </p>
+      </div>
+    </div>
+
+    <!-- No API Data Available - When in API mode and no telemetry data -->
+    <div v-else-if="isMeterDataReady && !currentMeterData" class="flex items-center justify-center py-16">
+      <div class="text-center max-w-md">
+        <span class="material-symbols-outlined text-5xl mb-3 block text-amber-500">cloud_off</span>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ $t('puissance.labels.noApiData') }}</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          {{ $t('puissance.labels.noApiDataDescription') }}
+          <strong>{{ currentMeterId ? getMeterName(currentMeterId) : $t('common.thisMeter') }}</strong>
+        </p>
+        <div class="flex items-center justify-center gap-2 mb-4">
+          <span class="material-symbols-outlined text-lg text-amber-500">settings_suggest</span>
+          <p class="text-xs text-slate-500 dark:text-slate-500">
+            {{ $t('puissance.labels.checkDeviceConfig') }}
+          </p>
+        </div>
+        <button
+          @click="isLoadingTelemetry = true; fetchAllTelemetryData().finally(() => isLoadingTelemetry = false)"
+          class="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-300 text-sm font-medium"
+          :disabled="isLoadingTelemetry"
+        >
+          <span v-if="isLoadingTelemetry" class="flex items-center gap-2">
+            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            {{ $t('common.retrying') }}
+          </span>
+          <span v-else class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-lg">refresh</span>
+            {{ $t('common.retry') }}
+          </span>
+        </button>
       </div>
     </div>
 
@@ -163,14 +218,26 @@
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.metrics') }}</h2>
           </div>
 
+          <!-- KPI Cards Loading State -->
+          <div v-if="isLoadingTelemetry" class="space-y-3">
+            <div v-for="i in 8" :key="i" class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 animate-pulse">
+              <div class="flex items-center justify-between mb-3">
+                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-32"></div>
+                <div class="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+              </div>
+              <div class="h-8 bg-slate-200 dark:bg-slate-700 rounded w-24 mb-2"></div>
+              <div class="h-2 bg-slate-200 dark:bg-slate-700 rounded w-40"></div>
+            </div>
+          </div>
+
           <!-- KPI Cards in Column -->
-          <div v-if="currentMeterData" class="space-y-3">
+          <div v-else-if="currentMeterData" class="space-y-3">
             <KPICard
               v-for="(kpiKey, idx) in visibleKpiKeys"
               :key="idx"
               :title="$t(`puissance.kpi.${kpiKey}`)"
-              :value="(currentMeterData.kpiValues as unknown as Record<string, number>)[kpiKey]"
-              :unit="$t('common.unit.kw')"
+              :value="(currentMeterData.kpiValues as unknown as Record<string, number | null>)[kpiKey]"
+              :unit="kpiKey === 'instantaneousConsumption' ? $t('common.unit.kw') : $t('common.unit.kwh')"
               :meter-name="currentMeterData.name"
               :meter-color="currentMeterData.color"
             />
@@ -179,6 +246,29 @@
 
         <!-- Right Column: Charts (2 cols) -->
         <div v-if="displayElements.charts" :class="[displayElements.kpis ? 'lg:col-span-2' : 'lg:col-span-3', 'space-y-6']">
+          <!-- Charts Loading State -->
+          <div v-if="isLoadingTelemetry" class="space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 animate-pulse">
+              <div class="flex items-center justify-between mb-4">
+                <div class="h-5 bg-slate-200 dark:bg-slate-700 rounded w-48"></div>
+                <div class="h-9 bg-slate-200 dark:bg-slate-700 rounded w-32"></div>
+              </div>
+              <div class="h-64 bg-slate-200 dark:bg-slate-700 rounded"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 animate-pulse">
+                <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32 mb-4"></div>
+                <div class="h-48 bg-slate-200 dark:bg-slate-700 rounded"></div>
+              </div>
+              <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 animate-pulse">
+                <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32 mb-4"></div>
+                <div class="h-48 bg-slate-200 dark:bg-slate-700 rounded"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Content -->
+          <template v-else>
           <!-- Monthly Chart -->
           <div>
             <div class="flex items-center justify-between mb-4">
@@ -249,6 +339,7 @@
               />
             </div>
           </div>
+          </template>
         </div>
       </div>
     </div>
@@ -459,9 +550,14 @@ import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { getMeterColorByIndex } from '@/utils/meterColors'
+import { usePuissance } from '@/composables/usePuissance'
+import { useApiData } from '@/config/dataMode'
 import type { Meter, KPIValues } from '@/data/mockData'
 
 const { t } = useI18n()
+
+// ✅ USE PUISSANCE COMPOSABLE FOR KPI DATA
+const { getKPIs, getChartData, fetchPuissanceKPIs, isLoading, error } = usePuissance()
 
 // ✅ USE COMPOSABLE FOR CENTRALIZED METER MANAGEMENT
 const metersStore = useMetersStore()
@@ -520,6 +616,13 @@ watch(validSelectedMeterIds, (newIds) => {
 // UI State
 const showCompteurSelector = ref(false)
 
+// Telemetry state
+const telemetryFetchStatus = ref<'idle' | 'loading' | 'success' | 'failed'>('idle')
+const isLoadingTelemetry = computed(() => isLoading.value)
+
+// Temporary cache mapping for backward compatibility with view logic
+const telemetryCache = ref<Map<string, any>>(new Map())
+
 // Handle meter selection from modal
 function handleCompteurSelection(selectedIds: string[]) {
   metersStore.setSelectedMeters(selectedIds)
@@ -569,7 +672,146 @@ onMounted(async () => {
   } else if (selectedMeterIds.value.length > 0) {
     console.log('Restored selected meters for Puissance view:', selectedMeterIds.value)
   }
+
+  // Fetch telemetry data if API mode enabled
+  if (useApiData()) {
+    await fetchAllTelemetryData()
+  }
 })
+
+// ===========================
+// TELEMETRY DATA FETCHING
+// ===========================
+
+async function fetchAllTelemetryData() {
+  if (!useApiData()) return
+
+  const metersWithUUID = validSelectedMeterIds.value
+    .map(id => allCompteurs.value.find(c => c.id === id))
+    .filter((c): c is NonNullable<typeof c> => c !== undefined && c.deviceUUID !== undefined)
+
+  if (metersWithUUID.length === 0) {
+    telemetryFetchStatus.value = 'idle'
+    return
+  }
+
+  telemetryFetchStatus.value = 'loading'
+
+  try {
+    console.log(`[Puissance] Fetching KPI data for ${metersWithUUID.length} meters using new /puissance endpoint`)
+    console.log(`[Puissance] Meters to fetch:`, metersWithUUID.map(m => ({ id: m.id, name: m.name, deviceUUID: m.deviceUUID })))
+
+    // Fetch data for each meter in parallel
+    await Promise.all(
+      metersWithUUID.map(async meter => {
+        try {
+          console.log(`[Puissance] Fetching data for meter ID: ${meter.id}, deviceUUID: ${meter.deviceUUID}`)
+          const response = await fetchPuissanceKPIs(meter.deviceUUID!, { debug: false, useCache: true })
+
+          // Map the new API response format to the legacy cache structure
+          // API returns: { instantaneousPower: number, consumedX: number, xData: [{ts, value}] }
+          // View expects: { xData: [{key, ts, value}], instantaneousPower: [{key, ts, value}] }
+          telemetryCache.value.set(meter.id, {
+            meterId: meter.id,
+            // Direct KPI values (used by kpiValues object)
+            instantaneousConsumption: response.data.instantaneousPower,
+            consumedThisHour: response.data.consumedThisHour,
+            consumedToday: response.data.consumedToday,
+            consumedYesterday: response.data.consumedYesterday,
+            consumedThisMonth: response.data.consumedThisMonth,
+            consumedLastMonth: response.data.consumedLastMonth,
+            // Convert instantaneous power number to array format with key (for chart filtering)
+            instantaneousPower: response.data.instantaneousPower !== null
+              ? [{ key: 'ActivePowerTotal', ts: Date.now(), value: response.data.instantaneousPower }]
+              : [],
+            // Add key property to chart data arrays (view filters by key === 'ActivePowerTotal')
+            hourlyData: response.data.hourlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
+            dailyData: response.data.dailyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
+            monthlyData: response.data.monthlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value }))
+          })
+
+          console.log(`[Puissance] ✓ Cached data for ${meter.name}:`, {
+            meterId: meter.id,
+            kpis: {
+              instantaneous: response.data.instantaneousPower,
+              thisHour: response.data.consumedThisHour,
+              today: response.data.consumedToday
+            },
+            chartPoints: {
+              hourly: response.data.hourlyData.length,
+              daily: response.data.dailyData.length,
+              monthly: response.data.monthlyData.length
+            }
+          })
+
+          console.log(`[Puissance] Cache state after setting meter ${meter.id}:`, {
+            cacheSize: telemetryCache.value.size,
+            allKeys: Array.from(telemetryCache.value.keys()),
+            thisEntry: telemetryCache.value.get(meter.id)
+          })
+        } catch (err) {
+          console.error(`[Puissance] Failed to fetch ${meter.name}:`, err instanceof Error ? err.message : String(err))
+          console.error(`[Puissance] Full error:`, err)
+        }
+      })
+    )
+
+    telemetryFetchStatus.value = 'success'
+    console.log(`[Puissance] ✓ Successfully fetched KPI data for all meters`)
+    console.log(`[Puissance] Final cache state:`, {
+      cacheSize: telemetryCache.value.size,
+      allKeys: Array.from(telemetryCache.value.keys()),
+      allEntries: Array.from(telemetryCache.value.entries()).map(([id, data]) => ({
+        id,
+        hasData: !!data,
+        kpis: data ? {
+          instantaneous: data.instantaneousConsumption,
+          thisHour: data.consumedThisHour
+        } : null
+      }))
+    })
+  } catch (error) {
+    console.error('[Puissance] Failed to fetch telemetry:', error)
+    telemetryFetchStatus.value = 'failed'
+  }
+}
+
+/**
+ * Watch for current meter changes and fetch telemetry if needed
+ */
+watch(currentMeterId, async (newMeterId) => {
+  if (newMeterId && useApiData()) {
+    const meter = allCompteurs.value.find(c => c.id === newMeterId)
+    if (meter?.deviceUUID && !telemetryCache.value.has(meter.id)) {
+      // Fetch data for this meter
+      try {
+        const response = await fetchPuissanceKPIs(meter.deviceUUID, { debug: false, useCache: true })
+
+        // Map the new API response format to the legacy cache structure
+        telemetryCache.value.set(meter.id, {
+          meterId: meter.id,
+          // Direct KPI values
+          instantaneousConsumption: response.data.instantaneousPower,
+          consumedThisHour: response.data.consumedThisHour,
+          consumedToday: response.data.consumedToday,
+          consumedYesterday: response.data.consumedYesterday,
+          consumedThisMonth: response.data.consumedThisMonth,
+          consumedLastMonth: response.data.consumedLastMonth,
+          // Convert to array format with key property
+          instantaneousPower: response.data.instantaneousPower !== null
+            ? [{ key: 'ActivePowerTotal', ts: Date.now(), value: response.data.instantaneousPower }]
+            : [],
+          hourlyData: response.data.hourlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
+          dailyData: response.data.dailyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
+          monthlyData: response.data.monthlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value }))
+        })
+      } catch (err) {
+        console.error(`[Puissance] Failed to fetch ${meter.name}:`, err instanceof Error ? err.message : String(err))
+      }
+    }
+  }
+})
+
 // Type for Transformed Data
 // ===========================
 interface TransformedMeterData {
@@ -582,9 +824,9 @@ interface TransformedMeterData {
   hourlyData: { labels: string[]; values: number[] }
   dailyData: { labels: string[]; values: number[] }
   monthlyData: { labels: string[]; values: number[] }
-  hourlyTableData: Array<{ timestamp: string; power: number; efficiency: number; status: string }>
-  dailyTableData: Array<{ timestamp: string; power: number; average: number }>
-  dailyAverageData: Array<{ timestamp: string; power: number; days: number }>
+  hourlyTableData: Array<{ timestamp: number; power: number; efficiency: number; status: string }>
+  dailyTableData: Array<{ timestamp: number; power: number; average: number }>
+  dailyAverageData: Array<{ timestamp: number; power: number; days: number }>
 }
 
 // Selected meter (single-meter view, but from the centralized selected list)
@@ -681,107 +923,656 @@ const visibleKpiKeys = computed(() => {
  */
 const currentMeterData = computed<TransformedMeterData | null>(() => {
   // Use currentMeterId which changes when user navigates between selected meters
-  if (!currentMeterId.value) return null
+  if (!currentMeterId.value) {
+    console.log(`[Puissance KPI] currentMeterData computed: no currentMeterId`)
+    return null
+  }
 
-  return transformMeterData(currentMeterId.value)
+  const data = transformMeterData(currentMeterId.value)
+
+  if (data) {
+    console.log(`[Puissance KPI] currentMeterData computed - KPI values:`, {
+      meterId: currentMeterId.value,
+      name: data.name,
+      instantaneousConsumption: (data.kpiValues as any).instantaneousConsumption,
+      consumedThisHour: (data.kpiValues as any).consumedThisHour,
+      consumedToday: (data.kpiValues as any).consumedToday,
+      consumedYesterday: (data.kpiValues as any).consumedYesterday,
+      consumedThisMonth: (data.kpiValues as any).consumedThisMonth,
+      consumedLastMonth: (data.kpiValues as any).consumedLastMonth
+    })
+  }
+
+  return data
 })
 
 /**
  * Transform meter data from centralized format to view format
+ * Uses real telemetry data if available, falls back to mock data only in mock mode
  */
 function transformMeterData(meterId: string): TransformedMeterData | null {
   const selectedMeterObj = metersStore.allMeters.find(m => m.id === meterId)
-  if (!selectedMeterObj) return null
 
-  // Get full meter data from centralized source
-  const fullData = metersStore.getFullMeterData(meterId)
-  if (!fullData) return null
+  // Check if we have real telemetry data for this meter/element
+  const telemetryData = telemetryCache.value.get(meterId)
+  const isApiMode = useApiData()
 
-  // Calculate average power from metrics for table status
-  const avgPower = fullData.metrics.power
+  console.log(`[Puissance] transformMeterData called for ${meterId}:`, {
+    isMeter: !!selectedMeterObj,
+    telemetryDataAvailable: !!telemetryData,
+    isApiMode,
+    cacheSize: telemetryCache.value.size,
+    cacheKeys: Array.from(telemetryCache.value.keys()),
+    telemetryDataContent: telemetryData
+  })
+
+  // If not a direct meter, check if it's element data in cache
+  if (!selectedMeterObj) {
+    if (!telemetryData) {
+      console.warn(`[Puissance] No meter or telemetry data found for: ${meterId}`)
+      return null
+    }
+    // It's element data or a meter we're viewing from element breakdown
+    // Try to construct minimal transformed data from telemetry
+    console.log(`[Puissance] Using element/cached data for ${meterId}`)
+  }
+
+  // Get full meter data from centralized source (mock data)
+  const fullData = selectedMeterObj ? metersStore.getFullMeterData(meterId) : null
+  if (!fullData && !telemetryData) return null
+
+  // In API mode, initialize with empty data if no telemetry available
+  // (will display empty charts instead of error message)
+
+  let hourlyValues: number[] = []
+  let hourlyLabels: string[] = []
+  let hourlyTimestamps: number[] = []
+  let dailyValues: number[] = []
+  let dailyLabels: string[] = []
+  let dailyTimestamps: number[] = []
+  let monthlyValues: number[] = []
+  let monthlyLabels: string[] = []
+  let monthlyTimestamps: number[] = []
+  let instantaneousPowerValue: number | null = null
+  let avgPowerToday: number | null = null
+  let avgPowerYesterday: number | null = null
+  let avgPowerThisMonth: number | null = null
+  let avgPowerLastMonth: number | null = null
+  let peakPowerToday: number | null = null
+
+  if (telemetryData && isApiMode) {
+    console.log(`[Puissance] Using API telemetry data for meter: ${meterId}`, {
+      hasInstantaneousData: !!telemetryData.instantaneousPower,
+      hasHourlyData: !!telemetryData.hourlyData,
+      hasDailyData: !!telemetryData.dailyData,
+      hasMonthlyData: !!telemetryData.monthlyData,
+      instantaneousLength: telemetryData.instantaneousPower?.length || 0,
+      hourlyLength: telemetryData.hourlyData?.length || 0,
+      dailyLength: telemetryData.dailyData?.length || 0,
+      monthlyLength: telemetryData.monthlyData?.length || 0,
+      fullTelemetryData: telemetryData
+    })
+
+    // Extract instantaneous power (most recent reading)
+    if (telemetryData.instantaneousPower && telemetryData.instantaneousPower.length > 0) {
+      console.log(`[Puissance] Raw instantaneous data:`, {
+        totalPoints: telemetryData.instantaneousPower.length,
+        allPoints: telemetryData.instantaneousPower
+      })
+
+      // Get the most recent value
+      const sortedByTime = [...telemetryData.instantaneousPower].sort((a, b) => b.ts - a.ts)
+      const latest = sortedByTime[0]
+      instantaneousPowerValue = latest.value
+      console.log(`[Puissance KPI] instantaneousPower:`, {
+        apiKey: latest.key,
+        apiParameters: {
+          timeRange: 'Last 5 minutes',
+          interval: '1 minute',
+          aggregation: 'NONE (latest value)',
+          limit: 1
+        },
+        apiResponse: telemetryData.instantaneousPower,
+        calculation: `latest value from response (sorted by timestamp desc)`,
+        value: instantaneousPowerValue,
+        unit: 'kW',
+        timestamp: new Date(latest.ts).toLocaleString(),
+        apiTimestampMs: latest.ts
+      })
+    }
+
+    // Transform hourly data (already filtered to ActivePowerTotal)
+    if (telemetryData.hourlyData && telemetryData.hourlyData.length > 0) {
+      console.log(`[Puissance] Raw hourly data (before filtering):`, {
+        totalPoints: telemetryData.hourlyData.length,
+        uniqueKeys: [...new Set(telemetryData.hourlyData.map((d: any) => d.key))],
+        firstFewPoints: telemetryData.hourlyData.slice(0, 3),
+        allPoints: telemetryData.hourlyData
+      })
+
+      // Filter for ActivePowerTotal key only
+      const powerData = telemetryData.hourlyData
+        .filter((d: any) => d.key === 'ActivePowerTotal')
+        .sort((a: any, b: any) => a.ts - b.ts)  // Ensure chronological order
+
+      console.log(`[Puissance] Hourly data AFTER filtering for ActivePowerTotal:`, {
+        pointsAfterFilter: powerData.length,
+        pointsRemoved: telemetryData.hourlyData.length - powerData.length,
+        filteredData: powerData
+      })
+
+      hourlyValues = powerData.map((d: any) => d.value)
+      hourlyTimestamps = powerData.map((d: any) => d.ts)  // Keep raw timestamps
+      hourlyLabels = powerData.map((d: any) => {
+        const date = new Date(d.ts)
+        const hours = date.getHours().toString().padStart(2, '0')
+        const minutes = date.getMinutes().toString().padStart(2, '0')
+        return `${hours}:${minutes}`
+      })
+
+      console.log(`[Puissance] Hourly timestamps:`, powerData.map((d: any) => new Date(d.ts).toLocaleString()))
+      console.log(`[Puissance] Hourly labels:`, hourlyLabels)
+      console.log(`[Puissance] Hourly values:`, hourlyValues)
+
+      // Calculate today's average from hourly data
+      if (hourlyValues.length > 0) {
+        avgPowerToday = hourlyValues.reduce((a, b) => a + b, 0) / hourlyValues.length
+        // Calculate peak power today
+        peakPowerToday = Math.max(...hourlyValues)
+
+        console.log(`[Puissance KPI] peakPowerToday:`, {
+          apiKey: 'ActivePowerTotal',
+          apiParameters: {
+            timeRange: 'Last 24 hours',
+            interval: '1 hour (hourly average)',
+            aggregation: 'AVG'
+          },
+          apiResponse: hourlyValues,
+          calculation: `Math.max(${hourlyValues.map((v, i) => `${v.toFixed(2)}`).join(', ')})`,
+          value: peakPowerToday,
+          unit: 'kW',
+          dataPoints: hourlyValues.length
+        })
+
+        console.log(`[Puissance KPI] avgPowerToday:`, {
+          apiKey: 'ActivePowerTotal',
+          apiParameters: {
+            timeRange: 'Last 24 hours',
+            interval: '1 hour (hourly average)',
+            aggregation: 'AVG'
+          },
+          apiResponse: hourlyValues,
+          calculation: `sum([${hourlyValues.map(v => v.toFixed(2)).join(', ')}]) / ${hourlyValues.length}`,
+          value: avgPowerToday,
+          unit: 'kW',
+          dataPoints: hourlyValues.length
+        })
+      }
+    }
+
+    // Transform daily data (already filtered to ActivePowerTotal)
+    if (telemetryData.dailyData && telemetryData.dailyData.length > 0) {
+      console.log(`[Puissance] Raw daily data (before filtering):`, {
+        totalPoints: telemetryData.dailyData.length,
+        uniqueKeys: [...new Set(telemetryData.dailyData.map((d: any) => d.key))],
+        firstFewPoints: telemetryData.dailyData.slice(0, 3),
+        allPoints: telemetryData.dailyData
+      })
+
+      // Filter for ActivePowerTotal key only
+      const powerData = telemetryData.dailyData
+        .filter((d: any) => d.key === 'ActivePowerTotal')
+        .sort((a: any, b: any) => a.ts - b.ts)  // Ensure chronological order
+
+      console.log(`[Puissance] Daily data AFTER filtering for ActivePowerTotal:`, {
+        pointsAfterFilter: powerData.length,
+        pointsRemoved: telemetryData.dailyData.length - powerData.length,
+        filteredData: powerData
+      })
+
+      // Fill in missing days to show all days on x-axis
+      if (powerData.length > 1) {
+        const firstDate = new Date(powerData[0].ts)
+        const lastDate = new Date(powerData[powerData.length - 1].ts)
+        const filledData = []
+
+        // Start from first day
+        const current = new Date(firstDate.getUTCFullYear(), firstDate.getUTCMonth(), firstDate.getUTCDate())
+
+        while (current <= lastDate) {
+          const dayKey = `${current.getUTCFullYear()}-${String(current.getUTCMonth() + 1).padStart(2, '0')}-${String(current.getUTCDate()).padStart(2, '0')}`
+          const existingPoint = powerData.find((p: any) => {
+            const pDate = new Date(p.ts)
+            return pDate.getUTCFullYear() === current.getUTCFullYear() &&
+                   pDate.getUTCMonth() === current.getUTCMonth() &&
+                   pDate.getUTCDate() === current.getUTCDate()
+          })
+
+          if (existingPoint) {
+            filledData.push(existingPoint)
+          } else {
+            // Add empty point for missing day
+            filledData.push({
+              ts: current.getTime(),
+              value: 0,  // Show as zero/empty bar
+              key: 'ActivePowerTotal'
+            })
+          }
+
+          // Move to next day
+          current.setUTCDate(current.getUTCDate() + 1)
+        }
+
+        console.log(`[Puissance] Filled daily data (with empty days):`, {
+          originalCount: powerData.length,
+          filledCount: filledData.length,
+          filledData: filledData
+        })
+
+        dailyValues = filledData.map((d: any) => d.value)
+        dailyTimestamps = filledData.map((d: any) => d.ts)  // Keep raw timestamps
+        dailyLabels = filledData.map((d: any) => {
+          const date = new Date(d.ts)
+          const day = date.getUTCDate().toString().padStart(2, '0')
+          const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+          return `${day}/${month}`
+        })
+      } else {
+        dailyValues = powerData.map((d: any) => d.value)
+        dailyTimestamps = powerData.map((d: any) => d.ts)  // Keep raw timestamps
+        dailyLabels = powerData.map((d: any) => {
+          const date = new Date(d.ts)
+          const day = date.getUTCDate().toString().padStart(2, '0')
+          const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+          return `${day}/${month}`
+        })
+      }
+
+      console.log(`[Puissance] Daily timestamps:`, dailyLabels)
+      console.log(`[Puissance] Daily labels:`, dailyLabels)
+      console.log(`[Puissance] Daily values:`, dailyValues)
+
+      // Calculate yesterday's average (second to last day in the data)
+      if (dailyValues.length > 1) {
+        avgPowerYesterday = dailyValues[dailyValues.length - 2]
+
+        console.log(`[Puissance KPI] avgPowerYesterday:`, {
+          apiKey: 'ActivePowerTotal',
+          apiParameters: {
+            timeRange: 'Last 30 days',
+            interval: '1 day (daily average)',
+            aggregation: 'AVG'
+          },
+          apiResponse: dailyValues,
+          calculation: `dailyValues[${dailyValues.length - 2}] (second-to-last day)`,
+          value: avgPowerYesterday,
+          unit: 'kW',
+          dataPoints: dailyValues.length,
+          note: `Index ${dailyValues.length - 2} of ${dailyValues.length} days`
+        })
+      }
+      if (dailyValues.length > 0) {
+        const todayPower = dailyValues[dailyValues.length - 1]
+        // Use this for "today" average if we don't have hourly data
+        if (avgPowerToday === null) {
+          avgPowerToday = todayPower
+        }
+      }
+    }
+
+    // Transform monthly data (already filtered to ActivePowerTotal)
+    if (telemetryData.monthlyData && telemetryData.monthlyData.length > 0) {
+      console.log(`[Puissance] Raw monthly data (before filtering):`, {
+        totalPoints: telemetryData.monthlyData.length,
+        uniqueKeys: [...new Set(telemetryData.monthlyData.map((d: any) => d.key))],
+        firstFewPoints: telemetryData.monthlyData.slice(0, 3),
+        allPoints: telemetryData.monthlyData
+      })
+
+      // Filter for ActivePowerTotal key only
+      const powerData = telemetryData.monthlyData
+        .filter((d: any) => d.key === 'ActivePowerTotal')
+        .sort((a: any, b: any) => a.ts - b.ts)  // Ensure chronological order
+
+      console.log(`[Puissance] Monthly data AFTER filtering for ActivePowerTotal:`, {
+        pointsAfterFilter: powerData.length,
+        pointsRemoved: telemetryData.monthlyData.length - powerData.length,
+        filteredData: powerData
+      })
+
+      // Fill in missing months to show all months on x-axis
+      if (powerData.length > 1) {
+        const firstDate = new Date(powerData[0].ts)
+        const lastDate = new Date(powerData[powerData.length - 1].ts)
+        const filledData = []
+
+        // Get year and month from first and last dates (using UTC)
+        let year = firstDate.getUTCFullYear()
+        let month = firstDate.getUTCMonth()
+        const lastYear = lastDate.getUTCFullYear()
+        const lastMonth = lastDate.getUTCMonth()
+
+        // Iterate through months until we reach or pass the last date
+        while (year < lastYear || (year === lastYear && month <= lastMonth)) {
+          const existingPoint = powerData.find((p: any) => {
+            const pDate = new Date(p.ts)
+            return pDate.getUTCFullYear() === year &&
+                   pDate.getUTCMonth() === month
+          })
+
+          if (existingPoint) {
+            filledData.push(existingPoint)
+          } else {
+            // Add empty point for missing month using UTC date
+            const pointDate = new Date(Date.UTC(year, month, 1))
+            filledData.push({
+              ts: pointDate.getTime(),
+              value: 0,  // Show as zero/empty bar
+              key: 'ActivePowerTotal'
+            })
+          }
+
+          // Move to next month
+          month++
+          if (month > 11) {
+            month = 0
+            year++
+          }
+        }
+
+        console.log(`[Puissance] Filled monthly data (with empty months):`, {
+          originalCount: powerData.length,
+          filledCount: filledData.length,
+          filledData: filledData
+        })
+
+        monthlyValues = filledData.map((d: any) => d.value)
+        monthlyTimestamps = filledData.map((d: any) => d.ts)  // Keep raw timestamps
+        monthlyLabels = filledData.map((d: any) => {
+          const date = new Date(d.ts)
+          return date.toLocaleString('default', { month: 'short', year: '2-digit' })
+        })
+      } else {
+        monthlyValues = powerData.map((d: any) => d.value)
+        monthlyTimestamps = powerData.map((d: any) => d.ts)  // Keep raw timestamps
+        monthlyLabels = powerData.map((d: any) => {
+          const date = new Date(d.ts)
+          return date.toLocaleString('default', { month: 'short', year: '2-digit' })
+        })
+      }
+
+      console.log(`[Puissance] Monthly timestamps:`, monthlyLabels.map((_, i) => new Date(monthlyLabels[i] || '').toLocaleString()))
+      console.log(`[Puissance] Monthly labels:`, monthlyLabels)
+      console.log(`[Puissance] Monthly values:`, monthlyValues)
+
+      // Calculate this month and last month averages
+      if (monthlyValues.length > 0) {
+        avgPowerThisMonth = monthlyValues[monthlyValues.length - 1]
+        console.log(`[Puissance KPI] avgPowerThisMonth:`, {
+          apiKey: 'ActivePowerTotal',
+          apiParameters: {
+            timeRange: 'Last 365 days (12 months)',
+            interval: '30 days (monthly average)',
+            aggregation: 'AVG'
+          },
+          apiResponse: monthlyValues,
+          calculation: `monthlyValues[${monthlyValues.length - 1}] (last month in array)`,
+          value: avgPowerThisMonth,
+          unit: 'kW',
+          dataPoints: monthlyValues.length,
+          timestamp: new Date(powerData[powerData.length - 1].ts).toLocaleString()
+        })
+      }
+      if (monthlyValues.length > 1) {
+        avgPowerLastMonth = monthlyValues[monthlyValues.length - 2]
+        console.log(`[Puissance KPI] avgPowerLastMonth:`, {
+          apiKey: 'ActivePowerTotal',
+          apiParameters: {
+            timeRange: 'Last 365 days (12 months)',
+            interval: '30 days (monthly average)',
+            aggregation: 'AVG'
+          },
+          apiResponse: monthlyValues,
+          calculation: `monthlyValues[${monthlyValues.length - 2}] (second-to-last month)`,
+          value: avgPowerLastMonth,
+          unit: 'kW',
+          dataPoints: monthlyValues.length,
+          timestamp: new Date(powerData[powerData.length - 2].ts).toLocaleString()
+        })
+      }
+    }
+  } else if (!isApiMode && fullData) {
+    // Use mock data only in mock/hybrid mode
+    console.log(`[Puissance] Using mock data for meter: ${meterId}`)
+    hourlyValues = fullData.timeSeries.hourly.map(d => d.value)
+    hourlyLabels = fullData.timeSeries.hourly.map(d => d.timestamp)
+    dailyValues = fullData.timeSeries.daily.map(d => d.value)
+    dailyLabels = fullData.timeSeries.daily.map(d => d.timestamp)
+    monthlyValues = fullData.timeSeries.monthly.map(d => d.value)
+    monthlyLabels = fullData.timeSeries.monthly.map(d => d.timestamp)
+    instantaneousPowerValue = fullData.metrics.power
+    avgPowerToday = fullData.kpis.avgPowerToday
+    avgPowerYesterday = fullData.kpis.avgPowerYesterday
+    avgPowerThisMonth = fullData.kpis.avgPowerThisMonth
+    avgPowerLastMonth = fullData.kpis.avgPowerLastMonth
+    peakPowerToday = fullData.kpis.peak
+  } else if (isApiMode && !telemetryData) {
+    // API mode but no data yet - keep empty arrays initialized above
+    console.log(`[Puissance] API mode: Waiting for telemetry data for meter: ${meterId}`)
+  }
+
+  // Log all KPIs summary
+  if (isApiMode && telemetryData) {
+    console.log(`[Puissance KPIs Summary] All metrics for ${meterId}:`, {
+      instantaneousPower: {
+        value: instantaneousPowerValue,
+        unit: 'kW',
+        source: 'Latest ActivePowerTotal value'
+      },
+      peakPowerToday: {
+        value: peakPowerToday,
+        unit: 'kW',
+        source: 'Maximum of hourly ActivePowerTotal values'
+      },
+      avgPowerToday: {
+        value: avgPowerToday,
+        unit: 'kW',
+        source: 'Average of hourly ActivePowerTotal values',
+        dataPoints: hourlyValues.length
+      },
+      avgPowerYesterday: {
+        value: avgPowerYesterday,
+        unit: 'kW',
+        source: 'Second-to-last daily ActivePowerTotal value',
+        dataPoints: dailyValues.length
+      },
+      avgPowerThisMonth: {
+        value: avgPowerThisMonth,
+        unit: 'kW',
+        source: 'Last monthly ActivePowerTotal value',
+        dataPoints: monthlyValues.length
+      },
+      avgPowerLastMonth: {
+        value: avgPowerLastMonth,
+        unit: 'kW',
+        source: 'Second-to-last monthly ActivePowerTotal value',
+        dataPoints: monthlyValues.length
+      }
+    })
+  }
+
+  // Calculate average power for table status
+  const avgPower = hourlyValues.length > 0
+    ? hourlyValues.reduce((a, b) => a + b, 0) / hourlyValues.length
+    : fullData?.metrics?.power ?? 0
 
   // If element selected, return element-specific data
-  if (selectedElement.value && fullData.elements && fullData.elements.length > 0) {
+  if (selectedElement.value && fullData?.elements && fullData.elements.length > 0) {
     const elementData = metersStore.getElementData(meterId, selectedElement.value)
     if (elementData) {
       const elementAvgPower = elementData.metrics.power
       // Transform element data to match expected format
       return {
-        name: `${fullData.name} - ${elementData.name}`,
-        color: metersStore.getMeterColor(meterId),
-        icon: selectedMeterObj.icon ?? 'default_icon',
-        category: (fullData.type ?? 'meter') as 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage',
-        elements: fullData.elements.map(el => el.id),
-        kpiValues: elementData.kpis,
+        name: `${fullData?.name || 'Meter'} - ${elementData.name}`,
+        color: metersStore.getMeterColor(meterId) || '#6b7280',
+        icon: selectedMeterObj?.icon ?? 'default_icon',
+        category: (fullData?.type ?? 'meter') as 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage',
+        elements: fullData?.elements?.map(el => el.id) || [],
+        kpiValues: (isApiMode ? {
+          // In API mode, use energy consumption values (kWh) from telemetry
+          instantaneousConsumption: telemetryData?.instantaneousConsumption || null,
+          consumedThisHour: telemetryData?.consumedThisHour || null,
+          consumedToday: telemetryData?.consumedToday || null,
+          consumedYesterday: telemetryData?.consumedYesterday || null,
+          consumedDayBeforeYesterday: telemetryData?.consumedDayBeforeYesterday || null,
+          consumedThisMonth: telemetryData?.consumedThisMonth || null,
+          consumedLastMonth: telemetryData?.consumedLastMonth || null,
+          realtimeCurrentYear: telemetryData?.realtimeCurrentYear || null,
+          realtimeCurrentMonth: telemetryData?.realtimeCurrentMonth || null,
+          // Legacy power values (deprecated)
+          current: null,
+          peak: peakPowerToday,
+          average: null,
+          total: null,
+          instantaneousPower: instantaneousPowerValue,
+          avgPowerToday,
+          avgPowerYesterday,
+          avgPowerThisMonth,
+          avgPowerLastMonth,
+          avgPowerBeforeYesterday: null
+        } : {
+          // In mock mode, merge element mock data with API overrides
+          ...elementData.kpis,
+          instantaneousPower: instantaneousPowerValue ?? elementData.kpis.instantaneousPower,
+          avgPowerToday: avgPowerToday ?? elementData.kpis.avgPowerToday,
+          avgPowerYesterday: avgPowerYesterday ?? elementData.kpis.avgPowerYesterday,
+          avgPowerThisMonth: avgPowerThisMonth ?? elementData.kpis.avgPowerThisMonth,
+          avgPowerLastMonth: avgPowerLastMonth ?? elementData.kpis.avgPowerLastMonth,
+          peak: peakPowerToday ?? elementData.kpis.peak
+        }) as KPIValues,
         hourlyData: {
-          labels: elementData.timeSeries.hourly.map(d => d.timestamp),
-          values: elementData.timeSeries.hourly.map(d => d.value)
+          labels: hourlyLabels,
+          values: hourlyValues
         },
         dailyData: {
-          labels: elementData.timeSeries.daily.map(d => d.timestamp),
-          values: elementData.timeSeries.daily.map(d => d.value)
+          labels: dailyLabels,
+          values: dailyValues
         },
         monthlyData: {
-          labels: elementData.timeSeries.monthly.map(d => d.timestamp),
-          values: elementData.timeSeries.monthly.map(d => d.value)
+          labels: monthlyLabels,
+          values: monthlyValues
         },
-        hourlyTableData: elementData.timeSeries.hourly.map((d, i) => ({
-          timestamp: d.timestamp,
-          power: d.value,
+        hourlyTableData: hourlyValues.map((value, i) => ({
+          timestamp: hourlyTimestamps[i] || Date.now(),  // Use raw timestamp
+          power: value,
           efficiency: Math.round(85 + Math.random() * 10),
-          status: d.value > elementAvgPower ? 'high' : 'normal'
+          status: value > elementAvgPower ? 'high' : 'normal'
         })),
-        dailyTableData: elementData.timeSeries.daily.map(d => ({
-          timestamp: d.timestamp,
-          power: d.value * 24,
-          average: d.value
+        dailyTableData: dailyValues.map((value, i) => ({
+          timestamp: dailyTimestamps[i] || Date.now(),  // Use raw timestamp
+          power: value * 24,
+          average: value
         })),
-        dailyAverageData: elementData.timeSeries.monthly.map(d => ({
-          timestamp: d.timestamp,
-          power: d.value,
+        dailyAverageData: monthlyValues.map((value, i) => ({
+          timestamp: monthlyTimestamps[i] || Date.now(),  // Use raw timestamp,
+          power: value,
           days: 30
         }))
       }
     }
   }
 
-  // Return aggregated meter data
-  return {
-    name: fullData.name,
-    color: metersStore.getMeterColor(meterId),
-    icon: selectedMeterObj.icon ?? 'default_icon',
-    category: (fullData.type ?? 'meter') as 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage',
-    elements: fullData.elements?.map(el => el.id) || [],
-    kpiValues: fullData.kpis,
+  // Return aggregated meter data with telemetry or mock data
+  const transformedData = {
+    name: fullData?.name || `Meter ${meterId}`,
+    color: metersStore.getMeterColor(meterId) || '#6b7280',
+    icon: selectedMeterObj?.icon ?? 'default_icon',
+    category: (fullData?.type ?? 'meter') as 'TGBT' | 'Compresseurs' | 'Clim' | 'Éclairage',
+    elements: fullData?.elements?.map(el => el.id) || [],
+    kpiValues: (isApiMode ? {
+      // In API mode, use energy consumption values (kWh) from telemetry
+      consumedThisHour: telemetryData?.consumedThisHour || null,
+      consumedToday: telemetryData?.consumedToday || null,
+      instantaneousConsumption: telemetryData?.instantaneousConsumption || null,
+      consumedYesterday: telemetryData?.consumedYesterday || null,
+      consumedDayBeforeYesterday: telemetryData?.consumedDayBeforeYesterday || null,
+      consumedThisMonth: telemetryData?.consumedThisMonth || null,
+      consumedLastMonth: telemetryData?.consumedLastMonth || null,
+      // Legacy power values (deprecated)
+      current: null,
+      peak: peakPowerToday,
+      average: null,
+      total: null,
+      instantaneousPower: instantaneousPowerValue,
+      avgPowerToday,
+      avgPowerYesterday,
+      avgPowerThisMonth,
+      avgPowerLastMonth,
+      avgPowerBeforeYesterday: null
+    } : {
+      // In mock mode, use mock data with API overrides
+      ...((fullData?.kpis) || {
+        current: null,
+        peak: null,
+        average: null,
+        total: null,
+        avgPowerLastMonth: null,
+        avgPowerThisMonth: null,
+        avgPowerYesterday: null,
+        avgPowerToday: null,
+        avgPowerBeforeYesterday: null,
+        instantaneousPower: null
+      }),
+      instantaneousPower: instantaneousPowerValue ?? fullData?.kpis?.instantaneousPower ?? null,
+      avgPowerToday: avgPowerToday ?? fullData?.kpis?.avgPowerToday ?? null,
+      avgPowerYesterday: avgPowerYesterday ?? fullData?.kpis?.avgPowerYesterday ?? null,
+      avgPowerThisMonth: avgPowerThisMonth ?? fullData?.kpis?.avgPowerThisMonth ?? null,
+      avgPowerLastMonth: avgPowerLastMonth ?? fullData?.kpis?.avgPowerLastMonth ?? null,
+      peak: peakPowerToday ?? fullData?.kpis?.peak ?? null
+    }) as KPIValues,
     hourlyData: {
-      labels: fullData.timeSeries.hourly.map(d => d.timestamp),
-      values: fullData.timeSeries.hourly.map(d => d.value)
+      labels: hourlyLabels,
+      values: hourlyValues
     },
     dailyData: {
-      labels: fullData.timeSeries.daily.map(d => d.timestamp),
-      values: fullData.timeSeries.daily.map(d => d.value)
+      labels: dailyLabels,
+      values: dailyValues
     },
     monthlyData: {
-      labels: fullData.timeSeries.monthly.map(d => d.timestamp),
-      values: fullData.timeSeries.monthly.map(d => d.value)
+      labels: monthlyLabels,
+      values: monthlyValues
     },
-    hourlyTableData: fullData.timeSeries.hourly.map((d, i) => ({
-      timestamp: d.timestamp,
-      power: d.value,
+    hourlyTableData: hourlyValues.map((value, i) => ({
+      timestamp: hourlyTimestamps[i] || Date.now(),  // Use raw timestamp
+      power: value,
       efficiency: Math.round(85 + Math.random() * 10),
-      status: d.value > avgPower ? 'high' : 'normal'
+      status: value > avgPower ? 'high' : 'normal'
     })),
-    dailyTableData: fullData.timeSeries.daily.map(d => ({
-      timestamp: d.timestamp,
-      power: d.value * 24,
-      average: d.value
+    dailyTableData: dailyValues.map((value, i) => ({
+      timestamp: dailyTimestamps[i] || Date.now(),  // Use raw timestamp
+      power: value * 24,
+      average: value
     })),
-    dailyAverageData: fullData.timeSeries.monthly.map(d => ({
-      timestamp: d.timestamp,
-      power: d.value,
+    dailyAverageData: monthlyValues.map((value, i) => ({
+      timestamp: monthlyTimestamps[i] || Date.now(),  // Use raw timestamp
+      power: value,
       days: 30
     }))
   }
+
+  console.log(`[Puissance] 📊 transformMeterData returning for ${meterId}:`, {
+    name: transformedData.name,
+    instantaneousConsumption: (transformedData.kpiValues as any).instantaneousConsumption,
+    consumedThisHour: (transformedData.kpiValues as any).consumedThisHour,
+    consumedToday: (transformedData.kpiValues as any).consumedToday,
+    consumedYesterday: (transformedData.kpiValues as any).consumedYesterday,
+    consumedDayBeforeYesterday: (transformedData.kpiValues as any).consumedDayBeforeYesterday,
+    consumedThisMonth: (transformedData.kpiValues as any).consumedThisMonth,
+    consumedLastMonth: (transformedData.kpiValues as any).consumedLastMonth,
+    allKpiValues: transformedData.kpiValues
+  })
+
+  return transformedData
 }
 
 /**
@@ -793,14 +1584,14 @@ const isMeterDataReady = computed(() => {
          currentMeterData.value.monthlyData !== undefined
 })
 
-// KPI keys in order
+// KPI keys in order - Energy consumption metrics (kWh)
 const kpiKeys = [
-  'avgPowerLastMonth',
-  'avgPowerThisMonth',
-  'avgPowerYesterday',
-  'avgPowerToday',
-  'avgPowerBeforeYesterday',
-  'instantaneousPower',
+  'instantaneousConsumption', // Current instantaneous power consumption (kW)
+  'consumedThisHour',        // Energy consumed this hour (deltaHourEnergyConsumtion)
+  'consumedToday',           // Energy consumed today (deltaDayEnergyConsumtion)
+  'consumedYesterday',       // Energy consumed yesterday (historical calculation)
+  'consumedThisMonth',       // Energy consumed this month (AccumulatedActiveEnergyDelivered calculation)
+  'consumedLastMonth',       // Energy consumed last month (historical calculation)
 ]
 
 /**

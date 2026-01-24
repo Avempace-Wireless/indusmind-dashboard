@@ -15,6 +15,7 @@
     "noData": "No Data Available",
     "noDataAvailable": "No data available from the energy monitoring system",
     "retry": "Retry",
+    "retrying": "Retrying...",
     "meterData": "meter data",
     "error": "Error",
     "success": "Success",
@@ -409,12 +410,12 @@
       "lighting": "Lighting"
     },
     "kpi": {
-      "avgPowerLastMonth": "Average Power Last Month",
-      "avgPowerThisMonth": "Average Power This Month",
-      "avgPowerYesterday": "Average Power Yesterday",
-      "avgPowerToday": "Average Power Today",
-      "avgPowerBeforeYesterday": "Average Power Before Yesterday",
-      "instantaneousPower": "Instantaneous Power (This Hour)"
+      "instantaneousPower": "Current Power",
+      "peakPowerToday": "Peak Power Today",
+      "avgPowerToday": "Today's Average",
+      "avgPowerYesterday": "Yesterday's Average",
+      "avgPowerThisMonth": "This Month Average",
+      "avgPowerLastMonth": "Last Month Average"
     },
     "charts": {
       "monthlyPower": "Monthly Power – Current Year",
@@ -459,7 +460,10 @@
       "fetchingData": "Fetching data...",
       "noElementData": "No Element Data Available",
       "noElementBreakdown": "No detailed breakdown available",
-      "tryDifferentMeter": "Try selecting a different meter"
+      "tryDifferentMeter": "Try selecting a different meter",
+      "noApiData": "No API Data Available",
+      "noApiDataDescription": "No telemetry data available for",
+      "checkDeviceConfig": "Check that the deviceUUID is configured correctly"
     },
     "tables": {
       "hourlyPower": "Power {meter} Hour by Hour",

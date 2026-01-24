@@ -23,6 +23,7 @@
         >
           <span class="material-symbols-outlined text-lg" :style="{ color: meterColor }">
             bolt
+
           </span>
         </div>
       </div>
@@ -30,10 +31,23 @@
       <!-- Main Value -->
       <div class="mb-3">
         <div class="flex items-baseline gap-1">
-          <span class="text-2xl sm:text-3xl font-bold" :style="{ color: meterColor }">
+          <span
+            v-if="value !== null && value !== undefined"
+            class="text-2xl sm:text-3xl font-bold"
+            :style="{ color: meterColor }"
+          >
             {{ formattedValue }}
           </span>
-          <span class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400">
+          <span
+            v-else
+            class="text-2xl sm:text-3xl font-bold text-gray-400 dark:text-gray-600"
+          >
+            N/A
+          </span>
+          <span
+            v-if="value !== null && value !== undefined"
+            class="text-xs sm:text-sm font-semibold text-gray-600 dark:text-gray-400"
+          >
             {{ unit }}
           </span>
         </div>
@@ -54,7 +68,7 @@ import { computed } from 'vue'
 
 interface Props {
   title: string
-  value: number
+  value: number | null
   unit: string
   meterName: string
   meterColor: string
@@ -63,6 +77,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const formattedValue = computed(() => {
+  if (props.value === null || props.value === undefined) return 'N/A'
   if (props.value === 0) return '0'
   return props.value.toFixed(1)
 })

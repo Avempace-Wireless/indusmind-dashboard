@@ -120,7 +120,7 @@ export function useTelemetryDynamic() {
       if (config.interval !== undefined) params.append('interval', config.interval.toString())
       if (config.agg) params.append('agg', config.agg)
       if (config.limit !== undefined) params.append('limit', config.limit.toString())
-      params.append('orderBy', 'ASC')
+      params.append('orderBy', config.orderBy || 'ASC')
 
       const url = `${backendUrl}/telemetry/${deviceUUID}/timeseries?${params.toString()}`
 
@@ -157,7 +157,8 @@ export function useTelemetryDynamic() {
         statusCode: response.status,
         hasData: !!apiData.data,
         apiDataKeys: Object.keys(apiData),
-        fullResponse: apiData
+        dataObject: apiData.data,
+        fullResponse: JSON.stringify(apiData, null, 2)
       })
 
       // Transform ThingsBoard response to normalized format
@@ -171,15 +172,18 @@ export function useTelemetryDynamic() {
         responseDataType: typeof responseData,
         responseDataKeys: typeof responseData === 'object' ? Object.keys(responseData) : 'not-object',
         requestedKeys: config.keys,
-        fullResponseData: responseData
+        responseDataStructure: JSON.stringify(Object.keys(responseData))
       })
 
       for (const key of config.keys) {
         const keyData = responseData[key] || []
-        console.log(`[useTelemetryDynamic] Processing key "${key}":`, {
+        console.log(`[useTelemetryDynamic] ✓ KEY VERIFICATION "${key}":`, {
+          keyExists: key in responseData,
+          keyDataType: typeof keyData,
           keyDataLength: keyData.length,
-          keyDataSample: keyData.length > 0 ? keyData.slice(0, 2) : 'empty',
-          fullKeyData: keyData
+          keyDataSample: keyData.length > 0 ? keyData.slice(0, 3) : 'EMPTY - NO DATA FOR THIS KEY',
+          fullKeyData: keyData,
+          allAvailableKeys: Object.keys(responseData)
         })
 
         for (const point of keyData) {

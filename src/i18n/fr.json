@@ -14,8 +14,7 @@
     "loading": "Chargement...",
     "noData": "Aucune donnée disponible",
     "noDataAvailable": "Aucune donnée disponible du système de suivi énergétique",
-    "retry": "Réessayer",
-    "meterData": "données du compteur",
+    "retry": "Réessayer",    "retrying": "Nouvelle tentative...",    "meterData": "données du compteur",
     "error": "Erreur",
     "success": "Succès",
     "warning": "Avertissement",
@@ -410,12 +409,19 @@
       "lighting": "Éclairage"
     },
     "kpi": {
-      "avgPowerLastMonth": "Puissance moyenne du mois dernier",
-      "avgPowerThisMonth": "Puissance moyenne ce mois-ci",
-      "avgPowerYesterday": "Puissance moyenne hier",
-      "avgPowerToday": "Puissance moyenne aujourd'hui",
-      "avgPowerBeforeYesterday": "Puissance moyenne avant-hier",
-      "instantaneousPower": "Puissance instantanée (cette heure)"
+      "consumedThisHour": "Consommé cette heure",
+      "consumedToday": "Consommé aujourd'hui",
+      "instantaneousConsumption": "Consommation instantanée",
+      "consumedYesterday": "Consommé hier",
+      "consumedDayBeforeYesterday": "Consommé avant hier",
+      "consumedThisMonth": "Consommé ce mois-ci",
+      "consumedLastMonth": "Consommé le mois dernier",
+      "instantaneousPower": "Puissance actuelle",
+      "peakPowerToday": "Pic aujourd'hui",
+      "avgPowerToday": "Moyenne aujourd'hui",
+      "avgPowerYesterday": "Moyenne hier",
+      "avgPowerThisMonth": "Moyenne ce mois",
+      "avgPowerLastMonth": "Moyenne mois dernier"
     },
     "charts": {
       "monthlyPower": "Puissance mensuelle – Année en cours",
@@ -460,7 +466,10 @@
       "fetchingData": "Récupération des données...",
       "noElementData": "Aucune donnée disponible",
       "noElementBreakdown": "Pas de détails disponibles",
-      "tryDifferentMeter": "Essayez de sélectionner un autre compteur"
+      "tryDifferentMeter": "Essayez de sélectionner un autre compteur",
+      "noApiData": "Aucune donnée API disponible",
+      "noApiDataDescription": "Aucune donnée de télémétrie disponible pour",
+      "checkDeviceConfig": "Vérifiez que le deviceUUID est configuré correctement"
     },
     "tables": {
       "hourlyPower": "Puissance {meter} heure par heure",

@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Chart, LineController, LinearScale, PointElement, LineElement, CategoryScale, Tooltip, Filler } from 'chart.js'
 
 Chart.register(LineController, LinearScale, PointElement, LineElement, CategoryScale, Tooltip, Filler)
@@ -73,7 +73,8 @@ const chartRef = ref<HTMLCanvasElement>()
 const selectedTimeRange = ref('1h')
 const timeRanges = ['15m', '1h', '24h', '7j']
 
-const xAxisLabels = ['13:30', '13:40', '13:50', '14:00', '14:10', '14:20', '14:30']
+// Use props labels for x-axis, fallback to default if not provided
+const xAxisLabels = computed(() => props.labels && props.labels.length > 0 ? props.labels : [])
 
 onMounted(() => {
   if (!chartRef.value) return
@@ -84,11 +85,11 @@ onMounted(() => {
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels: xAxisLabels,
+      labels: xAxisLabels.value,
       datasets: [
         {
           label: 'Consumption',
-          data: [150, 145, 160, 140, 135, 150, 160],
+          data: props.data,
           borderColor: '#135bec',
           backgroundColor: 'rgba(19, 91, 236, 0.1)',
           borderWidth: 3,
