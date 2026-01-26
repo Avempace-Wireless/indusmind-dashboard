@@ -139,7 +139,7 @@
             <div v-if="store.loading" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/30 rounded-lg">
               <div class="flex flex-col items-center gap-3">
                 <div class="animate-spin">
-                  <span class="material-symbols-outlined text-4xl text-blue-600 dark:text-blue-400">loading</span>
+
                 </div>
                 <p class="text-sm font-medium text-gray-600 dark:text-gray-300">{{ t('common.loading') }}</p>
               </div>

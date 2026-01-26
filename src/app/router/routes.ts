@@ -56,6 +56,15 @@ export const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/current',
+    name: 'current',
+    component: () => import('@/features/current/views/CurrentView.vue'),
+    meta: {
+      title: 'current.pageTitle',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/equipment',
     name: 'Equipment',
     component: () => import('@/features/meters/views/EquipmentView.vue'),

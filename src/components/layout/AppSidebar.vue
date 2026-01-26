@@ -238,6 +238,7 @@ import {
   LayoutDashboardIcon,
   LinearIcon,
   EnergyIcon,
+  CurrentIcon,
 } from '../../icons'
 import SidebarWidget from './SidebarWidget.vue'
 import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
@@ -262,6 +263,11 @@ const menuGroups = computed(() => [
         icon: EnergyIcon,
         name: t('sidebar.puissance'),
         path: '/puissance',
+      },
+      {
+        icon: CurrentIcon,
+        name: t('sidebar.current'),
+        path: '/current',
       },
       {
         icon: CalenderIcon,
