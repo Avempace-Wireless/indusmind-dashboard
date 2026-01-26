@@ -188,11 +188,11 @@
           </div>
 
           <!-- KPI Cards Grid -->
-          <div v-else-if="currentMeterId && metersCurrentData.length > 0" class="space-y-3">
+          <div v-else-if="currentMeterId && (currentKPIs || metersCurrentData.length > 0)" class="space-y-3">
             <!-- Instantaneous Current -->
             <CurrentKPICard
               :title="$t('current.instantaneous')"
-              :value="metersCurrentData[currentMeterIndex]?.current ?? null"
+              :value="isApiMode && currentKPIs ? currentKPIs.instantaneousCurrent : metersCurrentData[currentMeterIndex]?.current ?? null"
               :unit="$t('common.unit.ampere')"
               :meter-name="getMeterName(currentMeterId)"
               :meter-color="metersStore.getMeterColor(currentMeterId)"
@@ -201,7 +201,7 @@
             <!-- Last Hour Average -->
             <CurrentKPICard
               :title="$t('current.lastHourAvg')"
-              :value="getLastHourAvg(currentMeterIndex)"
+              :value="isApiMode && currentKPIs ? currentKPIs.lastHourAverage : getLastHourAvg(currentMeterIndex)"
               :unit="$t('common.unit.ampere')"
               :meter-name="getMeterName(currentMeterId)"
               :meter-color="metersStore.getMeterColor(currentMeterId)"
@@ -210,7 +210,7 @@
             <!-- Today Average -->
             <CurrentKPICard
               :title="$t('current.todayAvg')"
-              :value="getTodayAvg(currentMeterIndex)"
+              :value="isApiMode && currentKPIs ? currentKPIs.todayAverage : getTodayAvg(currentMeterIndex)"
               :unit="$t('common.unit.ampere')"
               :meter-name="getMeterName(currentMeterId)"
               :meter-color="metersStore.getMeterColor(currentMeterId)"
@@ -345,11 +345,34 @@
       <!-- Historical Data Table -->
       <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-          <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-            <span class="material-symbols-outlined text-indigo-500">history</span>
-            {{ $t('current.historicalTitle') }}
-          </h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('current.historicalDescription') }}</p>
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
+                <span class="material-symbols-outlined text-indigo-500">history</span>
+                {{ $t('current.historicalTitle') }}
+              </h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('current.historicalDescription') }}</p>
+            </div>
+            <!-- Statistics Summary -->
+            <div v-if="isApiMode && currentKPIData" class="grid grid-cols-2 gap-3">
+              <div class="text-center">
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Min</p>
+                <p class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ getTableStats.min.toFixed(2) }}</p>
+              </div>
+              <div class="text-center">
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Max</p>
+                <p class="text-lg font-bold text-red-600 dark:text-red-400">{{ getTableStats.max.toFixed(2) }}</p>
+              </div>
+              <div class="text-center">
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Avg</p>
+                <p class="text-lg font-bold text-green-600 dark:text-green-400">{{ getTableStats.avg.toFixed(2) }}</p>
+              </div>
+              <div class="text-center">
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Points</p>
+                <p class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ getTableStats.total }}</p>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="p-6">
           <div class="overflow-x-auto">
@@ -363,11 +386,11 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in historicalData.slice(0, 10)" :key="index" class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <tr v-for="(item, index) in getTableData.slice(0, 10)" :key="index" class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                   <td class="py-4 px-4 font-medium text-gray-900 dark:text-white">{{ item.timestamp }}</td>
-                  <td class="text-right py-4 px-4 font-bold text-blue-600 dark:text-blue-400"><span class="inline-block bg-blue-50 dark:bg-blue-900 px-3 py-1 rounded-lg" style="opacity: 0.3;">{{ item.current.toFixed(2) }}</span></td>
-                  <td class="text-right py-4 px-4 font-bold text-green-600 dark:text-green-400"><span class="inline-block bg-green-50 dark:bg-green-900 px-3 py-1 rounded-lg" style="opacity: 0.3;">{{ item.voltage }}</span></td>
-                  <td class="text-right py-4 px-4 font-bold text-orange-600 dark:text-orange-400"><span class="inline-block bg-orange-50 dark:bg-orange-900 px-3 py-1 rounded-lg" style="opacity: 0.3;">{{ item.power }}</span></td>
+                  <td class="text-right py-4 px-4 font-bold text-blue-600 dark:text-blue-400"><span class="inline-block bg-blue-50 dark:bg-blue-900 px-3 py-1 rounded-lg">{{ (typeof item.current === 'number' ? item.current : parseFloat(item.current as any)).toFixed(2) }}</span></td>
+                  <td class="text-right py-4 px-4 font-bold text-green-600 dark:text-green-400"><span class="inline-block bg-green-50 dark:bg-green-900 px-3 py-1 rounded-lg">{{ item.voltage }}</span></td>
+                  <td class="text-right py-4 px-4 font-bold text-orange-600 dark:text-orange-400"><span class="inline-block bg-orange-50 dark:bg-orange-900 px-3 py-1 rounded-lg">{{ typeof item.power === 'string' ? item.power : item.power.toFixed(2) }}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -399,12 +422,14 @@ import { useMetersStore } from '@/stores/useMetersStore'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import CurrentKPICard from '@/components/current/CurrentKPICard.vue'
-import { useCurrent, type CurrentData, type CurrentChartData } from '@/composables/current/useCurrent'
+import { useCurrent, type CurrentData, type CurrentChartData, type CurrentKPIData } from '@/composables/current/useCurrent'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
+import { useApiData } from '@/config/dataMode'
 import Chart from 'chart.js/auto'
 
 const { t } = useI18n()
 const metersStore = useMetersStore()
+const isApiMode = useApiData()
 
 // Use the same composable as other views for consistency
 const {
@@ -423,7 +448,10 @@ const selectedPeriod = ref<'hour' | 'day' | 'week' | 'month'>('day')
 const currentMeterIndex = ref(0)
 const isLoading = ref(false)
 
-const { getCurrentData, getChartData } = useCurrent()
+const { getCurrentData, getChartData, fetchCurrentKPIs } = useCurrent()
+
+// Store API KPI data per device UUID
+const currentKPIDataMap = ref<Map<string, CurrentKPIData>>(new Map())
 
 const periods = computed(() => [
   { value: 'hour' as const, label: t('current.periods.hour') },
@@ -438,6 +466,32 @@ const validSelectedMeterIds = computed(() =>
 )
 
 const currentMeterId = computed(() => validSelectedMeterIds.value[currentMeterIndex.value] || null)
+const currentDeviceUUID = computed(() => {
+  if (!currentMeterId.value) return null
+  const meter = metersStore.getMeterById(currentMeterId.value)
+  return meter?.deviceUUID || currentMeterId.value
+})
+
+// Current meter's KPI data from API (when in API mode)
+const currentKPIData = computed(() => {
+  if (!isApiMode || !currentDeviceUUID.value) return null
+  return currentKPIDataMap.value.get(currentDeviceUUID.value) || null
+})
+
+// Computed property to get KPI values - from API if available, else fallback to mock
+const currentKPIs = computed(() => {
+  if (isApiMode && currentKPIData.value) {
+    return {
+      instantaneousCurrent: currentKPIData.value.instantaneousCurrent ?? 0,
+      lastHourMin: currentKPIData.value.lastHourMin ?? 0,
+      lastHourAverage: currentKPIData.value.lastHourAverage ?? 0,
+      lastHourMax: currentKPIData.value.lastHourMax ?? 0,
+      todayAverage: currentKPIData.value.todayAverage ?? 0,
+    }
+  }
+  return null
+})
+
 const currentData = ref<CurrentData | null>(null)
 const metersCurrentData = ref<CurrentData[]>([])
 const historicalData = ref<any[]>([])
@@ -468,20 +522,23 @@ const getMeterBackgroundColor = (meterId: string) => {
   return color + '15'
 }
 
-// Helper functions to calculate last hour statistics
+// Helper functions to calculate last hour statistics (for mock data)
 const getLastHourMin = (meterIndex: number): number | null => {
+  if (isApiMode && currentKPIData.value) return currentKPIData.value.lastHourMin
   if (!historicalData.value || historicalData.value.length === 0) return null
   const values = historicalData.value.map(item => item.current)
   return Math.min(...values)
 }
 
 const getLastHourMax = (meterIndex: number): number | null => {
+  if (isApiMode && currentKPIData.value) return currentKPIData.value.lastHourMax
   if (!historicalData.value || historicalData.value.length === 0) return null
   const values = historicalData.value.map(item => item.current)
   return Math.max(...values)
 }
 
 const getLastHourAvg = (meterIndex: number): number | null => {
+  if (isApiMode && currentKPIData.value) return currentKPIData.value.lastHourAverage
   if (!historicalData.value || historicalData.value.length === 0) return null
   const values = historicalData.value.map(item => item.current)
   const sum = values.reduce((acc, val) => acc + val, 0)
@@ -489,8 +546,9 @@ const getLastHourAvg = (meterIndex: number): number | null => {
 }
 
 const getTodayAvg = (meterIndex: number): number | null => {
+  if (isApiMode && currentKPIData.value) return currentKPIData.value.todayAverage
   if (!historicalData.value || historicalData.value.length === 0) return null
-  // Calculate average for today's data (last 24 hours)
+  // Calculate average for today's data
   const values = historicalData.value.map(item => item.current)
   const sum = values.reduce((acc, val) => acc + val, 0)
   return sum / values.length
@@ -503,6 +561,56 @@ const getYesterdayAvg = (meterIndex: number): number | null => {
   if (!todayAvg) return null
   return todayAvg * 0.92 // Yesterday was 92% of today's average
 }
+
+// Get table data for the current period
+const getTableData = computed(() => {
+  if (!isApiMode || !currentKPIData.value) {
+    return historicalData.value
+  }
+
+  // Map API data to table format based on selected period
+  let dataPoints: Array<{ ts: number; value: number }> = []
+
+  switch (selectedPeriod.value) {
+    case 'hour':
+      dataPoints = currentKPIData.value.widgetData
+      break
+    case 'day':
+      dataPoints = currentKPIData.value.hourlyData
+      break
+    case 'week':
+      dataPoints = currentKPIData.value.dailyWeekData
+      break
+    case 'month':
+      dataPoints = currentKPIData.value.dailyMonthData
+      break
+    default:
+      dataPoints = currentKPIData.value.hourlyData
+  }
+
+  return dataPoints.map(p => ({
+    timestamp: new Date(p.ts).toLocaleString(),
+    current: p.value,
+    voltage: 230,
+    power: (p.value * 230 / 1000).toFixed(2)
+  }))
+})
+
+// Get statistics for the selected period
+const getTableStats = computed(() => {
+  const data = getTableData.value
+  if (!data || data.length === 0) {
+    return { min: 0, max: 0, avg: 0, total: 0 }
+  }
+
+  const values = data.map(d => d.current)
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+  const avg = values.reduce((a, b) => a + b, 0) / values.length
+  const total = values.length
+
+  return { min, max, avg, total }
+})
 
 const selectMeter = (index: number) => {
   currentMeterIndex.value = index
@@ -519,27 +627,49 @@ const loadCurrentData = async () => {
 
   isLoading.value = true
   try {
-    // Load data for all selected meters
-    const promises = validSelectedMeterIds.value.map(meterId => getCurrentData(meterId))
-    metersCurrentData.value = (await Promise.all(promises)).filter(Boolean) as CurrentData[]
+    if (isApiMode) {
+      // Fetch KPI data from API for all selected meters
+      console.log('[CurrentView] Loading API data for meters:', validSelectedMeterIds.value)
 
-    // Also keep current meter data for backward compatibility with other tabs
-    if (currentMeterId.value) {
-      const data = await getCurrentData(currentMeterId.value)
-      currentData.value = data
+      const deviceUUIDs = validSelectedMeterIds.value
+        .map(meterId => {
+          const meter = metersStore.getMeterById(meterId)
+          return meter?.deviceUUID || meterId
+        })
+        .filter(Boolean)
+
+      // Fetch KPI data for all selected meters in parallel
+      const kpiResults = await Promise.all(
+        deviceUUIDs.map(deviceUUID => fetchCurrentKPIs(deviceUUID, { useCache: false }))
+      )
+
+      // Store KPI data in map
+      deviceUUIDs.forEach((deviceUUID, index) => {
+        if (kpiResults[index]) {
+          currentKPIDataMap.value.set(deviceUUID, kpiResults[index]!)
+          console.log('[CurrentView] KPI data loaded for device:', deviceUUID, kpiResults[index])
+        }
+      })
+    } else {
+      // Generate mock data
+      metersCurrentData.value = (await Promise.all(
+        validSelectedMeterIds.value.map(meterId => getCurrentData(meterId))
+      )).filter(Boolean) as CurrentData[]
+
+      // Generate historical data
+      historicalData.value = Array.from({ length: 24 }).map((_, i) => {
+        const current = 20 + Math.random() * 30
+        const voltage = 230
+        return {
+          timestamp: `${String(i).padStart(2, '0')}:00`,
+          current,
+          voltage,
+          power: (current * voltage / 1000).toFixed(2)
+        }
+      })
     }
-
-    // Generate historical data
-    historicalData.value = Array.from({ length: 24 }).map((_, i) => {
-      const current = 20 + Math.random() * 30
-      const voltage = 230
-      return {
-        timestamp: `${String(i).padStart(2, '0')}:00`,
-        current,
-        voltage,
-        power: (current * voltage / 1000).toFixed(2)
-      }
-    })
+  } catch (err) {
+    console.error('[CurrentView] Error loading current data:', err)
   } finally {
     isLoading.value = false
   }
@@ -560,218 +690,252 @@ const initCharts = async () => {
   // Wait for canvas elements to be mounted
   await nextTick()
 
-  // Overview Chart - Comparative view with all selected meters
-  const overviewCanvas = document.getElementById('overviewChart') as HTMLCanvasElement
-  if (overviewCanvas) {
-    const ctx = overviewCanvas.getContext('2d')
-    if (ctx) {
-      if (overviewChart) overviewChart.destroy()
+  try {
+    // Overview Chart - Comparative view with all selected meters
+    const overviewCanvas = document.getElementById('overviewChart') as HTMLCanvasElement
+    if (overviewCanvas) {
+      const ctx = overviewCanvas.getContext('2d')
+      if (ctx) {
+        if (overviewChart) overviewChart.destroy()
 
-      // Get chart data for all selected meters
-      const allChartsData = await Promise.all(
-        validSelectedMeterIds.value.map(meterId => getChartData(meterId, 24))
-      )
+        let chartDataArray: CurrentChartData[] = []
 
-      // Build datasets for all meters
-      const datasets = validSelectedMeterIds.value.map((meterId, index) => {
-        const chartData = allChartsData[index]
-        if (!chartData) return null
+        if (isApiMode) {
+          // Use API data for overview
+          const deviceUUIDs = validSelectedMeterIds.value
+            .map(meterId => {
+              const meter = metersStore.getMeterById(meterId)
+              return meter?.deviceUUID || meterId
+            })
+            .filter(Boolean)
 
-        return {
-          label: getMeterName(meterId),
-          data: chartData.datasets[0].data,
-          borderColor: metersStore.getMeterColor(meterId),
-          backgroundColor: `${metersStore.getMeterColor(meterId)}20`,
-          borderWidth: 2,
-          tension: 0.4,
-          fill: false,
-          spanGaps: false,
-          pointRadius: 0,
-          pointHoverRadius: 0
+          chartDataArray = (await Promise.all(
+            deviceUUIDs.map(deviceUUID => getChartData(deviceUUID, 'day'))
+          )).filter(Boolean) as CurrentChartData[]
+        } else {
+          // Use mock data
+          chartDataArray = (await Promise.all(
+            validSelectedMeterIds.value.map(meterId => getChartData(meterId, 'day'))
+          )).filter(Boolean) as CurrentChartData[]
         }
-      }).filter(Boolean)
 
-      if (datasets.length > 0 && allChartsData[0]) {
-        overviewChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: allChartsData[0].labels,
-            datasets: datasets as any
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              tooltip: {
-                enabled: false
-              },
-              legend: {
-                position: 'top' as const,
-                labels: {
-                  color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151',
-                  padding: 15,
-                  font: { size: 12, weight: 500 as any }
-                }
-              },
-              filler: {
-                propagate: true
-              }
+        // Build datasets for all meters
+        const datasets = validSelectedMeterIds.value.map((meterId, index) => {
+          const chartData = chartDataArray[index]
+          if (!chartData) return null
+
+          return {
+            label: getMeterName(meterId),
+            data: chartData.datasets[0].data,
+            borderColor: metersStore.getMeterColor(meterId),
+            backgroundColor: `${metersStore.getMeterColor(meterId)}20`,
+            borderWidth: 2,
+            tension: 0.4,
+            fill: false,
+            spanGaps: false,
+            pointRadius: 0,
+            pointHoverRadius: 0
+          }
+        }).filter(Boolean)
+
+        if (datasets.length > 0 && chartDataArray[0]) {
+          overviewChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: chartDataArray[0].labels,
+              datasets: datasets as any
             },
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  display: true,
-                  color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
-                  font: { size: 11 }
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                tooltip: {
+                  enabled: true
                 },
-                grid: {
-                  color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#1e293b' : '#e5e7eb'
+                legend: {
+                  position: 'top' as const,
+                  labels: {
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151',
+                    padding: 15,
+                    font: { size: 12, weight: 500 as any }
+                  }
+                },
+                filler: {
+                  propagate: true
                 }
               },
-              x: {
-                ticks: {
-                  display: true,
-                  color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
-                  font: { size: 11 }
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    display: true,
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                    font: { size: 11 }
+                  },
+                  grid: {
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#1e293b' : '#e5e7eb'
+                  }
                 },
-                grid: {
-                  color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#1e293b' : '#e5e7eb'
+                x: {
+                  ticks: {
+                    display: true,
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                    font: { size: 11 }
+                  },
+                  grid: {
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#1e293b' : '#e5e7eb'
+                  }
                 }
               }
             }
-          }
-        })
+          })
+        }
       }
     }
-  }
 
-  // 24H Chart - Single meter view for other tabs
-  if (!currentMeterId.value) return
+    // 24H Chart - Single meter view
+    if (!currentMeterId.value) return
 
-  const chartData = await getChartData(currentMeterId.value, 24)
-  if (!chartData) return
+    let currentPeriod: 'hour' | 'day' | 'week' | 'month' = 'day'
+    let chart24hData: CurrentChartData | null = null
 
-  const meterColor = metersStore.getMeterColor(currentMeterId.value)
-
-  const chart24hCanvas = document.getElementById('chart24h') as HTMLCanvasElement
-  if (chart24hCanvas) {
-    const ctx = chart24hCanvas.getContext('2d')
-    if (ctx) {
-      if (chart24h) chart24h.destroy()
-      chart24h = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: chartData.labels,
-          datasets: [
-            {
-              label: t('current.current'),
-              data: chartData.datasets[0].data,
-              backgroundColor: meterColor,
-              borderColor: meterColor,
-              borderWidth: 1
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            tooltip: {
-              enabled: false
-            },
-            legend: {
-              labels: {
-                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151'
-              }
-            }
-          },
-          scales: {
-            x: {
-              stacked: false,
-              ticks: {
-                display: true,
-                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
-                font: { size: 11 }
-              }
-            },
-            y: {
-              stacked: false,
-              ticks: {
-                display: true,
-                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
-                font: { size: 11 }
-              }
-            }
-          }
-        }
-      })
+    if (isApiMode && currentDeviceUUID.value) {
+      chart24hData = await getChartData(currentDeviceUUID.value, currentPeriod)
+    } else if (!isApiMode && currentMeterId.value) {
+      chart24hData = await getChartData(currentMeterId.value, currentPeriod)
     }
-  }
 
-  // Daily Chart
-  const chartDailyCanvas = document.getElementById('chartDaily') as HTMLCanvasElement
-  if (chartDailyCanvas) {
-    const ctx = chartDailyCanvas.getContext('2d')
-    if (ctx) {
-      if (chartDaily) chartDaily.destroy()
-      const dailyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-      const dailyData = [35, 38, 32, 40, 42, 38, 36]
+    if (chart24hData) {
+      const chart24hCanvas = document.getElementById('chart24h') as HTMLCanvasElement
+      if (chart24hCanvas) {
+        const ctx = chart24hCanvas.getContext('2d')
+        if (ctx) {
+          if (chart24h) chart24h.destroy()
 
-      chartDaily = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: dailyLabels,
-          datasets: [
-            {
-              label: t('current.average'),
-              data: dailyData,
-              borderColor: meterColor,
-              backgroundColor: `${meterColor}20`,
-              borderWidth: 3,
-              tension: 0.4,
-              fill: true,
-              pointBackgroundColor: meterColor,
-              pointBorderColor: '#fff',
-              pointBorderWidth: 0,
-              pointRadius: 0,
-              pointHoverRadius: 0
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            tooltip: {
-              enabled: false
+          chart24h = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: chart24hData.labels,
+              datasets: [
+                {
+                  label: t('current.current'),
+                  data: chart24hData.datasets[0].data,
+                  backgroundColor: metersStore.getMeterColor(currentMeterId.value),
+                  borderColor: metersStore.getMeterColor(currentMeterId.value),
+                  borderWidth: 1
+                }
+              ]
             },
-            legend: {
-              labels: {
-                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151'
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                tooltip: {
+                  enabled: true
+                },
+                legend: {
+                  labels: {
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151'
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  stacked: false,
+                  ticks: {
+                    display: true,
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                    font: { size: 11 }
+                  }
+                },
+                y: {
+                  stacked: false,
+                  ticks: {
+                    display: true,
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                    font: { size: 11 }
+                  }
+                }
               }
             }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                display: true,
-                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
-                font: { size: 11 }
-              }
-            },
-            x: {
-              ticks: {
-                display: true,
-                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
-                font: { size: 11 }
-              }
-            }
-          }
+          })
         }
-      })
+      }
     }
+
+    // Daily/Period Chart
+    let dailyPeriodData: CurrentChartData | null = null
+    if (isApiMode && currentDeviceUUID.value) {
+      dailyPeriodData = await getChartData(currentDeviceUUID.value, selectedPeriod.value)
+    } else if (!isApiMode && currentMeterId.value) {
+      dailyPeriodData = await getChartData(currentMeterId.value, selectedPeriod.value)
+    }
+
+    if (dailyPeriodData) {
+      const chartDailyCanvas = document.getElementById('chartDaily') as HTMLCanvasElement
+      if (chartDailyCanvas) {
+        const ctx = chartDailyCanvas.getContext('2d')
+        if (ctx) {
+          if (chartDaily) chartDaily.destroy()
+
+          chartDaily = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: dailyPeriodData.labels,
+              datasets: [
+                {
+                  label: t('current.average'),
+                  data: dailyPeriodData.datasets[0].data,
+                  borderColor: metersStore.getMeterColor(currentMeterId.value),
+                  backgroundColor: `${metersStore.getMeterColor(currentMeterId.value)}20`,
+                  borderWidth: 3,
+                  tension: 0.4,
+                  fill: true,
+                  pointBackgroundColor: metersStore.getMeterColor(currentMeterId.value),
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 0,
+                  pointRadius: 4,
+                  pointHoverRadius: 6
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                tooltip: {
+                  enabled: true
+                },
+                legend: {
+                  labels: {
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151'
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    display: true,
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                    font: { size: 11 }
+                  }
+                },
+                x: {
+                  ticks: {
+                    display: true,
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                    font: { size: 11 }
+                  }
+                }
+              }
+            }
+          })
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[CurrentView] Error initializing charts:', err)
   }
 }
 

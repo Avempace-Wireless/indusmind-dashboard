@@ -21,6 +21,30 @@ export interface CurrentChartData {
   }>
 }
 
+// API Response types
+export interface CurrentKPIData {
+  instantaneousCurrent: number | null
+  lastHourMin: number | null
+  lastHourAverage: number | null
+  lastHourMax: number | null
+  todayAverage: number | null
+  hourlyData: Array<{ ts: number; value: number }>
+  widgetData: Array<{ ts: number; value: number }>
+  dailyWeekData: Array<{ ts: number; value: number }>
+  dailyMonthData: Array<{ ts: number; value: number }>
+}
+
+export interface CurrentKPIResponse {
+  success: boolean
+  data: CurrentKPIData
+  meta: {
+    deviceUUID: string
+    deviceName: string
+    requestedAt: number
+    timezone?: string
+  }
+}
+
 /**
  * Composable for managing current data
  * Handles both API and mock data modes
@@ -30,7 +54,7 @@ export function useCurrent() {
 
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  const currentDataCache = ref<Map<string, CurrentData>>(new Map())
+  const currentDataCache = ref<Map<string, CurrentKPIData>>(new Map())
 
   /**
    * Generate mock current data
@@ -52,37 +76,45 @@ export function useCurrent() {
   }
 
   /**
-   * Fetch current data for a specific meter
+   * Fetch current KPI data from API
    */
-  async function getCurrentData(meterId: string): Promise<CurrentData | null> {
+  async function fetchCurrentKPIs(deviceUUID: string, options?: { useCache?: boolean }): Promise<CurrentKPIData | null> {
     try {
-      isLoading.value = true
-      error.value = null
-
-      // Check cache first
-      if (currentDataCache.value.has(meterId)) {
-        const cachedData = currentDataCache.value.get(meterId)
-        if (cachedData && Date.now() - cachedData.timestamp < 5000) { // 5-second cache
+      // Check cache first if enabled
+      if (options?.useCache !== false && currentDataCache.value.has(deviceUUID)) {
+        const cachedData = currentDataCache.value.get(deviceUUID)
+        if (cachedData) {
+          console.log('[useCurrent] Using cached data for device:', deviceUUID)
           return cachedData
         }
       }
 
-      let data: CurrentData
+      isLoading.value = true
+      error.value = null
 
-      if (isApiModeEnabled) {
-        // TODO: Implement API call
-        // const response = await fetch(`/api/meters/${meterId}/current`)
-        // data = await response.json()
-        data = generateMockCurrentData(meterId)
-      } else {
-        data = generateMockCurrentData(meterId)
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+      const url = `${baseUrl}/api/telemetry/${deviceUUID}/current`
+
+      console.log('[useCurrent] Fetching current data from:', url)
+
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch current data: ${response.statusText}`)
       }
 
-      currentDataCache.value.set(meterId, data)
+      const json = await response.json()
+      if (!json.success || !json.data) {
+        throw new Error('Invalid API response structure')
+      }
+
+      const data = json.data as CurrentKPIData
+      currentDataCache.value.set(deviceUUID, data)
+      console.log('[useCurrent] Current KPI data fetched:', data)
+
       return data
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch current data'
-      console.error('[useCurrent] Error:', err)
+      console.error('[useCurrent] Error fetching current KPIs:', err)
       return null
     } finally {
       isLoading.value = false
@@ -90,31 +122,108 @@ export function useCurrent() {
   }
 
   /**
+   * Get current KPI data - API or mock
+   */
+  async function getCurrentData(deviceUUID: string): Promise<CurrentData | null> {
+    try {
+      if (isApiModeEnabled) {
+        const kpiData = await fetchCurrentKPIs(deviceUUID)
+        if (!kpiData) return null
+
+        // Transform API response to CurrentData format
+        return {
+          meterId: deviceUUID,
+          timestamp: Date.now(),
+          current: kpiData.instantaneousCurrent ?? 0,
+          voltage: 230,
+          power: ((kpiData.instantaneousCurrent ?? 0) * 230) / 1000,
+          max: kpiData.lastHourMax ?? 0,
+          min: kpiData.lastHourMin ?? 0,
+        }
+      } else {
+        return generateMockCurrentData(deviceUUID)
+      }
+    } catch (err) {
+      console.error('[useCurrent] Error in getCurrentData:', err)
+      return null
+    }
+  }
+
+  /**
    * Fetch current chart data for historical display
    */
-  async function getChartData(meterId: string, hours: number = 24): Promise<CurrentChartData | null> {
+  async function getChartData(deviceUUID: string, period: 'hour' | 'day' | 'week' | 'month' = 'day'): Promise<CurrentChartData | null> {
     try {
-      isLoading.value = true
+      if (!isApiModeEnabled) {
+        // Generate mock chart data
+        const labels: string[] = []
+        const currentData: number[] = []
 
-      const labels: string[] = []
-      const currentData: number[] = []
+        // Generate hourly data for the past 24 hours
+        const now = new Date()
+        for (let i = 23; i >= 0; i--) {
+          const time = new Date(now.getTime() - i * 3600000)
+          labels.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }))
 
-      // Generate hourly data for the past N hours
-      const now = new Date()
-      for (let i = hours - 1; i >= 0; i--) {
-        const time = new Date(now.getTime() - i * 3600000)
-        labels.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }))
+          const current = Math.random() * 50 + 10
+          currentData.push(Math.round(current * 100) / 100)
+        }
 
-        const current = Math.random() * 50 + 10
-        currentData.push(Math.round(current * 100) / 100)
+        return {
+          labels,
+          datasets: [
+            {
+              label: 'Current (A)',
+              data: currentData,
+              borderColor: '#3B82F6',
+              backgroundColor: '#3B82F620',
+            },
+          ],
+        }
       }
+
+      // API mode: fetch from current KPI data
+      const kpiData = await fetchCurrentKPIs(deviceUUID)
+      if (!kpiData) return null
+
+      let dataPoints: Array<{ ts: number; value: number }> = []
+
+      switch (period) {
+        case 'hour':
+          dataPoints = kpiData.widgetData
+          break
+        case 'day':
+          dataPoints = kpiData.hourlyData
+          break
+        case 'week':
+          dataPoints = kpiData.dailyWeekData
+          break
+        case 'month':
+          dataPoints = kpiData.dailyMonthData
+          break
+        default:
+          dataPoints = kpiData.hourlyData
+      }
+
+      const labels = dataPoints.map(p => {
+        const date = new Date(p.ts)
+        if (period === 'hour') {
+          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        } else if (period === 'day') {
+          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        } else {
+          return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+        }
+      })
+
+      const currentDataValues = dataPoints.map(p => p.value)
 
       return {
         labels,
         datasets: [
           {
             label: 'Current (A)',
-            data: currentData,
+            data: currentDataValues,
             borderColor: '#3B82F6',
             backgroundColor: '#3B82F620',
           },
@@ -124,21 +233,19 @@ export function useCurrent() {
       error.value = err instanceof Error ? err.message : 'Failed to fetch chart data'
       console.error('[useCurrent] Error fetching chart:', err)
       return null
-    } finally {
-      isLoading.value = false
     }
   }
 
   /**
    * Fetch current data for multiple meters
    */
-  async function fetchCurrentData(meterIds: string[]): Promise<Map<string, CurrentData>> {
-    const results = new Map<string, CurrentData>()
+  async function fetchCurrentData(deviceUUIDs: string[]): Promise<Map<string, CurrentKPIData>> {
+    const results = new Map<string, CurrentKPIData>()
 
-    for (const meterId of meterIds) {
-      const data = await getCurrentData(meterId)
+    for (const deviceUUID of deviceUUIDs) {
+      const data = await fetchCurrentKPIs(deviceUUID)
       if (data) {
-        results.set(meterId, data)
+        results.set(deviceUUID, data)
       }
     }
 
@@ -157,6 +264,7 @@ export function useCurrent() {
     error,
     getCurrentData,
     getChartData,
+    fetchCurrentKPIs,
     fetchCurrentData,
     clearCache,
   }
