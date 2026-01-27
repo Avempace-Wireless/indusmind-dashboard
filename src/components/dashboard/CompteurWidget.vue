@@ -725,7 +725,9 @@ function formatNumericValue(value: number | null | undefined): string {
     return '0'
   }
   // Return just the number with appropriate decimal places
-  return value.toFixed(keyConfig.value.decimals || 1)
+  const config = keyConfig.value
+  const decimals = (config as any)?.decimals || 1
+  return value.toFixed(decimals)
 }
 
 /**
