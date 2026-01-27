@@ -118,6 +118,9 @@ onMounted(() => {
           padding: 8,
           titleColor: '#ffffff',
           bodyColor: '#ffffff'
+        },
+        datalabels: {
+          display: false
         }
       },
       scales: {

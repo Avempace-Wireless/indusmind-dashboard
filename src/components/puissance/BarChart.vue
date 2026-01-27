@@ -124,6 +124,9 @@ const initChart = () => {
           },
         },
       },
+      datalabels: {
+        display: false
+      },
     },
     scales: {
       y: {

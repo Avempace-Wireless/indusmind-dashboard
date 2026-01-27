@@ -137,6 +137,9 @@ const initChart = () => {
             return `${context.dataset.label}: ${formatted} kWh`
           }
         }
+      },
+      datalabels: {
+        display: false
       }
     }
   }
