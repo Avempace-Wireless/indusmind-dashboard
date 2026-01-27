@@ -28,10 +28,11 @@ export interface CurrentKPIData {
   lastHourAverage: number | null
   lastHourMax: number | null
   todayAverage: number | null
-  hourlyData: Array<{ ts: number; value: number }>
-  widgetData: Array<{ ts: number; value: number }>
-  dailyWeekData: Array<{ ts: number; value: number }>
-  dailyMonthData: Array<{ ts: number; value: number }>
+  hourlyData: Array<{ ts: number; date: string; value: number }>
+  widgetData: Array<{ ts: number; date: string; value: number }>
+  dailyWeekData: Array<{ ts: number; date: string; value: number }>
+  dailyMonthData: Array<{ ts: number; date: string; value: number }>
+  dailyYearData: Array<{ ts: number; date: string; month: number; value: number }>
 }
 
 export interface CurrentKPIResponse {
@@ -152,7 +153,7 @@ export function useCurrent() {
   /**
    * Fetch current chart data for historical display
    */
-  async function getChartData(deviceUUID: string, period: 'hour' | 'day' | 'week' | 'month' = 'day'): Promise<CurrentChartData | null> {
+  async function getChartData(deviceUUID: string, period: 'day' | 'week' | 'month' | 'year' = 'day'): Promise<CurrentChartData | null> {
     try {
       if (!isApiModeEnabled) {
         // Generate mock chart data
@@ -189,17 +190,21 @@ export function useCurrent() {
       let dataPoints: Array<{ ts: number; value: number }> = []
 
       switch (period) {
-        case 'hour':
-          dataPoints = kpiData.widgetData
-          break
         case 'day':
           dataPoints = kpiData.hourlyData
+          console.log('[useCurrent] Day period - dataPoints:', dataPoints?.length)
           break
         case 'week':
           dataPoints = kpiData.dailyWeekData
+          console.log('[useCurrent] Week period - dataPoints:', dataPoints?.length)
           break
         case 'month':
           dataPoints = kpiData.dailyMonthData
+          console.log('[useCurrent] Month period - dataPoints:', dataPoints?.length)
+          break
+        case 'year':
+          dataPoints = kpiData.dailyYearData
+          console.log('[useCurrent] Year period - dataPoints:', dataPoints?.length)
           break
         default:
           dataPoints = kpiData.hourlyData
@@ -207,18 +212,43 @@ export function useCurrent() {
 
       const labels = dataPoints.map(p => {
         const date = new Date(p.ts)
-        if (period === 'hour') {
-          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-        } else if (period === 'day') {
-          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        if (period === 'day') {
+          // Return HH:00 format for daily (aggregated by hour)
+          const hours = String(date.getHours()).padStart(2, '0')
+          return `${hours}:00`
+        } else if (period === 'week') {
+          // Return full date (day/month/year) for week data with day-of-week index for sorting
+          const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1 // Convert to Mon=0, Sun=6
+          const day = String(date.getDate()).padStart(2, '0')
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const year = date.getFullYear()
+          return `${dayIndex}:${day}/${month}/${year}` // Format: dayIndex:DD/MM/YYYY
+        } else if (period === 'month') {
+          // Return DD/MM/YYYY format for month (backend already returns date property in this format)
+          // Use the date property from backend if available, otherwise format from timestamp
+          if ('date' in p && typeof p.date === 'string') {
+            return p.date // Backend returns "DD/MM/YYYY"
+          }
+          const day = String(date.getDate()).padStart(2, '0')
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const year = date.getFullYear()
+          return `${day}/${month}/${year}`
+        } else if (period === 'year') {
+          // Return full date (month/year) with month number for sorting
+          const month = String(date.getMonth() + 1).padStart(2, '0')
+          const year = date.getFullYear()
+          const monthName = date.toLocaleDateString('en-US', { month: 'short' })
+          return `${month}:${monthName}/${year}` // Format: MM:MonthName/YYYY
         } else {
           return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
         }
       })
 
+      console.log('[useCurrent] Generated labels:', labels?.length, 'first few:', labels?.slice(0, 3))
+
       const currentDataValues = dataPoints.map(p => p.value)
 
-      return {
+      const result = {
         labels,
         datasets: [
           {
@@ -229,6 +259,14 @@ export function useCurrent() {
           },
         ],
       }
+
+      console.log('[useCurrent] Returning chart data:', {
+        labelsCount: result.labels.length,
+        dataCount: result.datasets[0].data.length,
+        first3Labels: result.labels.slice(0, 3)
+      })
+
+      return result
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch chart data'
       console.error('[useCurrent] Error fetching chart:', err)

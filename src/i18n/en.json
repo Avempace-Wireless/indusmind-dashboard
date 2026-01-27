@@ -786,22 +786,31 @@
     "avg": "Avg",
     "max": "Max",
     "tabs": {
-      "overview": "Aperçu",
-      "charts": "Graphique",
+      "overview": "Overview",
+      "charts": "Charts",
       "tables": "Tables"
     },
+    "time": "Time",
+    "date": "Date",
+    "month": "Month",
+    "dayMonthYear": "Day Month Year",
     "periods": {
       "hour": "Hour",
       "day": "Day",
       "week": "Week",
-      "month": "Month"
+      "month": "Month",
+      "year": "Year"
     },
     "chartTitle": "Current Trend – 24 Hours",
     "chartDescription": "Real-time current consumption trends for the selected period",
-    "chart24h": "Last 24 Hours Current",
-    "chart24hDescription": "Current values for all three phases over the last 24 hours",
-    "chartDaily": "Daily Average Current",
-    "chartDailyDescription": "Average current values for each day of the week",
+    "chart24h": "Hourly Current (24 Hours)",
+    "chart24hDescription": "Average hourly current data for the last 24 hours",
+    "chartDaily": "Daily Current for the Month",
+    "chartDailyDescription": "Average daily current data for the current month",
+    "chartWeekly": "Weekly Current",
+    "chartWeeklyDescription": "Average daily current data for the last 7 days",
+    "chartYearly": "Yearly Current",
+    "chartYearlyDescription": "Average monthly current data for the year",
     "chartPhases": "Current values for all three phases over the last 24 hours",
     "chartAverages": "Average current values for each day of the week",
     "chartPlaceholder": "Chart coming soon",
@@ -817,6 +826,27 @@
     "noData": {
       "title": "No Current Data Available",
       "description": "Select at least one meter to view current monitoring data"
+    },
+    "peak": "Peak",
+    "minimum": "Minimum",
+    "total": "Total",
+    "chartTitles": {
+      "hour": "Hourly Current - {meter}",
+      "day": "Daily Current - {meter}",
+      "week": "Weekly Current - {meter}",
+      "month": "Monthly Current - {meter}",
+      "year": "Yearly Current - {meter}"
+    },
+    "subtitles": {
+      "hour": "Detailed hourly current analysis",
+      "day": "Detailed daily current analysis",
+      "week": "Detailed weekly current analysis",
+      "month": "Detailed monthly current analysis",
+      "year": "Detailed yearly current analysis"
+    },
+    "rangeSlider": {
+      "start": "Start",
+      "end": "End"
     }
   }
 }

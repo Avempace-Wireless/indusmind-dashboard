@@ -65,7 +65,7 @@ export async function fetchDeviceTelemetry(
   if (params.limit) queryParams.set('limit', params.limit.toString())
   if (params.useStrictDataTypes) queryParams.set('useStrictDataTypes', 'true')
 
-  const url = `${API_BASE_URL}/telemetry/${deviceUUID}/timeseries?${queryParams.toString()}`
+  const url = `${API_BASE_URL}/api/telemetry/${deviceUUID}/timeseries?${queryParams.toString()}`
 
   try {
     const response = await fetch(url, {
