@@ -12,6 +12,7 @@
     "export": "Exporter",
     "import": "Importer",
     "loading": "Chargement...",
+    "wait": "Attendre",
     "noData": "Aucune donnée disponible",
     "noDataAvailable": "Aucune donnée disponible du système de suivi énergétique",
     "retry": "Réessayer",    "retrying": "Nouvelle tentative...",    "meterData": "données du compteur",

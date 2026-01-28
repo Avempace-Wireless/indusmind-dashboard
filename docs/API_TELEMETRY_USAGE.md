@@ -666,11 +666,100 @@ VITE_API_TIMEOUT=30000             # API timeout in ms
 
 ---
 
+## Temperature Sensor Telemetry Structure
+
+### Overview
+Temperature sensors (T_Sensor) use the following telemetry keys for real-time monitoring:
+
+### Standard Telemetry Keys
+
+| Key | Type | Description | Example |
+|-----|------|-------------|---------|
+| `Temperature` | number | Current temperature reading in °C | `51.1` |
+| `Humidity` | number | Current humidity percentage | `2.5` |
+| `DewPoint` | number | Dew point temperature in °C | `57.6` |
+| `RawSht3xData` | JSON | Raw sensor data object | `{"Temperature":51.1,"Humidity":2.5,"DewPoint":57.6}` |
+| `Time` | ISO 8601 | Last update timestamp | `2026-01-28T08:46:49.613Z` |
+
+### Additional Metadata Keys (from ThingsBoard)
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `active` | boolean | Whether sensor is actively reporting |
+| `label` | string | Display label for sensor (e.g., "Zone 1") |
+| `powerStatus` | boolean | Power supply status |
+| `displayName` | string | UI display name |
+| `hideAutoMode` | boolean | Hide auto mode toggle in UI |
+| `delay` | number | Data fetch delay in milliseconds |
+
+### Example Telemetry Response
+
+```json
+{
+  "Temperature": [
+    {
+      "ts": 1674906409613,
+      "value": "51.1"
+    }
+  ],
+  "Humidity": [
+    {
+      "ts": 1674906409613,
+      "value": "2.5"
+    }
+  ],
+  "DewPoint": [
+    {
+      "ts": 1674906409613,
+      "value": "57.6"
+    }
+  ],
+  "RawSht3xData": [
+    {
+      "ts": 1674906409613,
+      "value": "{\"Temperature\":51.1,\"Humidity\":2.5,\"DewPoint\":57.6}"
+    }
+  ],
+  "Time": [
+    {
+      "ts": 1674906409613,
+      "value": "2026-01-28T08:46:49.613Z"
+    }
+  ]
+}
+```
+
+### Usage in Thermal Management View
+
+**Endpoint:** `GET /api/devices/{deviceId}/telemetry`
+
+**Parameters:**
+```typescript
+{
+  keys: ['Temperature', 'Humidity', 'DewPoint', 'RawSht3xData'],
+  startTs: timestamp,
+  endTs: timestamp,
+  interval: 3600000,  // 1 hour
+  agg: 'AVG',
+  limit: 168  // 7 days of hourly data
+}
+```
+
+**Used by:**
+- Temperature reading display
+- Historical temperature charts (line/bar)
+- Min/Max temperature tracking
+- Humidity and dew point calculations
+
+---
+
 ## Related Files
 
 - **Composable:** `src/composables/useTelemetry.ts`
 - **Configuration:** `src/config/dataMode.ts`
 - **Dashboard:** `src/features/dashboard/views/DashboardView.vue`
+- **Thermal Management:** `src/features/thermal-management/views/ThermalManagementView.vue`
+- **Thermal Store:** `src/features/thermal-management/store/useSensorsStore.ts`
 - **Widget:** `src/components/dashboard/CompteurWidget.vue`
 - **Chart:** `src/components/dashboard/UnifiedChart.vue`
 

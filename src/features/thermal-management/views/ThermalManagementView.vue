@@ -16,6 +16,44 @@
 
         </div>
 
+        <!-- Error Banner (Thermal API) -->
+        <div v-if="thermalError" class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-900/20">
+          <div class="flex items-start justify-between">
+            <div class="flex items-start gap-3">
+              <svg class="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              </svg>
+              <div>
+                <h3 class="text-sm font-semibold text-red-800 dark:text-red-200">Thermal API Error</h3>
+                <p class="mt-1 text-sm text-red-700 dark:text-red-300">{{ thermalError }}</p>
+              </div>
+            </div>
+            <button
+              @click="thermalError = null"
+              class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+            >
+              <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+              </svg>
+            </button>
+          </div>
+          <div v-if="dataMode === 'api'" class="mt-3">
+            <button
+              @click="refreshThermalData"
+              :disabled="isFetchingThermal"
+              class="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 dark:bg-red-700 dark:hover:bg-red-600"
+            >
+              <svg v-if="isFetchingThermal" class="h-4 w-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+              </svg>
+              <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              {{ isFetchingThermal ? 'Refreshing...' : 'Retry' }}
+            </button>
+          </div>
+        </div>
+
         <!-- Sensor Selector Modal -->
         <SensorSelector
           :is-open="showSensorSelector"
@@ -24,61 +62,61 @@
         ></SensorSelector>
 
         <!-- Status Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
           <!-- Active Zones -->
-          <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-indigo-100 text-sm font-semibold uppercase tracking-wide">{{ t('thermal.status.active') }}</div>
-              <div class="bg-white/20 rounded-full p-2">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+            <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+              <div class="text-indigo-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.active') }}</div>
+              <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
+                <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
                 </svg>
               </div>
             </div>
-            <div class="text-4xl font-bold">{{ statusActiveZones }}<span class="text-lg">/{{ displayedZones.length }}</span></div>
-            <div class="text-indigo-100 text-sm mt-1">{{ t('thermal.status.operational') }}</div>
+            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusActiveZones }}<span class="text-sm sm:text-base lg:text-lg">/{{ thermalSummary?.totalSensors ?? displayedZones.length }}</span></div>
+            <div class="text-indigo-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.operational') }}</div>
           </div>
 
           <!-- Average Temperature -->
-          <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-green-100 text-sm font-semibold uppercase tracking-wide">{{ t('thermal.status.avgTemp') }}</div>
-              <div class="bg-white/20 rounded-full p-2">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+            <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+              <div class="text-green-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.avgTemp') }}</div>
+              <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
+                <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
                 </svg>
               </div>
             </div>
-            <div class="text-4xl font-bold">{{ statusAvgTemp }}°C</div>
-            <div class="text-green-100 text-sm mt-1">{{ t('thermal.status.currentAverage') }}</div>
+            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusAvgTemp }}°C</div>
+            <div class="text-green-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.currentAverage') }}</div>
           </div>
 
           <!-- Temperature Range -->
-          <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-amber-100 text-sm font-semibold uppercase tracking-wide">{{ t('thermal.status.tempRange') }}</div>
-              <div class="bg-white/20 rounded-full p-2">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+            <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+              <div class="text-amber-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.tempRange') }}</div>
+              <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
+                <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
                 </svg>
               </div>
             </div>
-            <div class="text-4xl font-bold">{{ statusTempRange.min }}—{{ statusTempRange.max }}°C</div>
-            <div class="text-amber-100 text-sm mt-1">{{ t('thermal.status.minMax') }}</div>
+            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusTempRange.min }}—{{ statusTempRange.max }}°C</div>
+            <div class="text-amber-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.minMax') }}</div>
           </div>
 
           <!-- System Health -->
-          <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="flex items-center justify-between mb-2">
-              <div class="text-purple-100 text-sm font-semibold uppercase tracking-wide">{{ t('thermal.status.systemHealth') }}</div>
-              <div class="bg-white/20 rounded-full p-2">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+            <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+              <div class="text-purple-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.systemHealth') }}</div>
+              <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
+                <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"/>
                 </svg>
               </div>
             </div>
-            <div class="text-4xl font-bold">{{ statusSystemHealth }}%</div>
-            <div class="text-purple-100 text-sm mt-1">{{ t('thermal.status.withinTargets') }}</div>
+            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusSystemHealth }}%</div>
+            <div class="text-purple-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.withinTargets') }}</div>
           </div>
         </div>
       </div>
@@ -175,51 +213,70 @@
           @dragover.prevent
           @drop="onDrop(zone.id)"
         >
-            <!-- Zone Header with Status -->
-            <div class="mb-2 sm:mb-3 lg:mb-4 flex items-start justify-between gap-1.5 sm:gap-2 lg:gap-3">
+            <!-- Zone Header with Status and Chart Block -->
+            <div class="mb-4 sm:mb-5 lg:mb-6 flex items-start justify-between gap-3">
+              <!-- Zone Info Block -->
               <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1 sm:gap-2 min-w-0">
-                  <div class="flex-1 min-w-0">
-                    <h3 class="text-xs sm:text-sm lg:text-base font-bold text-gray-900 dark:text-white truncate">
-                      {{ zone.sensorName || t('thermal.zone', { number: zone.id }) }}
-                    </h3>
-                    <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                      {{ zone.sensorLabel }}
-                    </p>
-                  </div>
-                  <button
-                    @click="openChartModal(zone.id)"
-                    class="inline-flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all"
-                    :title="t('thermal.chart.open')"
-                  >
-                    <svg
-                      class="h-5 w-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 18.5h16" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 15l4-4 3 3 4-6 3 4" />
-                      <circle cx="5" cy="15" r="1.1" fill="currentColor" />
-                      <circle cx="9" cy="11" r="1.1" fill="currentColor" />
-                      <circle cx="12" cy="14" r="1.1" fill="currentColor" />
-                      <circle cx="16" cy="8" r="1.1" fill="currentColor" />
-                      <circle cx="19" cy="12" r="1.1" fill="currentColor" />
+                <h3 class="text-xs sm:text-sm lg:text-base font-bold text-gray-900 dark:text-white truncate">
+                  {{ zone.sensorLabel }}
+                </h3>
+                <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate"
+                   :title="zone.sensorName">
+                  {{ zone.sensorName || t('thermal.zone', { number: zone.id }) }}
+                </p>
+
+                <!-- Status Badge -->
+                <div class="mt-2">
+                  <span :class="[
+                    'inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[8px] sm:text-[10px] font-semibold whitespace-nowrap',
+                    zone.powerStatus === false
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                  ]">
+                    <svg :class="['w-2 h-2 sm:w-2.5 sm:h-2.5', zone.powerStatus === false ? 'text-red-500' : 'text-green-500']" fill="currentColor" viewBox="0 0 20 20">
+                      <circle cx="10" cy="10" r="8" />
                     </svg>
-                  </button>
+                    <span class="hidden sm:inline">{{ zone.powerStatus === false ? t('thermal.chart.inactive') : t('thermal.chart.active') }}</span>
+                    <span class="sm:hidden">{{ zone.powerStatus === false ? 'Off' : 'On' }}</span>
+                  </span>
                 </div>
+              </div>
+
+              <!-- Chart Icon Block -->
+              <div class="flex flex-col items-center gap-2">
+                <button
+                  @click="openChartModal(zone)"
+                  class="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all"
+                  :title="t('thermal.chart.open')"
+                >
+                  <svg
+                    class="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 18.5h16" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 15l4-4 3 3 4-6 3 4" />
+                    <circle cx="5" cy="15" r="1.1" fill="currentColor" />
+                    <circle cx="9" cy="11" r="1.1" fill="currentColor" />
+                    <circle cx="12" cy="14" r="1.1" fill="currentColor" />
+                    <circle cx="16" cy="8" r="1.1" fill="currentColor" />
+                    <circle cx="19" cy="12" r="1.1" fill="currentColor" />
+                  </svg>
+                </button>
+
               </div>
             </div>
 
-              <!-- Current Temperature Display -->
-              <div
+            <!-- Current Temperature Display -->
+            <div
                 class="mb-2 sm:mb-3 lg:mb-4 rounded-md sm:rounded-lg lg:rounded-xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-2 sm:p-3 lg:p-5 shadow-inner dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20"
               >
                 <div class="mb-1 sm:mb-1.5 lg:mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                   {{ t('thermal.currentTemp') }}
                 </div>
                 <div class="flex items-baseline gap-1 sm:gap-2">
-                  <span class="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">21.2</span>
+                  <span class="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">{{ zone.currentTemp !== null ? zone.currentTemp.toFixed(1) : '--' }}</span>
                   <span class="text-base sm:text-lg lg:text-xl font-semibold text-gray-500 dark:text-gray-400">°C</span>
                 </div>
               </div>
@@ -232,20 +289,25 @@
                 <div v-if="zone.mode === 'manual'" class="w-full flex justify-center">
                   <button
                     @click="togglePower(zone.id)"
+                    :disabled="isControllingRelay[zone.sensorId || '']"
                     :class="[
-                      'group relative flex h-16 sm:h-20 lg:h-28 w-16 sm:w-20 lg:w-28 flex-col items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95',
+                      'group relative flex h-16 sm:h-20 lg:h-28 w-16 sm:w-20 lg:w-28 flex-col items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
                       zone.power
                         ? 'bg-gradient-to-br from-green-400 via-green-500 to-green-600 shadow-green-500/40 hover:shadow-green-500/60'
                         : 'bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 shadow-gray-500/40 hover:from-red-400 hover:via-red-500 hover:to-red-600 hover:shadow-red-500/60',
                     ]"
                   >
-                    <!-- Power Icon -->
-                    <svg class="h-5 sm:h-7 lg:h-10 w-5 sm:w-7 lg:w-10 mb-0.5 sm:mb-0.5 lg:mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Power Icon or Loading Spinner -->
+                    <svg v-if="!isControllingRelay[zone.sensorId || '']" class="h-5 sm:h-7 lg:h-10 w-5 sm:w-7 lg:w-10 mb-0.5 sm:mb-0.5 lg:mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <svg v-else class="h-5 sm:h-7 lg:h-10 w-5 sm:w-7 lg:w-10 mb-0.5 sm:mb-0.5 lg:mb-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     <!-- Power Label -->
                     <span class="text-xs font-bold uppercase tracking-wider">
-                      {{ zone.power ? t('thermal.power.on') : t('thermal.power.off') }}
+                      {{ isControllingRelay[zone.sensorId || ''] ? t('common.wait') : (zone.power ? t('thermal.power.on') : t('thermal.power.off')) }}
                     </span>
                     <!-- Glow Effect -->
                     <div
@@ -255,6 +317,13 @@
                       ]"
                     ></div>
                   </button>
+
+                  <!-- Relay Error Message -->
+                  <div v-if="relayError" class="absolute -bottom-8 left-0 right-0 text-center">
+                    <p class="text-xs font-semibold text-red-600 dark:text-red-400 whitespace-normal">
+                      {{ relayError }}
+                    </p>
+                  </div>
                 </div>
 
                 <!-- Temperature Controls (Auto Mode Only) -->
@@ -414,107 +483,61 @@
       </h2>
 
       <!-- Temperature Charts -->
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Zone Temperatures Chart -->
           <div
-            class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+            class="overflow-hidden rounded-2xl border border-blue-200 dark:border-blue-900/30 bg-white shadow-lg dark:bg-gray-800 hover:shadow-xl transition-shadow duration-300 flex flex-col"
           >
-            <div class="border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 dark:border-gray-700 dark:from-blue-900/20 dark:to-indigo-900/20">
-              <div class="flex flex-col gap-4">
-                <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                      {{ t('thermal.charts.zoneTemps.title') }}
-                    </h3>
-                  </div>
-                  <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <!-- Chart Type Toggle -->
-                    <div class="flex items-center gap-2">
-                      <label class="text-xs font-semibold text-gray-600 dark:text-gray-400">View:</label>
-                      <div class="flex gap-1.5 rounded-lg border border-gray-300 bg-gray-50 p-1 dark:border-gray-600 dark:bg-gray-800">
-                        <button
-                          @click="chartType = 'line'"
-                          :class="[
-                            'rounded px-2.5 py-1.5 text-xs font-medium transition-colors',
-                            chartType === 'line'
-                              ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
-                              : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white',
-                          ]">
-                          Line
-                        </button>
-                        <button
-                          @click="chartType = 'bar'"
-                          :class="[
-                            'rounded px-2.5 py-1.5 text-xs font-medium transition-colors',
-                            chartType === 'bar'
-                              ? 'bg-white text-indigo-600 shadow-sm dark:bg-gray-700 dark:text-indigo-400'
-                              : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white',
-                          ]">
-                          Bar
-                        </button>
-                      </div>
-                    </div>
-                    <!-- Period Selector -->
-                    <div class="flex items-center gap-2">
-                      <label class="text-xs font-semibold text-gray-600 dark:text-gray-400">Period:</label>
-                      <div class="flex gap-2">
-                        <button v-for="period in [1, 6, 12, 24]" :key="period"
-                          @click="chartPeriod = period as 1 | 6 | 12 | 24"
-                          :class="[
-                            'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
-                            chartPeriod === period
-                              ? 'bg-indigo-600 text-white shadow-md'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600',
-                          ]">
-                          {{ period }}h
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
+            <div class="border-b border-blue-100 dark:border-blue-900/20 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 px-6 py-4">
+              <div class="flex items-center gap-3">
+                <div class="h-1 w-1 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                  {{ t('thermal.charts.zoneTemps.title') }}
+                </h3>
               </div>
             </div>
 
-            <!-- Chart -->
-            <div class="p-6">
-              <div class="relative" :class="chartHeightClass">
-                <component
-                  :is="chartType === 'line' ? LineChart : BarChart"
-                  :data="tempChartData"
-                  :options="tempChartOptions"
-                  class="!h-full !w-full"
-                ></component>
+            <!-- Unified Chart -->
+            <div class="flex-1 p-4 flex flex-col bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-[500px]">
+              <div v-if="isFetchingChartData" class="flex items-center justify-center flex-1">
+                <div class="text-center">
+                  <div class="inline-block animate-spin rounded-full h-8 w-8 border-3 border-blue-300 border-t-blue-600 dark:border-blue-700 dark:border-t-blue-400 mb-2"></div>
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</p>
+                </div>
               </div>
-
+              <div v-else class="w-full" style="height: 500px;">
+                <VueApexCharts
+                  :key="`chart-${chartDataMap.size}`"
+                  type="area"
+                  height="500"
+                  :options="getAllSensorsChartOptions()"
+                  :series="getAllSensorsChartSeries()"
+                />
+              </div>
             </div>
           </div>
 
           <!-- Min/Max Temperature Chart -->
           <div
-            class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+            class="overflow-hidden rounded-2xl border border-emerald-200 dark:border-emerald-900/30 bg-white shadow-lg dark:bg-gray-800 hover:shadow-xl transition-shadow duration-300 flex flex-col"
           >
-            <div class="border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-6 dark:border-gray-700 dark:from-emerald-900/20 dark:to-teal-900/20">
-              <div class="flex items-start justify-between">
-                <div>
+            <div class="border-b border-emerald-100 dark:border-emerald-900/20 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 px-6 py-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="h-1 w-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"></div>
                   <h3 class="text-lg font-bold text-gray-900 dark:text-white">
                     {{ t('thermal.charts.minMax.title') }}
                   </h3>
-                  <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    {{ t('thermal.charts.minMax.subtitle') }}
-                  </p>
                 </div>
-                <div class="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-900/40">
-                  <svg class="h-6 w-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                  </svg>
-                </div>
+                <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
               </div>
             </div>
 
             <!-- Chart -->
-            <div class="p-6">
-              <div class="relative" :class="chartHeightClass">
+            <div class="flex-1 p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-[350px]">
+              <div class="relative h-full" :class="chartHeightClass">
                 <BarChart :data="minMaxChartData" :options="minMaxChartOptions" class="!h-full !w-full"></BarChart>
               </div>
             </div>
@@ -534,70 +557,71 @@
       >
         <div
           v-if="showChartModal"
-          class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
           @click.self="closeChartModal"
           style="margin: 0 !important;"
         >
           <div
-            class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col relative z-[999999]"
+            class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col relative z-[999999]"
             @click.stop
+            v-if="chartModalZone"
           >
             <!-- Modal Header -->
-            <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-              <div>
-                <h3 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                  {{ chartModalZone?.sensorLabel || chartModalZone?.sensorName || `Zone ${chartModalZone?.id}` }}
+            <div class="flex items-center justify-between p-2 sm:p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div class="min-w-0 flex-1">
+                <h3 class="text-sm sm:text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">
+                  {{ chartModalZone.sensorLabel || chartModalZone.sensorName || `Zone ${chartModalZone.id}` }}
                 </h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('thermal.chart.subtitle') }}</p>
+                <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1 truncate">{{ t('thermal.chart.subtitle') }}</p>
               </div>
               <button
                 @click="closeChartModal"
-                class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                class="p-1 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
               >
-                <svg class="h-6 w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </button>
             </div>
 
             <!-- Modal Body with Chart -->
-            <div class="flex-1 overflow-auto p-4 sm:p-6">
-              <div v-if="chartModalZone" class="h-[400px] sm:h-[500px]">
+            <div class="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
+              <div v-if="chartModalZone" class="h-[250px] sm:h-[350px] md:h-[500px]">
                 <VueApexCharts
                   type="area"
                   :height="'100%'"
-                  :options="getChartOptions(chartModalZone)"
-                  :series="getChartSeries(chartModalZone)"
+                  :options="getChartOptions(chartModalZone!)"
+                  :series="getChartSeries(chartModalZone!)"
                 />
               </div>
             </div>
 
             <!-- Modal Footer with Zone Info -->
-            <div class="flex items-center justify-between p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+            <div class="flex items-center justify-between p-2 sm:p-4 md:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex-wrap gap-2 sm:gap-4 flex-shrink-0">
               <div class="flex items-center gap-6">
                 <div>
                   <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('thermal.chart.current') }}</div>
-                  <div class="text-lg font-bold text-gray-900 dark:text-white">21.2°C</div>
+                  <div class="text-lg font-bold text-gray-900 dark:text-white">{{ chartModalZone.currentTemp !== null ? chartModalZone.currentTemp.toFixed(1) : '--' }}°C</div>
                 </div>
                 <div>
                   <div class="text-xs text-red-500">{{ t('thermal.chart.maxTarget') }}</div>
-                  <div class="text-lg font-bold text-red-600 dark:text-red-400">{{ chartModalZone?.maxTemp }}°C</div>
+                  <div class="text-lg font-bold text-red-600 dark:text-red-400">{{ chartModalZone.maxTemp }}°C</div>
                 </div>
                 <div>
                   <div class="text-xs text-blue-500">{{ t('thermal.chart.minTarget') }}</div>
-                  <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ chartModalZone?.minTemp }}°C</div>
+                  <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ chartModalZone.minTemp }}°C</div>
                 </div>
               </div>
               <div class="flex items-center gap-2">
                 <span class="px-3 py-1 rounded-full text-xs font-semibold"
-                  :class="chartModalZone?.power ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'"
+                  :class="chartModalZone.power ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'"
                 >
-                  {{ chartModalZone?.power ? t('thermal.chart.active') : t('thermal.chart.inactive') }}
+                  {{ chartModalZone.power ? t('thermal.chart.active') : t('thermal.chart.inactive') }}
                 </span>
                 <span class="px-3 py-1 rounded-full text-xs font-semibold"
-                  :class="chartModalZone?.mode === 'auto' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'"
+                  :class="chartModalZone.mode === 'auto' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'"
                 >
-                  {{ chartModalZone?.mode === 'auto' ? t('thermal.auto') : t('thermal.manual') }}
+                  {{ chartModalZone.mode === 'auto' ? t('thermal.auto') : t('thermal.manual') }}
                 </span>
               </div>
             </div>
@@ -612,6 +636,9 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
+import { dataMode } from '@/config/dataMode'
+import { fetchThermalDashboardData } from '@/services/thermalTelemetryAPI'
+import { fetchThermalChartData, type SensorChartData, controlThermalRelay } from '@/services/thermalChartAPI'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js'
 import { Line as LineChart, Bar as BarChart } from 'vue-chartjs'
 import { SENSOR_COLOR_PALETTE } from '@/data/mockData'
@@ -625,23 +652,42 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarEleme
 const { t } = useI18n()
 const sensorsStore = useSensorsStore()
 
+// Thermal API state
+const isFetchingThermal = ref(false)
+const thermalError = ref<string | null>(null)
+
+// Chart data state
+const isFetchingChartData = ref(false)
+const chartDataMap = ref<Map<string, SensorChartData['data']>>(new Map())
+
+// Relay control state
+const isControllingRelay = ref<Record<string, boolean>>({})
+const relayError = ref<string | null>(null)
+
 // UI State
 const showSensorSelector = ref(false)
 const chartModalZoneId = ref<number | null>(null)
 const showChartModal = computed(() => chartModalZoneId.value !== null)
-const chartModalZone = computed(() =>
-  zones.value.find(z => z.id === chartModalZoneId.value)
-)
+const chartModalZone = computed(() => {
+  const zone = zones.value.find(z => z.id === chartModalZoneId.value)
+  return zone || undefined
+})
 
 interface Zone {
   id: number
+  currentTemp: number | null     // Actual temperature from API
   maxTemp: number | null
   minTemp: number | null
   power: boolean
   mode: 'manual' | 'auto'
+  powerStatus: boolean | null    // Sensor active/inactive status from API
   sensorId?: string
   sensorLabel?: string
   sensorName?: string
+  humidity?: number | null        // Optional humidity for future use
+  dewPoint?: number | null        // Optional dew point for calculations
+  relay?: string | null           // Zone assignment from API
+  controllerUUID?: string | null  // Controller managing this sensor
 }
 // Selected sensors (from store)
 const selectedSensors = computed(() => sensorsStore.selectedSensors)
@@ -658,30 +704,13 @@ const thermalSensors = computed(() => {
   return sensorsStore.availableSensors
 })
 
-const MIN_SENSORS_DISPLAY = 8
-
 // Separate label and name for display
 const getSensorLabel = (sensor: Sensor) => sensor.label || sensor.name
 const getSensorName = (sensor: Sensor) => sensor.name
 
-// Ensure at least 8 sensors by padding with clones for display-only purposes
+// Display only real sensors from API (no padding)
 const sensorsForDisplay = computed<Sensor[]>(() => {
-  const base = thermalSensors.value
-  if (base.length === 0) return []
-  if (base.length >= MIN_SENSORS_DISPLAY) return base
-  const padded = [...base]
-  let idx = 0
-  while (padded.length < MIN_SENSORS_DISPLAY) {
-    const source = base[idx % base.length]
-    padded.push({
-      ...source,
-      id: `virtual-${padded.length + 1}`,
-      name: `${source.name}-virt-${padded.length + 1}`,
-      label: source.label ?? `Virtual Sensor ${padded.length + 1}`
-    })
-    idx++
-  }
-  return padded
+  return thermalSensors.value
 })
 
 const zones = ref<Zone[]>([])
@@ -705,13 +734,12 @@ const getZoneSeries = (zone: Zone) => {
 // Chart data: compute from displayed zones (not padded sensors)
 const chartZoneTemps = computed(() => {
   return displayedZones.value.map((zone) => {
-    const series = getZoneSeries(zone)
-    const value = series[series.length - 1]
-    const clamped = Math.max(10, Math.min(35, value))
+    // Use actual current temperature from API
+    const value = zone.currentTemp ?? 0
     return {
       id: zone.id,
-      value: clamped,
-      height: ((clamped - 10) / (35 - 10)) * 100, // Scale from 10-35°C
+      value: value,
+      height: ((Math.max(10, Math.min(35, value)) - 10) / (35 - 10)) * 100, // Scale from 10-35°C
     }
   })
 })
@@ -854,7 +882,7 @@ const minMaxChartData = computed(() => ({
     },
     {
       label: t('thermal.chart.current'),
-      data: chartZoneTemps.value.map((z) => z.value),
+      data: displayedZones.value.map((z) => z.currentTemp ?? 0),
       backgroundColor: 'rgba(16, 185, 129, 0.85)',
       borderColor: '#10b981',
       borderWidth: 2,
@@ -967,22 +995,47 @@ const columnsPerRow = ref(4)
 const visibleZoneIds = ref<number[]>([])
 const zonesOrder = ref<number[]>([])
 
-// Real-time aggregated status from displayed zones
-const statusActiveZones = computed(() => displayedZones.value.filter((z) => z.power).length)
+// Thermal summary from API
+const thermalSummary = ref<{
+  totalSensors: number
+  activeSensors: number
+  averageTemperature: number
+  minTemperature: number
+  maxTemperature: number
+} | null>(null)
+
+// Real-time aggregated status from displayed zones or API summary
+const statusActiveZones = computed(() => {
+  // Count sensors with powerStatus === true (actual active sensors)
+  return zones.value.filter((z) => z.powerStatus === true).length
+})
 
 const statusTempRange = computed(() => {
+  if (thermalSummary.value) {
+    return {
+      min: thermalSummary.value.minTemperature.toFixed(1),
+      max: thermalSummary.value.maxTemperature.toFixed(1)
+    }
+  }
   if (displayedZones.value.length === 0) return { min: '--', max: '--' }
   const temps = displayedZones.value
-    .map((z, idx) => chartZoneTemps.value[idx]?.value ?? 22)
+    .map((z) => z.currentTemp)
+    .filter((t): t is number => t !== null)
+
+  if (temps.length === 0) return { min: '--', max: '--' }
   const min = Math.min(...temps)
   const max = Math.max(...temps)
   return { min: min.toFixed(1), max: max.toFixed(1) }
 })
 
 const statusAvgTemp = computed(() => {
+  if (thermalSummary.value) return thermalSummary.value.averageTemperature.toFixed(1)
   if (displayedZones.value.length === 0) return '--'
   const temps = displayedZones.value
-    .map((z, idx) => chartZoneTemps.value[idx]?.value ?? 22)
+    .map((z) => z.currentTemp)
+    .filter((t): t is number => t !== null)
+
+  if (temps.length === 0) return '--'
   const avg = temps.reduce((a, b) => a + b, 0) / temps.length
   return avg.toFixed(1)
 })
@@ -990,9 +1043,9 @@ const statusAvgTemp = computed(() => {
 const statusSystemHealth = computed(() => {
   if (displayedZones.value.length === 0) return 0
   const healthy = displayedZones.value.filter((z) => {
-    const idx = zones.value.findIndex(zone => zone.id === z.id)
-    const temp = chartZoneTemps.value[idx]?.value ?? 22
-    return temp >= (z.minTemp ?? 18) && temp <= (z.maxTemp ?? 28)
+    const currentTemp = z.currentTemp
+    if (currentTemp === null) return false
+    return currentTemp >= (z.minTemp ?? 18) && currentTemp <= (z.maxTemp ?? 28)
   }).length
   return Math.round((healthy / displayedZones.value.length) * 100)
 })
@@ -1117,17 +1170,215 @@ const generate24HData = (zoneId: number, currentTemp: number) => {
   return data
 }
 
-// Chart configuration for zone temperature history
-const getChartOptions = (zone: Zone) => {
+const togglePower = async (zoneId: number) => {
+  const zone = zones.value.find((z) => z.id === zoneId)
+  if (!zone || !zone.sensorId) return
+
+  try {
+    // Set loading state
+    isControllingRelay.value[zone.sensorId] = true
+    relayError.value = null
+
+    // Determine action based on current power state
+    const action = zone.power ? 'stop' : 'start'
+
+    // Call relay control API
+    const result = await controlThermalRelay(zone.sensorId, action)
+
+    if (result.success) {
+      // Update local state on success
+      zone.power = !zone.power
+      console.log(`[ThermalView] Relay control ${action} successful for zone ${zone.sensorLabel}`)
+    } else {
+      // Show error message
+      relayError.value = result.message || `Failed to ${action} relay`
+      console.error(`[ThermalView] Relay control error:`, result.message)
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    relayError.value = errorMsg
+    console.error(`[ThermalView] Relay control failed:`, errorMsg)
+  } finally {
+    // Clear loading state
+    if (zone.sensorId) {
+      isControllingRelay.value[zone.sensorId] = false
+    }
+  }
+}
+
+const openChartModal = (zone: Zone) => {
+  chartModalZoneId.value = zone.id
+}
+const closeChartModal = () => {
+  chartModalZoneId.value = null
+}
+
+// Unified chart functions for all sensors
+const getAllSensorsChartOptions = () => {
+  // Get all data from all sensors to calculate ranges
+  const allDataPoints: number[] = []
+  displayedZones.value.forEach(zone => {
+    if (zone.sensorId) {
+      const chartData = chartDataMap.value.get(zone.sensorId)
+      if (chartData) {
+        allDataPoints.push(...chartData.map((p: any) => p.value))
+      }
+    }
+  })
+
+  // Get x-axis labels from first sensor (all should have same timestamps)
+  const firstZone = displayedZones.value.find(z => z.sensorId && chartDataMap.value.has(z.sensorId))
+  const firstChartData = firstZone?.sensorId ? chartDataMap.value.get(firstZone.sensorId) : null
+  const xLabels = firstChartData?.map((p: any) => p.readableDate) || []
+
+  console.log(`[Chart Options] xLabels count: ${xLabels.length}`)
+  console.log(`[Chart Options] allDataPoints count: ${allDataPoints.length}`)
+  console.log(`[Chart Options] Displayed zones: ${displayedZones.value.length}`)
+  console.log(`[Chart Options] chartDataMap size: ${chartDataMap.value.size}`)
+  if (firstChartData) {
+    console.log(`[Chart Options] First sensor data sample:`, firstChartData.slice(0, 3))
+  }
+
+  const minValue = allDataPoints.length > 0 ? Math.min(...allDataPoints) : 20
+  const maxValue = allDataPoints.length > 0 ? Math.max(...allDataPoints) : 30
+  const padding = (maxValue - minValue) * 0.15
+
   return {
     chart: {
       type: 'area',
-      toolbar: { show: false },
+      fontFamily: 'inherit',
+      toolbar: {
+        show: false
+      },
       zoom: { enabled: false },
-      sparkline: { enabled: false },
-      animations: { enabled: true, speed: 800 }
+      animations: {
+        enabled: true,
+        speed: 800,
+        animateGradually: {
+          enabled: true,
+          delay: 150
+        },
+        dynamicAnimation: {
+          enabled: true,
+          speed: 150
+        }
+      }
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 2
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.4,
+        opacityTo: 0.05,
+        stops: [20, 100, 100, 100]
+      }
     },
     dataLabels: { enabled: false },
+    markers: {
+      size: 3,
+      strokeColors: '#fff',
+      strokeWidth: 1,
+      hover: { size: 5 }
+    },
+    xaxis: {
+      categories: xLabels,
+      labels: {
+        style: { fontSize: '11px', colors: '#9ca3af' },
+        rotate: -45
+      },
+      axisBorder: { show: true, color: '#e5e7eb' },
+      axisTicks: { show: false }
+    },
+    yaxis: {
+      labels: {
+        style: { fontSize: '12px', colors: '#9ca3af' },
+        formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(1)}°C` : ''
+      },
+      min: Math.max(0, minValue - padding),
+      max: maxValue + padding
+    },
+    grid: {
+      show: true,
+      borderColor: 'rgba(229, 231, 235, 0.3)',
+      strokeDashArray: 0,
+      xaxis: { lines: { show: true } }
+    },
+    tooltip: {
+      theme: 'light',
+      x: { format: 'HH:mm' },
+      y: {
+        formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(1)}°C` : 'N/A'
+      }
+    },
+    legend: {
+      position: 'top',
+      fontFamily: 'inherit',
+      offsetY: 0,
+      labels: {
+        colors: '#6b7280',
+        useSeriesColors: true,
+        fontSize: '12px'
+      },
+      markers: {
+        width: 12,
+        height: 12
+      }
+    }
+  }
+}
+
+const getAllSensorsChartSeries = () => {
+  const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4']
+
+  const series = displayedZones.value.map((zone, idx) => {
+    const sensorId = zone.sensorId
+    const chartData = sensorId ? chartDataMap.value.get(sensorId) : null
+
+    if (chartData && chartData.length > 0) {
+      console.log(`[Chart Series] ${zone.sensorLabel}: ${chartData.length} data points, values: ${chartData.map((p: any) => p.value).join(', ')}`)
+      return {
+        name: zone.sensorLabel || zone.sensorName || `Zone ${zone.id}`,
+        data: chartData.map((point: any) => point.value),
+        color: COLORS[idx % COLORS.length]
+      }
+    }
+
+    // Fallback to synthetic data
+    console.log(`[Chart Series] Using synthetic data for ${zone.sensorLabel}`)
+    const baseTemp = zone.currentTemp ?? 21.2
+    const syntheticData = generate24HData(zone.id, baseTemp)
+    return {
+      name: zone.sensorLabel || zone.sensorName || `Zone ${zone.id}`,
+      data: syntheticData,
+      color: COLORS[idx % COLORS.length]
+    }
+  })
+
+  console.log(`[Chart Series] Generated ${series.length} series with ${series.map(s => s.data.length).join(', ')} data points each`)
+  return series
+}
+
+// Single zone chart functions for modal
+const getChartOptions = (zone: Zone) => {
+  const chartData = zone.sensorId ? chartDataMap.value.get(zone.sensorId) : null
+
+  // Get data points for calculating ranges
+  const dataPoints = chartData?.map((p: any) => p.value) || []
+  const minValue = dataPoints.length > 0 ? Math.min(...dataPoints) : 20
+  const maxValue = dataPoints.length > 0 ? Math.max(...dataPoints) : 30
+  const padding = (maxValue - minValue) * 0.15
+
+  return {
+    chart: {
+      type: 'area',
+      fontFamily: 'inherit',
+      toolbar: { show: true }
+    },
+    colors: ['#3b82f6'],
     stroke: {
       curve: 'smooth',
       width: 2
@@ -1138,113 +1389,74 @@ const getChartOptions = (zone: Zone) => {
         shadeIntensity: 1,
         opacityFrom: 0.45,
         opacityTo: 0.05,
-        stops: [0, 90, 100]
+        stops: [20, 100, 100, 100]
       }
     },
-    colors: ['#2196F3'],
+    dataLabels: { enabled: false },
+    markers: {
+      size: 4,
+      colors: ['#3b82f6'],
+      strokeColors: '#fff',
+      strokeWidth: 2,
+      hover: { size: 6 }
+    },
     xaxis: {
-      type: 'datetime',
+      categories: chartData?.map((p: any) => p.readableDate) || [],
       labels: {
-        datetimeUTC: false,
-        format: 'HH:mm',
-        style: {
-          fontSize: '9px',
-          colors: '#9CA3AF'
-        },
-        rotate: 0
+        style: { fontSize: '12px', colors: '#9ca3af' }
       },
       axisBorder: { show: false },
-      axisTicks: { show: false },
-      tooltip: { enabled: false }
+      axisTicks: { show: false }
     },
     yaxis: {
       labels: {
-        formatter: (val: number) => val ? val.toFixed(1) + '°' : '',
-        style: {
-          fontSize: '9px',
-          colors: '#9CA3AF'
-        }
+        style: { fontSize: '12px', colors: '#9ca3af' },
+        formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(1)}°C` : ''
       },
-      min: (zone.minTemp ?? 18) - 3,
-      max: (zone.maxTemp ?? 28) + 3
+      min: Math.max(0, minValue - padding),
+      max: maxValue + padding
     },
     grid: {
-      borderColor: '#E5E7EB',
-      strokeDashArray: 3,
-      padding: { top: 0, right: 10, bottom: 0, left: 0 },
-      xaxis: { lines: { show: true } },
-      yaxis: { lines: { show: true } }
+      show: true,
+      borderColor: 'rgba(148, 163, 184, 0.2)',
+      strokeDashArray: 0,
+      xaxis: { lines: { show: false } }
     },
     tooltip: {
+      theme: 'dark',
       x: {
-        format: 'dd MMM HH:mm'
+        format: 'HH:mm'
       },
       y: {
-        formatter: (val: number) => val.toFixed(1) + '°C'
-      }
-    },
-    annotations: {
-      yaxis: [
-        {
-          y: zone.maxTemp,
-          borderColor: '#EF4444',
-          strokeDashArray: 4,
-          opacity: 0.5,
-          label: {
-            text: `${t('thermal.chart.annotationMax')} ${zone.maxTemp}°C`,
-            position: 'left',
-            style: {
-              fontSize: '9px',
-              color: '#fff',
-              background: '#EF4444',
-              padding: { left: 4, right: 4, top: 2, bottom: 2 }
-            }
-          }
-        },
-        {
-          y: zone.minTemp,
-          borderColor: '#3B82F6',
-          strokeDashArray: 4,
-          opacity: 0.5,
-          label: {
-            text: `${t('thermal.chart.annotationMin')} ${zone.minTemp}°C`,
-            position: 'left',
-            style: {
-              fontSize: '9px',
-              color: '#fff',
-              background: '#3B82F6',
-              padding: { left: 4, right: 4, top: 2, bottom: 2 }
-            }
-          }
+        formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(1)}°C` : 'N/A',
+        title: {
+          formatter: () => 'Temperature'
         }
-      ]
+      }
     }
   }
 }
 
 const getChartSeries = (zone: Zone) => {
-  const currentTemp = 21.2 // Using the same temp as display
+  const sensorId = zone.sensorId
+  const chartData = sensorId ? chartDataMap.value.get(sensorId) : null
+
+  if (chartData && chartData.length > 0) {
+    return [
+      {
+        name: t('thermal.chart.temperature'),
+        data: chartData.map((point: any) => point.value),
+      }
+    ]
+  }
+
+  const currentTemp = zone.currentTemp ?? 21.2
   return [
     {
       name: t('thermal.chart.temperature'),
       data: generate24HData(zone.id, currentTemp)
     }
   ]
-}
-
-const togglePower = (zoneId: number) => {
-  const zone = zones.value.find((z) => z.id === zoneId)
-  if (zone) {
-    zone.power = !zone.power
-  }
-}
-
-const openChartModal = (zoneId: number) => {
-  chartModalZoneId.value = zoneId
-}
-
-const closeChartModal = () => {
-  chartModalZoneId.value = null
 }
 
 const setMode = (zoneId: number, mode: 'manual' | 'auto') => {
@@ -1274,21 +1486,23 @@ function buildZonesFromSensors(sensors: Sensor[]) {
     updatedAt: new Date().toISOString()
   } as Sensor]
 
-  const targetCount = Math.max(base.length, MIN_SENSORS_DISPLAY)
+  // Build zones only for real sensors (no padding)
   const built: Zone[] = []
 
-  for (let i = 0; i < targetCount; i++) {
-    const sensor = base[i % base.length]
+  for (let i = 0; i < base.length; i++) {
+    const sensor = base[i]
     const avg = sensor.avgTemp ?? 22
     const max = sensor.maxTemp ?? Math.round((avg + 2) * 10) / 10
     const min = sensor.minTemp ?? Math.round((avg - 2) * 10) / 10
 
     built.push({
       id: i + 1,
+      currentTemp: avg,  // Use avgTemp as current temperature for mock data
       maxTemp: max,
       minTemp: min,
       power: i % 3 !== 2, // Every third zone is off (grey/red)
       mode: 'auto',
+      powerStatus: i % 3 !== 2,  // Mock sensor status (active by default)
       sensorId: sensor.id,
       sensorLabel: getSensorLabel(sensor),
       sensorName: getSensorName(sensor),
@@ -1300,9 +1514,205 @@ function buildZonesFromSensors(sensors: Sensor[]) {
   zonesOrder.value = built.map((z) => z.id)
 }
 
+/**
+ * Build zones from thermal API response
+ * Creates zones from real backend thermal sensor data
+ * Uses actual temperature and dew point values for smart min/max targeting
+ */
+function buildZonesFromThermalAPI(thermalData: any) {
+  if (!thermalData?.sensors || thermalData.sensors.length === 0) {
+    console.warn('[ThermalView] No sensors in thermal API response')
+    buildZonesFromSensors([])
+    return
+  }
+
+  // Store API summary data for status cards
+  if (thermalData.summary) {
+    thermalSummary.value = {
+      totalSensors: thermalData.summary.totalSensors,
+      activeSensors: thermalData.summary.activeSensors,
+      averageTemperature: thermalData.summary.averageTemperature,
+      minTemperature: thermalData.summary.minTemperature,
+      maxTemperature: thermalData.summary.maxTemperature,
+    }
+  }
+
+  const built: Zone[] = []
+  const sensors = thermalData.sensors
+
+  for (let i = 0; i < sensors.length; i++) {
+    const sensor = sensors[i]
+
+    // Current temperature from sensor reading
+    const currentTemp = sensor.temperature ?? 22
+
+    // Use API min/max if available, fallback to dew point-based calculation
+    let minTemp = sensor.minTemp
+    let maxTemp = sensor.maxTemp
+
+    // Fallback: Calculate from dew point if API values not available
+    if (minTemp === null || minTemp === undefined) {
+      const dewPoint = sensor.dewPoint ?? (currentTemp - 3)
+      minTemp = Math.max(
+        Math.round((dewPoint || currentTemp - 2) * 10) / 10,
+        10  // Absolute minimum 10°C
+      )
+    }
+
+    if (maxTemp === null || maxTemp === undefined) {
+      maxTemp = Math.round((currentTemp + 3) * 10) / 10
+    }
+
+    // Map mode: "manuel" → "manual", default to "auto" if null
+    let mode: 'manual' | 'auto' = 'auto'
+    if (sensor.mode === 'manuel' || sensor.mode === 'manual') {
+      mode = 'manual'
+    } else if (sensor.mode === 'auto') {
+      mode = 'auto'
+    }
+
+    built.push({
+      id: i + 1,
+      currentTemp: currentTemp,  // Store actual temperature from API
+      maxTemp: Number(maxTemp),  // Use API maxTemp or calculated
+      minTemp: Number(minTemp),  // Use API minTemp or calculated
+      power: sensor.powerStatus !== false,
+      mode: mode,  // Use API mode, properly mapped
+      powerStatus: sensor.powerStatus,  // Store sensor active/inactive status
+      sensorId: sensor.deviceUUID,
+      sensorLabel: sensor.displayName || sensor.label || sensor.name,
+      sensorName: sensor.name,
+      humidity: sensor.humidity,
+      dewPoint: sensor.dewPoint,
+      relay: sensor.relay,  // Zone assignment
+      controllerUUID: sensor.controllerUUID,  // Controller info
+    })
+  }
+
+  zones.value = built
+  visibleZoneIds.value = built.map((z) => z.id)
+  zonesOrder.value = built.map((z) => z.id)
+
+  console.log(`[ThermalView] Built ${built.length} zones from thermal API. Summary: ${thermalSummary.value?.totalSensors} total, ${thermalSummary.value?.activeSensors} active, Avg: ${thermalSummary.value?.averageTemperature}°C`)
+}
+
+/**
+ * Refresh thermal data from API
+ */
+async function refreshThermalData() {
+  try {
+    isFetchingThermal.value = true
+    thermalError.value = null
+
+    console.log('[ThermalView] Manually refreshing thermal data from API')
+    const thermalData = await fetchThermalDashboardData(false)
+
+    if (thermalData.status === 'success' && thermalData.sensors.length > 0) {
+      console.log(`[ThermalView] Successfully refreshed ${thermalData.sensors.length} sensors from thermal API`)
+      buildZonesFromThermalAPI(thermalData)
+      // Load chart data after thermal data is refreshed
+      await loadChartData()
+    } else {
+      thermalError.value = thermalData.message || 'Failed to fetch thermal data from API'
+      console.warn('[ThermalView] Thermal API returned no data:', thermalError.value)
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error('[ThermalView] Error refreshing thermal data:', errorMsg)
+    thermalError.value = errorMsg
+  } finally {
+    isFetchingThermal.value = false
+  }
+}
+
+/**
+ * Load aggregated temperature chart data for all displayed zones
+ * Uses 12-hour window with 2-minute intervals
+ */
+async function loadChartData() {
+  try {
+    isFetchingChartData.value = true
+    console.log('[ThermalView] Loading temperature chart data...')
+
+    // Get sensor IDs from displayed zones
+    const sensorIds = displayedZones.value
+      .map((z) => z.sensorId)
+      .filter((id): id is string => !!id)
+
+    if (sensorIds.length === 0) {
+      console.warn('[ThermalView] No sensor IDs available for chart data')
+      return
+    }
+
+    // Fetch aggregated chart data
+    const chartResponse = await fetchThermalChartData(sensorIds)
+
+    if (chartResponse.success && chartResponse.data.sensors.length > 0) {
+      console.log(
+        `[ThermalView] Successfully loaded chart data for ${chartResponse.data.sensors.length} sensors`
+      )
+
+      // Store chart data in map for quick lookup
+      chartDataMap.value.clear()
+      chartResponse.data.sensors.forEach((sensor) => {
+        const dataCount = sensor.data.length
+        console.log(`[ThermalView] Sensor ${sensor.sensorLabel}: ${dataCount} data points`)
+        console.log(`[ThermalView] Data range: ${sensor.data[0]?.readableDate} to ${sensor.data[dataCount - 1]?.readableDate}`)
+        chartDataMap.value.set(sensor.deviceUUID, sensor.data)
+      })
+
+      console.log('[ThermalView] Chart data ready for visualization')
+      console.log('[ThermalView] Chart map size:', chartDataMap.value.size)
+    } else {
+      console.warn('[ThermalView] No chart data returned from API')
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.warn(`[ThermalView] Failed to load chart data: ${errorMsg}`)
+    // Don't treat chart data failure as critical - charts can use synthetic data
+  } finally {
+    isFetchingChartData.value = false
+  }
+}
+
 onMounted(async () => {
-  await sensorsStore.fetchSensors()
-  buildZonesFromSensors(sensorsForDisplay.value)
+  try {
+    // Always fetch sensor list from device API
+    await sensorsStore.fetchSensors()
+
+    // If data mode is API, fetch thermal data from backend
+    if (dataMode === 'api') {
+      isFetchingThermal.value = true
+      thermalError.value = null
+
+      console.log('[ThermalView] Data mode is API, fetching thermal data from backend')
+      const thermalData = await fetchThermalDashboardData(false)
+
+      if (thermalData.status === 'success' && thermalData.sensors.length > 0) {
+        console.log(`[ThermalView] Successfully fetched ${thermalData.sensors.length} sensors from thermal API`)
+        // Build zones from API response
+        buildZonesFromThermalAPI(thermalData)
+
+        // Fetch chart data for all sensors
+        await loadChartData()
+      } else {
+        console.warn('[ThermalView] Thermal API returned no data, falling back to mock data')
+        thermalError.value = thermalData.message || 'Failed to fetch thermal data from API'
+        buildZonesFromSensors(sensorsForDisplay.value)
+      }
+    } else {
+      // Use mock data from sensors store
+      console.log('[ThermalView] Data mode is', dataMode, ', using sensor store data')
+      buildZonesFromSensors(sensorsForDisplay.value)
+    }
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error('[ThermalView] Error during initialization:', errorMsg)
+    thermalError.value = errorMsg
+    buildZonesFromSensors(sensorsForDisplay.value)
+  } finally {
+    isFetchingThermal.value = false
+  }
 })
 
 const sensorDisplayKey = computed(() => sensorsForDisplay.value.map((s) => s.id).join('|'))

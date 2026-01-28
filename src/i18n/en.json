@@ -12,6 +12,7 @@
     "export": "Export",
     "import": "Import",
     "loading": "Loading...",
+    "wait": "Wait",
     "noData": "No Data Available",
     "noDataAvailable": "No data available from the energy monitoring system",
     "retry": "Retry",
