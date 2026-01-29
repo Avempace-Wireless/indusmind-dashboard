@@ -1,6 +1,6 @@
 <template>
   <AdminLayout>
-    <div class="w-full flex flex-col gap-0 px-4 py-1">
+    <div class="w-full flex flex-col gap-0 px-1 py-1 global-meters-view">
       <!-- Ultra-compact Header -->
       <div class="flex items-center justify-between gap-2" style="padding: 4px 0; border-bottom: 1px solid #e2e8f0; --tw-border-opacity: 1;">
         <h1 class="text-slate-900 dark:text-white text-sm font-bold">
@@ -38,10 +38,10 @@
         </button>
       </div>
 
-      <!-- Content Grid - Full page with cards left (1/2), charts right (1/2) -->
+      <!-- Content Grid - Full page with cards left (1/2 or 2/3), charts right (1/2 or 1/3) -->
       <div v-else class="flex flex-col md:flex-row gap-1 overflow-y-auto md:overflow-hidden pb-2" style="height: calc(100vh - 110px);">
-        <!-- Left Panel: Meter Cards - 1/2 width, same height as right -->
-        <div class="flex-1 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-1 md:p-2 border border-slate-200 dark:border-slate-700 flex flex-col min-h-0 overflow-y-auto md:overflow-hidden">
+        <!-- Left Panel: Meter Cards - Dynamic width based on meter count -->
+        <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 flex flex-col min-h-0 overflow-y-auto md:overflow-hidden" :style="leftPanelStyle">
           <div class="grid gap-1 md:gap-2 flex-1 min-h-0 auto-rows-fr" :style="getGridStyle()">
             <div
               v-for="(compteur, index) in enrichedCompteurs"
@@ -107,7 +107,7 @@
         </div>
 
         <!-- Right Panel: Charts - Takes remaining space -->
-        <div class="flex-1 grid grid-cols-1 gap-1 min-h-0 md:flex md:flex-col">
+        <div class="flex-1 grid grid-cols-1 gap-1 min-h-0 md:flex md:flex-col rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 md:p-1" :style="rightPanelStyle">
           <!-- Energy Chart -->
           <div class="overflow-hidden rounded-lg md:rounded-xl border border-green-300 md:border-2 dark:border-green-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
             <div class="border-b border-green-300 md:border-b-2 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
@@ -335,6 +335,25 @@ const enrichedCompteurs = computed(() => {
   })
 })
 
+// Dynamic panel sizing based on meter count
+const leftPanelStyle = computed(() => {
+  const count = selectedCompteurs.value.length
+  // When 8 meters, use 2/3 for cards and 1/3 for charts; otherwise 1/2 each
+  if (count === 8) {
+    return { flex: '0 0 66.666%' }
+  }
+  return { flex: '1' }
+})
+
+const rightPanelStyle = computed(() => {
+  const count = selectedCompteurs.value.length
+  // When 8 meters, use 1/3 for charts; otherwise 1/2
+  if (count === 8) {
+    return { flex: '0 0 33.333%' }
+  }
+  return { flex: '1' }
+})
+
 // Methods
 const getMeterColorTailwind = (index: number) => {
   return getMeterColorByIndex(index).tailwind
@@ -351,12 +370,14 @@ const formatValue = (value: number | undefined): string => {
 
 const getChartColor = (index: number) => {
   const colors = [
-    'rgba(16, 185, 129, 1)',  // green
-    'rgba(59, 130, 246, 1)',  // blue
-    'rgba(239, 68, 68, 1)',   // red
-    'rgba(245, 158, 11, 1)',  // orange
-    'rgba(139, 92, 246, 1)',  // purple
-    'rgba(236, 72, 153, 1)',  // pink
+    'rgba(16, 185, 129, 1)',   // green
+    'rgba(59, 130, 246, 1)',   // blue
+    'rgba(239, 68, 68, 1)',    // red
+    'rgba(245, 158, 11, 1)',   // orange
+    'rgba(139, 92, 246, 1)',   // purple
+    'rgba(236, 72, 153, 1)',   // pink
+    'rgba(34, 211, 238, 1)',   // cyan
+    'rgba(20, 184, 166, 1)',   // teal
   ]
   return colors[index % colors.length]
 }
@@ -379,8 +400,11 @@ const getGridStyle = () => {
     return 'grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr;'
   } else if (count === 4) {
     return 'grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr;'
+  } else if (count === 8) {
+    // For 8 meters: 4 cards per line (2 rows of 4)
+    return 'grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr;'
   } else {
-    // For 5+ meters, use responsive auto-fit
+    // For 5-7 or 9+ meters, use responsive auto-fit
     return 'grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); grid-auto-rows: 1fr;'
   }
 }
@@ -395,5 +419,16 @@ const getGridStyle = () => {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Reduce sidebar margin for GlobalMetersView to maximize card space */
+:global(.global-meters-view) {
+  margin-left: calc(-10px + (100% - 100%));
+}
+
+/* Adjust for expanded sidebar */
+:global(.sidebar-expanded.global-meters-view),
+:global(.sidebar-hovered.global-meters-view) {
+  margin-left: -90px;
 }
 </style>
