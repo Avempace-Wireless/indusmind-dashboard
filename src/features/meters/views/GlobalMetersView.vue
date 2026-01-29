@@ -76,12 +76,12 @@
                 <!-- Instantaneous Power -->
                 <div class="text-center bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-lg p-0 border border-slate-200 dark:border-slate-700 flex-1 flex flex-col justify-center items-center">
                   <div>
-                    <span class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" style="font-size: clamp(5px, 0.6vmin, 7px); line-height: 1;">
+                    <span class="font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">
                       {{ $t('globalMeters.instantaneousPower') }}
                     </span>
                   </div>
                   <div class="flex items-baseline justify-center gap-0.5 mt-0.25">
-                    <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 48px)', color: getChartColor(index) }">
+                    <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getChartColor(index) }">
                       {{ formatValue(compteur.instantaneous) }}
                     </span>
                     <span class="font-bold text-slate-900 dark:text-slate-100" style="font-size: clamp(8px, 1vmin, 12px);">kW</span>
@@ -91,14 +91,14 @@
                 <!-- Today vs Yesterday Comparison - Proportional -->
                 <div class="grid grid-cols-2 gap-0 flex-1">
                   <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-0 border border-green-200 dark:border-green-900/30 flex flex-col justify-center items-center">
-                    <p class="text-green-700 dark:text-green-400 font-bold" style="font-size: clamp(5px, 0.6vmin, 7px); line-height: 1;">{{ $t('globalMeters.today') }}</p>
+                    <p class="text-green-800 dark:text-green-300 font-extrabold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">{{ $t('globalMeters.today') }}</p>
                     <p class="text-green-900 dark:text-green-200 font-bold leading-tight" style="font-size: clamp(14px, 2.3vmin, 24px); line-height: 1.1;">{{ formatValue(compteur.today) }}</p>
-                    <p class="text-green-700 dark:text-green-300 font-medium" style="font-size: clamp(5px, 0.6vmin, 7px); line-height: 1;">kWh</p>
+                    <p class="text-green-800 dark:text-green-300 font-bold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">kWh</p>
                   </div>
                   <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/30 dark:to-slate-900/30 rounded-lg p-0 border border-slate-300 dark:border-slate-700/50 flex flex-col justify-center items-center">
-                    <p class="text-slate-600 dark:text-slate-400 font-bold" style="font-size: clamp(5px, 0.6vmin, 7px); line-height: 1;">{{ $t('globalMeters.yesterday') }}</p>
+                    <p class="text-slate-700 dark:text-slate-300 font-extrabold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">{{ $t('globalMeters.yesterday') }}</p>
                     <p class="text-slate-800 dark:text-slate-200 font-bold leading-tight" style="font-size: clamp(14px, 2.3vmin, 24px); line-height: 1.1;">{{ formatValue(compteur.yesterday) }}</p>
-                    <p class="text-slate-600 dark:text-slate-400 font-medium" style="font-size: clamp(5px, 0.6vmin, 7px); line-height: 1;">kWh</p>
+                    <p class="text-slate-700 dark:text-slate-300 font-bold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">kWh</p>
                   </div>
                 </div>
               </div>
@@ -119,7 +119,11 @@
               </div>
             </div>
             <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-0">
+              <div v-if="enrichedCompteurs.length === 0 || enrichedCompteurs.every(m => m.hourlyData.length === 0)" class="w-full h-full flex items-center justify-center">
+                <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
+              </div>
               <EnergyConsumptionChart
+                v-else
                 :meters="enrichedCompteurs"
                 :loading="isLoadingAPI"
               />
@@ -137,7 +141,11 @@
               </div>
             </div>
             <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-0">
+              <div v-if="temperatureChartData.length === 0" class="w-full h-full flex items-center justify-center">
+                <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
+              </div>
               <TemperatureChart
+                v-else
                 :sensors="temperatureChartData"
                 :loading="isLoadingTemperature"
               />
@@ -206,12 +214,12 @@ onMounted(() => {
     currentTime.value = new Date()
   }, 1000)
 
-  // Refresh global meters data every 30 seconds when meters are selected
+  // Refresh global meters data every 10 seconds when meters are selected
   refreshInterval = setInterval(() => {
     if (selectedCompteurs.value.length > 0) {
-      fetchGlobalMetersData()
+      fetchGlobalMetersData(false)
     }
-  }, 30000)
+  }, 10000)
 
   // Initial fetch if meters are already selected
   if (selectedCompteurs.value.length > 0) {
@@ -243,7 +251,7 @@ watch(selectedCompteurs, async (newCompteurs, oldCompteurs) => {
 }, { deep: true })
 
 // Fetch global meters data from API
-async function fetchGlobalMetersData() {
+async function fetchGlobalMetersData(showLoader = true) {
   const deviceUUIDs = selectedCompteurs.value
     .filter((c) => c.deviceUUID)
     .map((c) => c.deviceUUID!)
@@ -253,9 +261,13 @@ async function fetchGlobalMetersData() {
     return
   }
 
-  isLoadingAPI.value = true
+  if (showLoader) {
+    isLoadingAPI.value = true
+  }
   const response = await fetchGlobalMeters(deviceUUIDs, false)
-  isLoadingAPI.value = false
+  if (showLoader) {
+    isLoadingAPI.value = false
+  }
 
   if (response && response.success) {
     globalMetersList.value = response.data
@@ -291,7 +303,7 @@ const handleCompteurSelection = (selectedIds: string[]) => {
   // The watch on selectedCompteurs will trigger API fetch
 }
 
-// Enrich selected compteurs with API data or fallback to mock data
+// Enrich selected compteurs with API data only (no mock data)
 const enrichedCompteurs = computed(() => {
   return selectedCompteurs.value.map((compteur, index) => {
     // Try to find corresponding API data
@@ -304,29 +316,25 @@ const enrichedCompteurs = computed(() => {
         id: compteur.id,
         name: compteur.name,
         status: apiData.status,
-        instantaneous: apiData.instantaneous ?? 0,
-        currentPower: apiData.instantaneous ?? 0, // For ComparisonChart
-        today: apiData.today ?? 0,
-        yesterday: apiData.yesterday ?? 0,
+        instantaneous: apiData.instantaneous ?? undefined,
+        currentPower: apiData.instantaneous ?? undefined, // For ComparisonChart
+        today: apiData.today ?? undefined,
+        yesterday: apiData.yesterday ?? undefined,
         hourlyData: apiData.hourlyData || [],
         monthlyData: apiData.monthlyData || [],
         yearlyData: apiData.yearlyData || [],
       }
     } else {
-      // Fallback to mock data while loading
-      const basePower = 45 + index * 12 + Math.random() * 15
-      const todayEnergy = 320 + index * 50 + Math.random() * 80
-      const yesterdayEnergy = todayEnergy - 20 + Math.random() * 40
-
+      // No API data available - return undefined values that will display as "--"
       return {
         ...compteur,
         id: compteur.id,
         name: compteur.name,
-        status: 'online' as const,
-        instantaneous: basePower,
-        currentPower: basePower,
-        today: todayEnergy,
-        yesterday: yesterdayEnergy,
+        status: 'offline' as const,
+        instantaneous: undefined,
+        currentPower: undefined,
+        today: undefined,
+        yesterday: undefined,
         hourlyData: [],
         monthlyData: [],
         yearlyData: [],
@@ -337,7 +345,8 @@ const enrichedCompteurs = computed(() => {
 
 // Dynamic panel sizing based on meter count
 const leftPanelStyle = computed(() => {
-  const count = selectedCompteurs.value.length
+  //const count = selectedCompteurs.value.length
+  const count = enrichedCompteurs.value.length
   // When 8 meters, use 2/3 for cards and 1/3 for charts; otherwise 1/2 each
   if (count === 8) {
     return { flex: '0 0 66.666%' }
@@ -346,7 +355,7 @@ const leftPanelStyle = computed(() => {
 })
 
 const rightPanelStyle = computed(() => {
-  const count = selectedCompteurs.value.length
+  const count = enrichedCompteurs.value.length
   // When 8 meters, use 1/3 for charts; otherwise 1/2
   if (count === 8) {
     return { flex: '0 0 33.333%' }
@@ -384,7 +393,7 @@ const getChartColor = (index: number) => {
 
 // Responsive grid style based on number of meters
 const getGridStyle = () => {
-  const count = selectedCompteurs.value.length
+  const count = enrichedCompteurs.value.length
 
   // For small screens (mobile), allow scrolling with single column
   if (window.innerWidth < 768) {
