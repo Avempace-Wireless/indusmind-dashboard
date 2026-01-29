@@ -255,6 +255,11 @@ const menuGroups = computed(() => [
     title: t('sidebar.monitoring'),
     items: [
       {
+        icon: PieChartIcon,
+        name: t('sidebar.globalMeters'),
+        path: '/global-meters',
+      },
+      {
         icon: GridIcon,
         name: t('sidebar.dashboard'),
         path: '/dashboard',

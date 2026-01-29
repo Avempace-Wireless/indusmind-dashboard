@@ -17,37 +17,41 @@
         </div>
 
         <!-- Error Banner (Thermal API) -->
-        <div v-if="thermalError" class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-900/20">
+        <div v-if="thermalError"
+          class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-900/20">
           <div class="flex items-start justify-between">
             <div class="flex items-start gap-3">
-              <svg class="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              <svg class="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor"
+                viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clip-rule="evenodd" />
               </svg>
               <div>
                 <h3 class="text-sm font-semibold text-red-800 dark:text-red-200">Thermal API Error</h3>
                 <p class="mt-1 text-sm text-red-700 dark:text-red-300">{{ thermalError }}</p>
               </div>
             </div>
-            <button
-              @click="thermalError = null"
-              class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-            >
+            <button @click="thermalError = null"
+              class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
               <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                <path fill-rule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clip-rule="evenodd" />
               </svg>
             </button>
           </div>
           <div v-if="dataMode === 'api'" class="mt-3">
-            <button
-              @click="refreshThermalData"
-              :disabled="isFetchingThermal"
-              class="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 dark:bg-red-700 dark:hover:bg-red-600"
-            >
-              <svg v-if="isFetchingThermal" class="h-4 w-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+            <button @click="refreshThermalData" :disabled="isFetchingThermal"
+              class="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 dark:bg-red-700 dark:hover:bg-red-600">
+              <svg v-if="isFetchingThermal" class="h-4 w-4 animate-spin" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
               <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               {{ isFetchingThermal ? 'Refreshing...' : 'Retry' }}
             </button>
@@ -55,24 +59,25 @@
         </div>
 
         <!-- Sensor Selector Modal -->
-        <SensorSelector
-          :is-open="showSensorSelector"
-          @apply="handleSensorSelection"
-          @close="showSensorSelector = false"
-        ></SensorSelector>
+        <SensorSelector :is-open="showSensorSelector" @apply="handleSensorSelection"
+          @close="showSensorSelector = false"></SensorSelector>
 
         <!-- Loading Banner -->
         <div v-if="isFetchingThermal && zones.length === 0" class="flex flex-col items-center justify-center py-24">
           <div class="text-center">
             <div class="inline-block mb-6">
-              <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 dark:border-slate-700 border-t-blue-600 dark:border-t-cyan-400"></div>
+              <div
+                class="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 dark:border-slate-700 border-t-blue-600 dark:border-t-cyan-400">
+              </div>
             </div>
             <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ $t('thermal.loading') }}</h3>
             <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">{{ $t('thermal.loadingDescription') }}</p>
             <div class="flex items-center justify-center gap-2">
               <div class="w-2 h-2 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse"></div>
-              <div class="w-2 h-2 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 150ms"></div>
-              <div class="w-2 h-2 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 300ms"></div>
+              <div class="w-2 h-2 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse"
+                style="animation-delay: 150ms"></div>
+              <div class="w-2 h-2 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse"
+                style="animation-delay: 300ms"></div>
             </div>
           </div>
         </div>
@@ -80,134 +85,150 @@
         <!-- Main Content (Hidden during initial load) -->
         <div v-if="!(isFetchingThermal && zones.length === 0)">
 
-        <!-- Status Cards -->
-        <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-          <!-- Active Zones -->
-          <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
-            <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
-              <div class="text-indigo-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.active') }}</div>
-              <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
-                <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
-                </svg>
-              </div>
-            </div>
-            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusActiveZones }}<span class="text-sm sm:text-base lg:text-lg">/{{ thermalSummary?.totalSensors ?? displayedZones.length }}</span></div>
-            <div class="text-indigo-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.operational') }}</div>
-          </div>
-
-          <!-- Average Temperature -->
-          <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
-            <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
-              <div class="text-green-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.avgTemp') }}</div>
-              <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
-                <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
-                </svg>
-              </div>
-            </div>
-            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusAvgTemp }}°C</div>
-            <div class="text-green-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.currentAverage') }}</div>
-          </div>
-
-          <!-- Temperature Range -->
-          <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
-            <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
-              <div class="text-amber-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.tempRange') }}</div>
-              <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
-                <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/>
-                </svg>
-              </div>
-            </div>
-            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusTempRange.min }}—{{ statusTempRange.max }}°C</div>
-            <div class="text-amber-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.minMax') }}</div>
-          </div>
-
-          <!-- System Health -->
-          <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
-            <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
-              <div class="text-red-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.overTemperature') }}</div>
-              <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
-                <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-              </div>
-            </div>
-            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusOverTemperature }}<span class="text-sm sm:text-base lg:text-lg">/{{ displayedZones.length || zones.length }}</span></div>
-            <div class="text-red-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.zonesAboveMax') }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Zone Control Section -->
-    <div v-if="!(isFetchingThermal && zones.length === 0)" class="mb-8">
-      <h2 class="mb-6 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-        {{ t('thermal.sections.zoneControl') }}
-      </h2>
-
-      <!-- Display Controls: compact, cohesive panel -->
-      <div class="mb-4 rounded-lg border border-gray-200 bg-gradient-to-r from-white to-gray-50 p-3 sm:p-4 shadow-sm dark:border-gray-700 dark:from-gray-800 dark:to-gray-800/50">
-        <!-- Mobile Stack: Controls stacked vertically -->
-        <div class="space-y-3 sm:space-y-0">
-          <!-- Row 1: Sensor selection - Grid Layout like History View -->
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-2">
-              {{ t('thermal.controls.sensorsLabel') }}
-            </label>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2">
-              <button
-                v-for="z in zones"
-                :key="'sel-'+z.id"
-                @click="toggleZoneVisibility(z.id)"
-                :title="`${z.sensorName || `Z${z.id}`}${z.sensorLabel ? ` - ${z.sensorLabel}` : ''}`"
-                :class="[
-                  'px-2 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-semibold transition-all duration-200 border flex flex-col items-start gap-1 relative overflow-hidden group',
-                  visibleZoneIds.includes(z.id)
-                    ? 'text-white shadow-md border-indigo-400 bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-600 dark:to-indigo-700'
-                    : 'border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:border-indigo-400 dark:hover:border-indigo-400 bg-white dark:bg-gray-800 hover:bg-indigo-50/70 dark:hover:bg-gray-700'
-                ]"
-              >
-                <div class="flex items-center gap-1 w-full flex-1 min-w-0">
-                  <span v-if="visibleZoneIds.includes(z.id)" class="material-symbols-outlined text-xs flex-shrink-0">check_circle</span>
-                  <div class="flex-1 min-w-0">
-                    <span class="font-semibold truncate text-left block">{{ z.sensorName || `Z${z.id}` }}</span>
-                    <span class="text-[9px] opacity-75 truncate text-left block" :class="visibleZoneIds.includes(z.id) ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'">{{ z.sensorLabel }}</span>
-                  </div>
+          <!-- Status Cards -->
+          <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+            <!-- Active Zones -->
+            <div
+              class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+              <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+                <div class="text-indigo-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{
+                  t('thermal.status.active') }}</div>
+                <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
+                  <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
+                  </svg>
                 </div>
-              </button>
+              </div>
+              <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusActiveZones }}<span
+                  class="text-sm sm:text-base lg:text-lg">/{{ thermalSummary?.totalSensors ?? displayedZones.length
+                  }}</span></div>
+              <div class="text-indigo-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.operational') }}</div>
+            </div>
+
+            <!-- Average Temperature -->
+            <div
+              class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+              <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+                <div class="text-green-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{
+                  t('thermal.status.avgTemp') }}</div>
+                <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
+                  <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" />
+                  </svg>
+                </div>
+              </div>
+              <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusAvgTemp }}°C</div>
+              <div class="text-green-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.currentAverage') }}
+              </div>
+            </div>
+
+            <!-- Temperature Range -->
+            <div
+              class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+              <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+                <div class="text-amber-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{
+                  t('thermal.status.tempRange') }}</div>
+                <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
+                  <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" />
+                  </svg>
+                </div>
+              </div>
+              <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusTempRange.min }}—{{ statusTempRange.max
+                }}°C</div>
+              <div class="text-amber-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.minMax') }}</div>
+            </div>
+
+            <!-- System Health -->
+            <div
+              class="bg-gradient-to-br from-red-500 to-red-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+              <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
+                <div class="text-red-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{
+                  t('thermal.status.overTemperature') }}</div>
+                <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
+                  <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+              <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusOverTemperature }}<span
+                  class="text-sm sm:text-base lg:text-lg">/{{ displayedZones.length || zones.length }}</span></div>
+              <div class="text-red-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.zonesAboveMax') }}</div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Zone Control Section -->
+      <div v-if="!(isFetchingThermal && zones.length === 0)" class="mb-8">
+        <h2 class="mb-6 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+          {{ t('thermal.sections.zoneControl') }}
+        </h2>
+
+        <!-- Display Controls: compact, cohesive panel -->
+        <div
+          class="mb-4 rounded-lg border border-gray-200 bg-gradient-to-r from-white to-gray-50 p-3 sm:p-4 shadow-sm dark:border-gray-700 dark:from-gray-800 dark:to-gray-800/50">
+          <!-- Mobile Stack: Controls stacked vertically -->
+          <div class="space-y-3 sm:space-y-0">
+            <!-- Row 1: Sensor selection - Grid Layout like History View -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400 mb-2">
+                {{ t('thermal.controls.sensorsLabel') }}
+              </label>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2">
+                <button v-for="z in zones" :key="'sel-' + z.id" @click="toggleZoneVisibility(z.id)"
+                  :title="`${z.sensorName || `Z${z.id}`}${z.sensorLabel ? ` - ${z.sensorLabel}` : ''}`" :class="[
+                    'px-2 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-semibold transition-all duration-200 border flex flex-col items-start gap-1 relative overflow-hidden group',
+                    visibleZoneIds.includes(z.id)
+                      ? 'text-white shadow-md border-indigo-400 bg-gradient-to-r from-indigo-600 to-indigo-700 dark:from-indigo-600 dark:to-indigo-700'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:border-indigo-400 dark:hover:border-indigo-400 bg-white dark:bg-gray-800 hover:bg-indigo-50/70 dark:hover:bg-gray-700'
+                  ]">
+                  <div class="flex items-center gap-1 w-full flex-1 min-w-0">
+                    <span v-if="visibleZoneIds.includes(z.id)"
+                      class="material-symbols-outlined text-xs flex-shrink-0">check_circle</span>
+                    <div class="flex-1 min-w-0">
+                      <span class="font-semibold truncate text-left block">{{ z.sensorName || `Z${z.id}` }}</span>
+                      <span class="text-[9px] opacity-75 truncate text-left block"
+                        :class="visibleZoneIds.includes(z.id) ? 'text-white/80' : 'text-gray-600 dark:text-gray-400'">{{
+                        z.sensorLabel }}</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Controls above cards -->
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2">
-            <label class="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+            <label
+              class="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
               {{ t('thermal.controls.columns') }}:
             </label>
             <div class="flex items-center gap-2">
-              <input
-                v-model.number="columnsPerRow"
-                type="range"
-                min="1"
-                max="4"
-                class="h-1 w-24 accent-indigo-600"
-              />
-              <span class="w-7 text-center text-xs sm:text-sm font-bold text-gray-900 dark:text-white">{{ columnsPerRow }}</span>
+              <input v-model.number="columnsPerRow" type="range" min="1" max="4" class="h-1 w-24 accent-indigo-600" />
+              <span class="w-7 text-center text-xs sm:text-sm font-bold text-gray-900 dark:text-white">{{ columnsPerRow
+                }}</span>
             </div>
           </div>
 
           <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            <button @click="selectAllZones" class="rounded px-2 sm:px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20 whitespace-nowrap">
+            <button @click="selectAllZones"
+              class="rounded px-2 sm:px-2.5 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20 whitespace-nowrap">
               {{ t('thermal.controls.selectAll') }}
             </button>
-            <button @click="clearZones" class="rounded px-2 sm:px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 whitespace-nowrap">
+            <button @click="clearZones"
+              class="rounded px-2 sm:px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 whitespace-nowrap">
               {{ t('thermal.controls.clear') }}
             </button>
-            <button @click="resetOrder" class="rounded px-2 sm:px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 whitespace-nowrap">
+            <button @click="resetOrder"
+              class="rounded px-2 sm:px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 whitespace-nowrap">
               {{ t('thermal.controls.resetOrder') }}
             </button>
           </div>
@@ -216,22 +237,14 @@
           {{ t('thermal.controls.orderHint') }}
         </p>
 
-      <!-- Zone Control Cards Grid - Responsive -->
-      <div class="grid gap-3 sm:gap-4" :style="{ gridTemplateColumns: gridColumns }">
-        <div
-          v-for="zone in displayedZones"
-          :key="zone.id"
-          :class="[
+        <!-- Zone Control Cards Grid - Responsive -->
+        <div class="grid gap-3 sm:gap-4" :style="{ gridTemplateColumns: gridColumns }">
+          <div v-for="zone in displayedZones" :key="zone.id" :class="[
             'zone-card relative overflow-hidden rounded-lg sm:rounded-xl lg:rounded-2xl bg-white p-2.5 sm:p-3 lg:p-5 shadow-lg transition-all duration-300 hover:shadow-2xl dark:bg-gray-800',
             zone.power
               ? 'ring-2 ring-green-400 dark:ring-green-600'
               : 'ring-1 ring-gray-200 dark:ring-gray-700',
-          ]"
-          draggable="true"
-          @dragstart="onDragStart(zone.id)"
-          @dragover.prevent
-          @drop="onDrop(zone.id)"
-        >
+          ]" draggable="true" @dragstart="onDragStart(zone.id)" @dragover.prevent @drop="onDrop(zone.id)">
             <!-- Zone Header with Status and Chart Block -->
             <div class="mb-4 sm:mb-5 lg:mb-6 flex items-start justify-between gap-3">
               <!-- Zone Info Block -->
@@ -240,7 +253,7 @@
                   {{ zone.sensorLabel }}
                 </h3>
                 <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 truncate"
-                   :title="zone.sensorName">
+                  :title="zone.sensorName">
                   {{ zone.sensorName || t('thermal.zone', { number: zone.id }) }}
                 </p>
 
@@ -252,10 +265,13 @@
                       ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                       : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                   ]">
-                    <svg :class="['w-2 h-2 sm:w-2.5 sm:h-2.5', zone.powerStatus === false ? 'text-red-500' : 'text-green-500']" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      :class="['w-2 h-2 sm:w-2.5 sm:h-2.5', zone.powerStatus === false ? 'text-red-500' : 'text-green-500']"
+                      fill="currentColor" viewBox="0 0 20 20">
                       <circle cx="10" cy="10" r="8" />
                     </svg>
-                    <span class="hidden sm:inline">{{ zone.powerStatus === false ? t('thermal.chart.inactive') : t('thermal.chart.active') }}</span>
+                    <span class="hidden sm:inline">{{ zone.powerStatus === false ? t('thermal.chart.inactive') :
+                      t('thermal.chart.active') }}</span>
                     <span class="sm:hidden">{{ zone.powerStatus === false ? 'Off' : 'On' }}</span>
                   </span>
                 </div>
@@ -263,17 +279,10 @@
 
               <!-- Chart Icon Block -->
               <div class="flex flex-col items-center gap-2">
-                <button
-                  @click="openChartModal(zone)"
+                <button @click="openChartModal(zone)"
                   class="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all"
-                  :title="t('thermal.chart.open')"
-                >
-                  <svg
-                    class="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  :title="t('thermal.chart.open')">
+                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 18.5h16" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M5 15l4-4 3 3 4-6 3 4" />
                     <circle cx="5" cy="15" r="1.1" fill="currentColor" />
@@ -289,16 +298,18 @@
 
             <!-- Current Temperature Display -->
             <div
-                class="mb-2 sm:mb-3 lg:mb-4 rounded-md sm:rounded-lg lg:rounded-xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-2 sm:p-3 lg:p-5 shadow-inner dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20"
-              >
-                <div class="mb-1 sm:mb-1.5 lg:mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                  {{ t('thermal.currentTemp') }}
-                </div>
-                <div class="flex items-baseline gap-1 sm:gap-2">
-                  <span class="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">{{ zone.currentTemp !== null ? zone.currentTemp.toFixed(1) : '--' }}</span>
-                  <span class="text-base sm:text-lg lg:text-xl font-semibold text-gray-500 dark:text-gray-400">°C</span>
-                </div>
+              class="mb-2 sm:mb-3 lg:mb-4 rounded-md sm:rounded-lg lg:rounded-xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-2 sm:p-3 lg:p-5 shadow-inner dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20">
+              <div
+                class="mb-1 sm:mb-1.5 lg:mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                {{ t('thermal.currentTemp') }}
               </div>
+              <div class="flex items-baseline gap-1 sm:gap-2">
+                <span
+                  class="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">{{
+                    zone.currentTemp !== null ? zone.currentTemp.toFixed(1) : '--' }}</span>
+                <span class="text-base sm:text-lg lg:text-xl font-semibold text-gray-500 dark:text-gray-400">°C</span>
+              </div>
+            </div>
 
             <!-- Controls Area with Mode Selection -->
             <div class="flex flex-col">
@@ -306,35 +317,36 @@
               <div class="min-h-[140px] sm:min-h-[160px] lg:min-h-[200px] flex items-center mb-3 sm:mb-4 lg:mb-5">
                 <!-- Power Toggle Button (Manual Mode Only) -->
                 <div v-if="zone.mode === 'manual'" class="w-full flex justify-center">
-                  <button
-                    @click="togglePower(zone.id)"
-                    :disabled="isControllingRelay[zone.sensorId || '']"
-                    :class="[
-                      'group relative flex h-16 sm:h-20 lg:h-28 w-16 sm:w-20 lg:w-28 flex-col items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
-                      zone.power
-                        ? 'bg-gradient-to-br from-green-400 via-green-500 to-green-600 shadow-green-500/40 hover:shadow-green-500/60'
-                        : 'bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 shadow-gray-500/40 hover:from-red-400 hover:via-red-500 hover:to-red-600 hover:shadow-red-500/60',
-                    ]"
-                  >
+                  <button @click="togglePower(zone.id)" :disabled="isControllingRelay[zone.sensorId || '']" :class="[
+                    'group relative flex h-16 sm:h-20 lg:h-28 w-16 sm:w-20 lg:w-28 flex-col items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
+                    zone.power
+                      ? 'bg-gradient-to-br from-green-400 via-green-500 to-green-600 shadow-green-500/40 hover:shadow-green-500/60'
+                      : 'bg-gradient-to-br from-gray-400 via-gray-500 to-gray-600 shadow-gray-500/40 hover:from-red-400 hover:via-red-500 hover:to-red-600 hover:shadow-red-500/60',
+                  ]">
                     <!-- Power Icon or Loading Spinner -->
-                    <svg v-if="!isControllingRelay[zone.sensorId || '']" class="h-5 sm:h-7 lg:h-10 w-5 sm:w-7 lg:w-10 mb-0.5 sm:mb-0.5 lg:mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <svg v-if="!isControllingRelay[zone.sensorId || '']"
+                      class="h-5 sm:h-7 lg:h-10 w-5 sm:w-7 lg:w-10 mb-0.5 sm:mb-0.5 lg:mb-1" fill="none"
+                      stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    <svg v-else class="h-5 sm:h-7 lg:h-10 w-5 sm:w-7 lg:w-10 mb-0.5 sm:mb-0.5 lg:mb-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg v-else class="h-5 sm:h-7 lg:h-10 w-5 sm:w-7 lg:w-10 mb-0.5 sm:mb-0.5 lg:mb-1 animate-spin"
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                      </path>
                     </svg>
                     <!-- Power Label -->
                     <span class="text-xs font-bold uppercase tracking-wider">
-                      {{ isControllingRelay[zone.sensorId || ''] ? t('common.wait') : (zone.power ? t('thermal.power.on') : t('thermal.power.off')) }}
+                      {{ isControllingRelay[zone.sensorId || ''] ? t('common.wait') : (zone.power ?
+                        t('thermal.power.on') : t('thermal.power.off')) }}
                     </span>
                     <!-- Glow Effect -->
-                    <div
-                      :class="[
-                        'absolute inset-0 rounded-full blur-xl opacity-0 transition-opacity duration-300 group-hover:opacity-50',
-                        zone.power ? 'bg-green-400' : 'bg-red-400',
-                      ]"
-                    ></div>
+                    <div :class="[
+                      'absolute inset-0 rounded-full blur-xl opacity-0 transition-opacity duration-300 group-hover:opacity-50',
+                      zone.power ? 'bg-green-400' : 'bg-red-400',
+                    ]"></div>
                   </button>
 
                   <!-- Relay Error Message -->
@@ -349,45 +361,38 @@
                 <div v-if="zone.mode === 'auto'" class="w-full space-y-1.5 sm:space-y-2 lg:space-y-3">
                   <!-- Max Temperature -->
                   <div>
-                    <label class="mb-0.5 sm:mb-1 lg:mb-1.5 flex items-center justify-between text-xs font-medium text-gray-700 dark:text-gray-300 gap-1">
+                    <label
+                      class="mb-0.5 sm:mb-1 lg:mb-1.5 flex items-center justify-between text-xs font-medium text-gray-700 dark:text-gray-300 gap-1">
                       <span class="flex items-center gap-0.5 sm:gap-1 min-w-0">
-                        <svg class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"/>
+                        <svg class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3 text-red-500 flex-shrink-0"
+                          fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
                         </svg>
                         <span class="hidden sm:inline">{{ t('thermal.maxTemp') }}</span>
                         <span class="sm:hidden">Max</span>
                       </span>
-                      <span v-if="zone.maxTemp" class="rounded bg-red-100 px-1 sm:px-1.5 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400 flex-shrink-0">
+                      <span v-if="zone.maxTemp"
+                        class="rounded bg-red-100 px-1 sm:px-1.5 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400 flex-shrink-0">
                         {{ zone.maxTemp }}°C
                       </span>
                     </label>
                     <div class="flex items-center gap-0.5 sm:gap-1 lg:gap-1.5 min-w-0">
-                      <input
-                        v-model.number="zone.maxTemp"
-                        type="number"
-                        step="0.5"
-                        min="10"
-                        max="40"
+                      <input v-model.number="zone.maxTemp" type="number" step="0.5" min="10" max="40"
                         :disabled="zone.mode !== 'auto'"
-                        class="min-w-0 flex-1 rounded border-2 border-gray-200 bg-white px-1.5 sm:px-2 lg:px-3 py-1 sm:py-1.5 lg:py-2 text-xs sm:text-sm lg:text-sm font-medium text-gray-900 transition-colors focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100 disabled:bg-gray-50 disabled:text-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-red-500 dark:focus:ring-red-900/30"
-                      />
+                        class="min-w-0 flex-1 rounded border-2 border-gray-200 bg-white px-1.5 sm:px-2 lg:px-3 py-1 sm:py-1.5 lg:py-2 text-xs sm:text-sm lg:text-sm font-medium text-gray-900 transition-colors focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100 disabled:bg-gray-50 disabled:text-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-red-500 dark:focus:ring-red-900/30" />
                       <div class="flex flex-col gap-0.5 shrink-0">
-                        <button
-                          @click="adjustTemp(zone.id, 'max', 1)"
-                          :disabled="zone.mode !== 'auto'"
-                          class="rounded-t border border-gray-300 bg-white p-0.5 text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-red-900/30"
-                        >
-                          <svg class="h-2 sm:h-2.5 lg:h-3 w-2 sm:w-2.5 lg:w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"/>
+                        <button @click="adjustTemp(zone.id, 'max', 1)" :disabled="zone.mode !== 'auto'"
+                          class="rounded-t border border-gray-300 bg-white p-0.5 text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-red-900/30">
+                          <svg class="h-2 sm:h-2.5 lg:h-3 w-2 sm:w-2.5 lg:w-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7" />
                           </svg>
                         </button>
-                        <button
-                          @click="adjustTemp(zone.id, 'max', -1)"
-                          :disabled="zone.mode !== 'auto'"
-                          class="rounded-b border border-t-0 border-gray-300 bg-white p-0.5 text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-red-900/30"
-                        >
-                          <svg class="h-2 sm:h-2.5 lg:h-3 w-2 sm:w-2.5 lg:w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"/>
+                        <button @click="adjustTemp(zone.id, 'max', -1)" :disabled="zone.mode !== 'auto'"
+                          class="rounded-b border border-t-0 border-gray-300 bg-white p-0.5 text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-red-900/30">
+                          <svg class="h-2 sm:h-2.5 lg:h-3 w-2 sm:w-2.5 lg:w-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
                           </svg>
                         </button>
                       </div>
@@ -396,45 +401,38 @@
 
                   <!-- Min Temperature -->
                   <div>
-                    <label class="mb-0.5 sm:mb-1 lg:mb-1.5 flex items-center justify-between text-xs font-medium text-gray-700 dark:text-gray-300 gap-1">
+                    <label
+                      class="mb-0.5 sm:mb-1 lg:mb-1.5 flex items-center justify-between text-xs font-medium text-gray-700 dark:text-gray-300 gap-1">
                       <span class="flex items-center gap-0.5 sm:gap-1 min-w-0">
-                        <svg class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"/>
+                        <svg class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3 text-blue-500 flex-shrink-0"
+                          fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
                         </svg>
                         <span class="hidden sm:inline">{{ t('thermal.minTemp') }}</span>
                         <span class="sm:hidden">Min</span>
                       </span>
-                      <span v-if="zone.minTemp" class="rounded bg-blue-100 px-1 sm:px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 flex-shrink-0">
+                      <span v-if="zone.minTemp"
+                        class="rounded bg-blue-100 px-1 sm:px-1.5 py-0.5 text-xs text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 flex-shrink-0">
                         {{ zone.minTemp }}°C
                       </span>
                     </label>
                     <div class="flex items-center gap-0.5 sm:gap-1 lg:gap-1.5 min-w-0">
-                      <input
-                        v-model.number="zone.minTemp"
-                        type="number"
-                        step="0.5"
-                        min="10"
-                        max="40"
+                      <input v-model.number="zone.minTemp" type="number" step="0.5" min="10" max="40"
                         :disabled="zone.mode !== 'auto'"
-                        class="min-w-0 flex-1 rounded border-2 border-gray-200 bg-white px-1.5 sm:px-2 lg:px-3 py-1 sm:py-1.5 lg:py-2 text-xs sm:text-sm lg:text-sm font-medium text-gray-900 transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-900/30"
-                      />
+                        class="min-w-0 flex-1 rounded border-2 border-gray-200 bg-white px-1.5 sm:px-2 lg:px-3 py-1 sm:py-1.5 lg:py-2 text-xs sm:text-sm lg:text-sm font-medium text-gray-900 transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 disabled:bg-gray-50 disabled:text-gray-400 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500 dark:focus:ring-blue-900/30" />
                       <div class="flex flex-col gap-0.5 shrink-0">
-                        <button
-                          @click="adjustTemp(zone.id, 'min', 1)"
-                          :disabled="zone.mode !== 'auto'"
-                          class="rounded-t border border-gray-300 bg-white p-0.5 text-gray-600 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/30"
-                        >
-                          <svg class="h-2 sm:h-2.5 lg:h-3 w-2 sm:w-2.5 lg:w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7"/>
+                        <button @click="adjustTemp(zone.id, 'min', 1)" :disabled="zone.mode !== 'auto'"
+                          class="rounded-t border border-gray-300 bg-white p-0.5 text-gray-600 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/30">
+                          <svg class="h-2 sm:h-2.5 lg:h-3 w-2 sm:w-2.5 lg:w-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 15l7-7 7 7" />
                           </svg>
                         </button>
-                        <button
-                          @click="adjustTemp(zone.id, 'min', -1)"
-                          :disabled="zone.mode !== 'auto'"
-                          class="rounded-b border border-t-0 border-gray-300 bg-white p-0.5 text-gray-600 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/30"
-                        >
-                          <svg class="h-2 sm:h-2.5 lg:h-3 w-2 sm:w-2.5 lg:w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"/>
+                        <button @click="adjustTemp(zone.id, 'min', -1)" :disabled="zone.mode !== 'auto'"
+                          class="rounded-b border border-t-0 border-gray-300 bg-white p-0.5 text-gray-600 transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-blue-900/30">
+                          <svg class="h-2 sm:h-2.5 lg:h-3 w-2 sm:w-2.5 lg:w-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
                           </svg>
                         </button>
                       </div>
@@ -445,35 +443,32 @@
 
               <!-- Mode Selection (Fixed Position) -->
               <div class="flex gap-1 sm:gap-1.5 lg:gap-2">
-                <button
-                  @click="setMode(zone.id, 'manual')"
-                  :class="[
-                    'group relative flex-1 overflow-hidden rounded-md sm:rounded-lg lg:rounded-xl px-1.5 sm:px-2 lg:px-4 py-1.5 sm:py-2 lg:py-3 text-xs font-bold uppercase tracking-wide shadow-md transition-all duration-300',
-                    zone.mode === 'manual'
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-blue-500/40'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
-                  ]"
-                >
+                <button @click="setMode(zone.id, 'manual')" :class="[
+                  'group relative flex-1 overflow-hidden rounded-md sm:rounded-lg lg:rounded-xl px-1.5 sm:px-2 lg:px-4 py-1.5 sm:py-2 lg:py-3 text-xs font-bold uppercase tracking-wide shadow-md transition-all duration-300',
+                  zone.mode === 'manual'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-blue-500/40'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
+                ]">
                   <span class="relative z-10 flex items-center justify-center gap-0.5 sm:gap-1">
                     <svg class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                      <path
+                        d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
                     <span class="hidden sm:inline">{{ t('thermal.manual') }}</span>
                     <span class="sm:hidden">M</span>
                   </span>
                 </button>
-                <button
-                  @click="setMode(zone.id, 'auto')"
-                  :class="[
-                    'group relative flex-1 overflow-hidden rounded-md sm:rounded-lg lg:rounded-xl px-1.5 sm:px-2 lg:px-4 py-1.5 sm:py-2 lg:py-3 text-xs font-bold uppercase tracking-wide shadow-md transition-all duration-300',
-                    zone.mode === 'auto'
-                      ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-purple-500/40'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
-                  ]"
-                >
+                <button @click="setMode(zone.id, 'auto')" :class="[
+                  'group relative flex-1 overflow-hidden rounded-md sm:rounded-lg lg:rounded-xl px-1.5 sm:px-2 lg:px-4 py-1.5 sm:py-2 lg:py-3 text-xs font-bold uppercase tracking-wide shadow-md transition-all duration-300',
+                  zone.mode === 'auto'
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-purple-500/40'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
+                ]">
                   <span class="relative z-10 flex items-center justify-center gap-0.5 sm:gap-1">
                     <svg class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                      <path fill-rule="evenodd"
+                        d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                        clip-rule="evenodd" />
                     </svg>
                     <span class="hidden sm:inline">{{ t('thermal.auto') }}</span>
                     <span class="sm:hidden">A</span>
@@ -483,31 +478,29 @@
             </div>
 
             <!-- Status Indicator Bar -->
-            <div
-              :class="[
-                'absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 lg:h-1.5 transition-all duration-300',
-                zone.power
-                  ? 'bg-gradient-to-r from-green-400 via-green-500 to-green-600 shadow-lg shadow-green-500/50'
-                  : 'bg-gray-200 dark:bg-gray-700',
-              ]"
-            ></div>
+            <div :class="[
+              'absolute bottom-0 left-0 right-0 h-0.5 sm:h-1 lg:h-1.5 transition-all duration-300',
+              zone.power
+                ? 'bg-gradient-to-r from-green-400 via-green-500 to-green-600 shadow-lg shadow-green-500/50'
+                : 'bg-gray-200 dark:bg-gray-700',
+            ]"></div>
           </div>
         </div>
       </div>
 
-    <!-- Temperature Monitoring Section -->
-    <div v-if="!(isFetchingThermal && zones.length === 0)" class="mb-8">
-      <h2 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">
-        {{ t('thermal.sections.monitoring') }}
-      </h2>
+      <!-- Temperature Monitoring Section -->
+      <div v-if="!(isFetchingThermal && zones.length === 0)" class="mb-8">
+        <h2 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">
+          {{ t('thermal.sections.monitoring') }}
+        </h2>
 
-      <!-- Temperature Charts -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Temperature Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Zone Temperatures Chart -->
           <div
-            class="overflow-hidden rounded-2xl border border-blue-200 dark:border-blue-900/30 bg-white shadow-lg dark:bg-gray-800 hover:shadow-xl transition-shadow duration-300 flex flex-col"
-          >
-            <div class="border-b border-blue-100 dark:border-blue-900/20 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 px-6 py-4">
+            class="overflow-hidden rounded-2xl border border-blue-200 dark:border-blue-900/30 bg-white shadow-lg dark:bg-gray-800 hover:shadow-xl transition-shadow duration-300 flex flex-col">
+            <div
+              class="border-b border-blue-100 dark:border-blue-900/20 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 px-6 py-4">
               <div class="flex items-center gap-3">
                 <div class="h-1 w-1 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"></div>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white">
@@ -517,30 +510,28 @@
             </div>
 
             <!-- Unified Chart -->
-            <div class="flex-1 p-4 flex flex-col bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-[500px]">
+            <div
+              class="flex-1 p-4 flex flex-col bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-[500px]">
               <div v-if="isFetchingChartData" class="flex items-center justify-center flex-1">
                 <div class="text-center">
-                  <div class="inline-block animate-spin rounded-full h-8 w-8 border-3 border-blue-300 border-t-blue-600 dark:border-blue-700 dark:border-t-blue-400 mb-2"></div>
+                  <div
+                    class="inline-block animate-spin rounded-full h-8 w-8 border-3 border-blue-300 border-t-blue-600 dark:border-blue-700 dark:border-t-blue-400 mb-2">
+                  </div>
                   <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</p>
                 </div>
               </div>
               <div v-else class="w-full" style="height: 500px;">
-                <VueApexCharts
-                  :key="`chart-${chartDataMap.size}`"
-                  type="area"
-                  height="500"
-                  :options="getAllSensorsChartOptions()"
-                  :series="getAllSensorsChartSeries()"
-                />
+                <VueApexCharts :key="`chart-${chartDataMap.size}`" type="area" height="500"
+                  :options="getAllSensorsChartOptions()" :series="getAllSensorsChartSeries()" />
               </div>
             </div>
           </div>
 
           <!-- Min/Max Temperature Chart -->
           <div
-            class="overflow-hidden rounded-2xl border border-emerald-200 dark:border-emerald-900/30 bg-white shadow-lg dark:bg-gray-800 hover:shadow-xl transition-shadow duration-300 flex flex-col"
-          >
-            <div class="border-b border-emerald-100 dark:border-emerald-900/20 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 px-6 py-4">
+            class="overflow-hidden rounded-2xl border border-emerald-200 dark:border-emerald-900/30 bg-white shadow-lg dark:bg-gray-800 hover:shadow-xl transition-shadow duration-300 flex flex-col">
+            <div
+              class="border-b border-emerald-100 dark:border-emerald-900/20 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 px-6 py-4">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="h-1 w-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"></div>
@@ -548,14 +539,17 @@
                     {{ t('thermal.charts.minMax.title') }}
                   </h3>
                 </div>
-                <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                <svg class="h-5 w-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
             </div>
 
             <!-- Chart -->
-            <div class="flex-1 p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-[350px]">
+            <div
+              class="flex-1 p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-[350px]">
               <div class="relative h-full" :class="chartHeightClass">
                 <BarChart :data="minMaxChartData" :options="minMaxChartOptions" class="!h-full !w-full"></BarChart>
               </div>
@@ -569,39 +563,29 @@
 
     <!-- Chart Modal -->
     <Teleport to="body">
-      <Transition
-        enter-active-class="transition-opacity duration-300"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-300"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="showChartModal"
+      <Transition enter-active-class="transition-opacity duration-300" enter-from-class="opacity-0"
+        enter-to-class="opacity-100" leave-active-class="transition-opacity duration-300" leave-from-class="opacity-100"
+        leave-to-class="opacity-0">
+        <div v-if="showChartModal"
           class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
-          @click.self="closeChartModal"
-          style="margin: 0 !important;"
-        >
+          @click.self="closeChartModal" style="margin: 0 !important;">
           <div
             class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col relative z-[999999]"
-            @click.stop
-            v-if="chartModalZone"
-          >
+            @click.stop v-if="chartModalZone">
             <!-- Modal Header -->
-            <div class="flex items-center justify-between p-2 sm:p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div
+              class="flex items-center justify-between p-2 sm:p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <div class="min-w-0 flex-1">
                 <h3 class="text-sm sm:text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">
                   {{ chartModalZone.sensorLabel || chartModalZone.sensorName || `Zone ${chartModalZone.id}` }}
                 </h3>
-                <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1 truncate">{{ t('thermal.chart.subtitle') }}</p>
+                <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1 truncate">{{
+                  t('thermal.chart.subtitle') }}</p>
               </div>
-              <button
-                @click="closeChartModal"
-                class="p-1 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
-              >
+              <button @click="closeChartModal"
+                class="p-1 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0">
                 <svg class="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
@@ -609,21 +593,19 @@
             <!-- Modal Body with Chart -->
             <div class="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
               <div v-if="chartModalZone" class="h-[250px] sm:h-[350px] md:h-[500px]">
-                <VueApexCharts
-                  type="area"
-                  :height="'100%'"
-                  :options="getChartOptions(chartModalZone!)"
-                  :series="getChartSeries(chartModalZone!)"
-                />
+                <VueApexCharts type="area" :height="'100%'" :options="getChartOptions(chartModalZone!)"
+                  :series="getChartSeries(chartModalZone!)" />
               </div>
             </div>
 
             <!-- Modal Footer with Zone Info -->
-            <div class="flex items-center justify-between p-2 sm:p-4 md:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex-wrap gap-2 sm:gap-4 flex-shrink-0">
+            <div
+              class="flex items-center justify-between p-2 sm:p-4 md:p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex-wrap gap-2 sm:gap-4 flex-shrink-0">
               <div class="flex items-center gap-6">
                 <div>
                   <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('thermal.chart.current') }}</div>
-                  <div class="text-lg font-bold text-gray-900 dark:text-white">{{ chartModalZone.currentTemp !== null ? chartModalZone.currentTemp.toFixed(1) : '--' }}°C</div>
+                  <div class="text-lg font-bold text-gray-900 dark:text-white">{{ chartModalZone.currentTemp !== null ?
+                    chartModalZone.currentTemp.toFixed(1) : '--' }}°C</div>
                 </div>
                 <div>
                   <div class="text-xs text-red-500">{{ t('thermal.chart.maxTarget') }}</div>
@@ -636,13 +618,11 @@
               </div>
               <div class="flex items-center gap-2">
                 <span class="px-3 py-1 rounded-full text-xs font-semibold"
-                  :class="chartModalZone.power ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'"
-                >
+                  :class="chartModalZone.power ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'">
                   {{ chartModalZone.power ? t('thermal.chart.active') : t('thermal.chart.inactive') }}
                 </span>
                 <span class="px-3 py-1 rounded-full text-xs font-semibold"
-                  :class="chartModalZone.mode === 'auto' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'"
-                >
+                  :class="chartModalZone.mode === 'auto' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'">
                   {{ chartModalZone.mode === 'auto' ? t('thermal.auto') : t('thermal.manual') }}
                 </span>
               </div>
@@ -1777,5 +1757,6 @@ const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(ma
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
 /* Desktop (1024px+): uses the columnsPerRow slider value from inline style */
 </style>
