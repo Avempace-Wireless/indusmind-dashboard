@@ -334,6 +334,20 @@
     }
   },
   "equipment": {
+    "pageTitle": "Équipement",
+    "devicesMonitored": "appareils surveillés",
+    "online": "en ligne",
+    "loading": "Chargement des appareils...",
+    "error": "Erreur de chargement",
+    "fetchError": "Erreur lors de la récupération des appareils",
+    "noDevices": "Aucun appareil trouvé",
+    "noDevicesDescription": "Aucun appareil n'est actuellement disponible pour être surveillé",
+    "search": "Rechercher par nom ou label...",
+    "filterAll": "Tous les types",
+    "noSearchResults": "Aucun résultat trouvé",
+    "noSearchResultsDescription": "Aucun appareil ne correspond à votre recherche ou vos filtres",
+    "resultSingular": "résultat",
+    "resultPlural": "résultats",
     "compressors": "Compresseurs",
     "compressorsIndustrial": "Compresseurs industriels",
     "compressorSecondary": "Compresseur secondaire",
@@ -341,7 +355,28 @@
     "climGeneralLabel": "Climatisation générale",
     "climOffices": "Climatisation bureaux",
     "lighting": "Éclairage",
-    "lightingGeneral": "Éclairage général"
+    "lightingGeneral": "Éclairage général",
+    "deviceType": {
+      "meter": "Compteur",
+      "sensor": "Capteur",
+      "controller": "Contrôleur"
+    },
+    "table": {
+      "name": "Compteur",
+      "type": "Type",
+      "status": "État",
+      "currentValue": "Valeur Actuelle",
+      "unit": "Unité",
+      "lastUpdate": "Dernière Mise à Jour",
+      "online": "En ligne",
+      "justNow": "À l'instant",
+      "minutesAgo": "Il y a {n} minute(s)",
+      "hoursAgo": "Il y a {n} heure(s)",
+      "daysAgo": "Il y a {n} jour(s)"
+    },
+    "pagination": {
+      "showing": "Affichage de {start} à {end} sur {total} appareils"
+    }
   },
   "categories": {
     "tgbt": "TGBT",

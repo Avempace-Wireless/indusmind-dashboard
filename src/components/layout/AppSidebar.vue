@@ -291,6 +291,26 @@ const menuGroups = computed(() => [
       },
     ],
   },
+    {
+    title: t('sidebar.equipment'),
+    comingSoon: false,
+    items: [
+      {
+        icon: BoxCubeIcon,
+        name: t('sidebar.equipment'),
+        path: '/equipment',
+        disabled: false,
+      },
+
+/*       {
+        icon: PlugInIcon,
+        name: t('sidebar.maintenance'),
+        path: '/maintenance',
+        disabled: true,
+        comingSoon: true,
+      }, */
+    ],
+  },
   {
     title: t('sidebar.analysis') + ' & ' + t('sidebar.reports'),
     comingSoon: true,
@@ -319,26 +339,6 @@ const menuGroups = computed(() => [
         path: '/reports',
         disabled: true,
       }
-    ],
-  },
-  {
-    title: t('sidebar.equipment'),
-    comingSoon: true,
-    items: [
-      {
-        icon: BoxCubeIcon,
-        name: t('sidebar.equipment'),
-        path: '/equipment',
-        disabled: true,
-      },
-
-/*       {
-        icon: PlugInIcon,
-        name: t('sidebar.maintenance'),
-        path: '/maintenance',
-        disabled: true,
-        comingSoon: true,
-      }, */
     ],
   },
 /*   {

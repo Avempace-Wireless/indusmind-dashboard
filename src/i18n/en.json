@@ -336,6 +336,20 @@
     }
   },
   "equipment": {
+    "pageTitle": "Equipment",
+    "devicesMonitored": "devices monitored",
+    "online": "online",
+    "loading": "Loading devices...",
+    "error": "Loading error",
+    "fetchError": "Error fetching devices",
+    "noDevices": "No devices found",
+    "noDevicesDescription": "No devices are currently available to monitor",
+    "search": "Search by name or label...",
+    "filterAll": "All types",
+    "noSearchResults": "No results found",
+    "noSearchResultsDescription": "No devices match your search or filters",
+    "resultSingular": "result",
+    "resultPlural": "results",
     "compressors": "Compressors",
     "compressorsIndustrial": "Industrial Compressors",
     "compressorSecondary": "Secondary Compressor",
@@ -343,7 +357,28 @@
     "climGeneralLabel": "General Cooling",
     "climOffices": "Office Cooling",
     "lighting": "Lighting",
-    "lightingGeneral": "General Lighting"
+    "lightingGeneral": "General Lighting",
+    "deviceType": {
+      "meter": "Meter",
+      "sensor": "Sensor",
+      "controller": "Controller"
+    },
+    "table": {
+      "name": "Meter",
+      "type": "Type",
+      "status": "Status",
+      "currentValue": "Current Value",
+      "unit": "Unit",
+      "lastUpdate": "Last Update",
+      "online": "Online",
+      "justNow": "Just now",
+      "minutesAgo": "{n} minute(s) ago",
+      "hoursAgo": "{n} hour(s) ago",
+      "daysAgo": "{n} day(s) ago"
+    },
+    "pagination": {
+      "showing": "Showing {start} to {end} of {total} devices"
+    }
   },
   "categories": {
     "tgbt": "Main Electrical Panel",
