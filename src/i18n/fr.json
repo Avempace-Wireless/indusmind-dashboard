@@ -673,6 +673,8 @@
     "pageTitle": "Contrôle de Température",
     "title": "Contrôle de Température",
     "subtitle": "Surveillance et contrôle de température multi-zones",
+    "loading": "Chargement des données thermiques...",
+    "loadingDescription": "Récupération des données de température en temps réel depuis les capteurs...",
     "menuItem": "Contrôle de Température",
     "manageSensors": "Gérer les Capteurs",
     "noSensorsSelected": {
@@ -717,6 +719,8 @@
       "allSystems": "Tous les systèmes",
       "tempRange": "Plage de Température",
       "minMax": "Min — Max",
+      "overTemperature": "Surtemperature",
+      "zonesAboveMax": "Zones dépassant la limite max",
       "systemHealth": "Santé du Système",
       "withinTargets": "Dans les Limites"
     },

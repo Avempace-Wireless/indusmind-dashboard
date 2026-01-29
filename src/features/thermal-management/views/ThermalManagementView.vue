@@ -61,6 +61,25 @@
           @close="showSensorSelector = false"
         ></SensorSelector>
 
+        <!-- Loading Banner -->
+        <div v-if="isFetchingThermal && zones.length === 0" class="flex flex-col items-center justify-center py-24">
+          <div class="text-center">
+            <div class="inline-block mb-6">
+              <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 dark:border-slate-700 border-t-blue-600 dark:border-t-cyan-400"></div>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ $t('thermal.loading') }}</h3>
+            <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">{{ $t('thermal.loadingDescription') }}</p>
+            <div class="flex items-center justify-center gap-2">
+              <div class="w-2 h-2 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse"></div>
+              <div class="w-2 h-2 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 150ms"></div>
+              <div class="w-2 h-2 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 300ms"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content (Hidden during initial load) -->
+        <div v-if="!(isFetchingThermal && zones.length === 0)">
+
         <!-- Status Cards -->
         <div class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
           <!-- Active Zones -->
@@ -106,24 +125,24 @@
           </div>
 
           <!-- System Health -->
-          <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
+          <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-4 lg:p-6 text-white">
             <div class="flex items-center justify-between gap-2 mb-1 sm:mb-2">
-              <div class="text-purple-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.systemHealth') }}</div>
+              <div class="text-red-100 text-xs sm:text-sm font-semibold uppercase tracking-wide truncate">{{ t('thermal.status.overTemperature') }}</div>
               <div class="bg-white/20 rounded-full p-1 sm:p-2 flex-shrink-0">
                 <svg class="w-3 h-3 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"/>
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                 </svg>
               </div>
             </div>
-            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusSystemHealth }}%</div>
-            <div class="text-purple-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.withinTargets') }}</div>
+            <div class="text-2xl sm:text-3xl lg:text-4xl font-bold">{{ statusOverTemperature }}<span class="text-sm sm:text-base lg:text-lg">/{{ displayedZones.length || zones.length }}</span></div>
+            <div class="text-red-100 text-xs sm:text-sm mt-0.5 sm:mt-1">{{ t('thermal.status.zonesAboveMax') }}</div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Zone Control Section -->
-    <div class="mb-8">
+    <div v-if="!(isFetchingThermal && zones.length === 0)" class="mb-8">
       <h2 class="mb-6 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
         {{ t('thermal.sections.zoneControl') }}
       </h2>
@@ -477,7 +496,7 @@
       </div>
 
     <!-- Temperature Monitoring Section -->
-    <div class="mb-8">
+    <div v-if="!(isFetchingThermal && zones.length === 0)" class="mb-8">
       <h2 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">
         {{ t('thermal.sections.monitoring') }}
       </h2>
@@ -544,6 +563,9 @@
           </div>
         </div>
       </div>
+
+    </div>
+    <!-- End Main Content -->
 
     <!-- Chart Modal -->
     <Teleport to="body">
@@ -653,7 +675,7 @@ const { t } = useI18n()
 const sensorsStore = useSensorsStore()
 
 // Thermal API state
-const isFetchingThermal = ref(false)
+const isFetchingThermal = ref(true)
 const thermalError = ref<string | null>(null)
 
 // Chart data state
@@ -1048,6 +1070,16 @@ const statusSystemHealth = computed(() => {
     return currentTemp >= (z.minTemp ?? 18) && currentTemp <= (z.maxTemp ?? 28)
   }).length
   return Math.round((healthy / displayedZones.value.length) * 100)
+})
+
+const statusOverTemperature = computed(() => {
+  const zones_to_check = displayedZones.value.length > 0 ? displayedZones.value : zones.value
+  if (zones_to_check.length === 0) return 0
+  return zones_to_check.filter((z) => {
+    const currentTemp = z.currentTemp
+    if (currentTemp === null) return false
+    return currentTemp > (z.maxTemp ?? 28)
+  }).length
 })
 
 const displayedZones = computed(() =>

@@ -669,6 +669,8 @@
     "pageTitle": "Temperature Control",
     "title": "Temperature Control",
     "subtitle": "Multi-zone temperature monitoring and control",
+    "loading": "Loading thermal data...",
+    "loadingDescription": "Fetching real-time temperature data from sensors...",
     "menuItem": "Temperature Control",
     "manageSensors": "Manage Sensors",
     "noSensorsSelected": {
@@ -713,6 +715,8 @@
       "allSystems": "All systems",
       "tempRange": "Temperature Range",
       "minMax": "Min — Max",
+      "overTemperature": "Over Temperature",
+      "zonesAboveMax": "Zones exceeding max limit",
       "systemHealth": "System Health",
       "withinTargets": "Within Targets"
     },
