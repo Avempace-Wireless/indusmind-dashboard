@@ -876,7 +876,11 @@
     "meters": "compteurs",
     "energyMeter": "Compteur d'Énergie",
     "noMetersSelected": "Aucun compteur sélectionné. Cliquez sur 'Sélectionner des Compteurs' pour choisir les compteurs à afficher.",
-    "selectMetersToVisualize": "Cliquez sur 'Sélectionner des Compteurs' pour choisir les compteurs à afficher",
+    "selectMetersToVisualize": "Sélectionner des compteurs à visualiser",
+    "noMetersDescription": "Choisissez les compteurs à afficher pour visualiser leurs données en temps réel et suivre leur consommation énergétique.",
+    "quickTip": "Astuce",
+    "tipDescription": "Vous pouvez sélectionner jusqu'à 8 compteurs pour une vue d'ensemble optimale.",
+    "fetchingMeterData": "Récupération des données des compteurs...",
     "selectMetersToCompare": "Sélectionnez un ou plusieurs compteurs à comparer",
     "power": "Puissance (kW)",
     "energy": "Énergie (kWh)",
@@ -898,6 +902,8 @@
     "temperatureChart": "Surveillance de la Température",
     "zonesTemperatures": "Températures des Zones",
     "autoRefresh": "Actualisation automatique toutes les 5 secondes",
-    "tvDisplayMode": "Mode d'affichage Usine"
+    "tvDisplayMode": "Mode d'affichage Usine",
+    "noTemperatureSensors": "Aucun capteur de température disponible",
+    "temperature24Hours": "Température sur 24 heures (Moyennes horaires)"
   }
 }

@@ -26,16 +26,71 @@
       />
 
       <!-- Main Content: Full responsive layout -->
-      <div v-if="selectedCompteurs.length === 0" class="flex-1 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700">
-        <span class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-7xl mb-4">devices</span>
-        <p class="text-slate-600 dark:text-slate-400 text-xl font-semibold mb-2">{{ $t('globalMeters.selectMetersToVisualize') }}</p>
-        <button
-          @click="showCompteurSelector = true"
-          class="mt-4 flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-5 py-3 text-sm font-bold text-white transition-colors shadow-lg"
-        >
-          <span class="material-symbols-outlined text-lg">add</span>
-          {{ $t('globalMeters.selectMeters') }}
-        </button>
+      <div v-if="selectedCompteurs.length === 0" class="flex-1 flex flex-col items-center justify-center p-8 animate-fadeIn" style="min-height: calc(100vh - 200px);">
+        <div class="max-w-md w-full text-center">
+          <!-- Icon with gradient background -->
+          <div class="relative inline-flex items-center justify-center mb-6">
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 blur-2xl rounded-full"></div>
+            <div class="relative bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-slate-800 dark:to-slate-700 p-6 rounded-2xl border-2 border-blue-200 dark:border-cyan-900 shadow-lg">
+              <span class="material-symbols-outlined text-blue-600 dark:text-cyan-400" style="font-size: 64px;">devices</span>
+            </div>
+          </div>
+
+          <!-- Title & Description -->
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+            {{ $t('globalMeters.selectMetersToVisualize') || 'Sélectionner des compteurs' }}
+          </h2>
+          <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed">
+            {{ $t('globalMeters.noMetersDescription') || 'Choisissez les compteurs à afficher pour visualiser leurs données en temps réel et suivre leur consommation énergétique.' }}
+          </p>
+
+          <!-- Action Button -->
+          <button
+            @click="showCompteurSelector = true"
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+          >
+            <span class="material-symbols-outlined text-xl">add_circle</span>
+            {{ $t('globalMeters.selectMeters') || 'Sélectionner des compteurs' }}
+          </button>
+
+          <!-- Info Card -->
+          <div class="mt-8 bg-blue-50 dark:bg-slate-800/50 border border-blue-200 dark:border-slate-700 rounded-lg p-4">
+            <div class="flex items-start gap-3 text-left">
+              <span class="material-symbols-outlined text-blue-600 dark:text-cyan-400 text-xl flex-shrink-0 mt-0.5">info</span>
+              <div class="flex-1">
+                <h4 class="text-sm font-semibold text-blue-900 dark:text-cyan-100 mb-1">
+                  {{ $t('globalMeters.quickTip') || 'Astuce' }}
+                </h4>
+                <p class="text-xs text-blue-700 dark:text-cyan-300">
+                  {{ $t('globalMeters.tipDescription') || 'Vous pouvez sélectionner jusqu\'à 8 compteurs pour une vue d\'ensemble optimale.' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-else-if="isLoadingAPI && isFirstLoad" class="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-cyan-900 rounded-xl p-4 shadow-md animate-fadeIn">
+        <div class="flex items-center gap-4">
+          <div class="flex-shrink-0">
+            <div class="animate-spin rounded-full h-8 w-8 border-3 border-blue-200 dark:border-cyan-700 border-t-blue-600 dark:border-t-cyan-400"></div>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="material-symbols-outlined text-blue-600 dark:text-cyan-400 text-lg">cloud_download</span>
+              <h3 class="text-sm font-semibold text-blue-900 dark:text-cyan-100">{{ $t('common.loading') || 'Chargement des données...' }}</h3>
+            </div>
+            <p class="text-xs text-blue-700 dark:text-cyan-300">{{ $t('globalMeters.fetchingMeterData') || 'Récupération des données des compteurs...' }}</p>
+          </div>
+          <div class="flex-shrink-0">
+            <div class="flex items-center gap-1">
+              <div class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 0ms"></div>
+              <div class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 150ms"></div>
+              <div class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 300ms"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Content Grid - Full page with cards left (1/2 or 2/3), charts right (1/2 or 1/3) -->
@@ -180,6 +235,7 @@ const showCompteurSelector = ref(false)
 const currentTime = ref(new Date())
 const globalMetersList = ref<GlobalMeterData[]>([])
 const isLoadingAPI = ref(false)
+const isFirstLoad = ref(true)
 const temperatureChartData = ref<any[]>([])
 const isLoadingTemperature = ref(false)
 
@@ -261,12 +317,13 @@ async function fetchGlobalMetersData(showLoader = true) {
     return
   }
 
-  if (showLoader) {
+  if (showLoader && isFirstLoad.value) {
     isLoadingAPI.value = true
   }
   const response = await fetchGlobalMeters(deviceUUIDs, false)
-  if (showLoader) {
+  if (showLoader && isFirstLoad.value) {
     isLoadingAPI.value = false
+    isFirstLoad.value = false
   }
 
   if (response && response.success) {
@@ -420,6 +477,22 @@ const getGridStyle = () => {
 </script>
 
 <style scoped>
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
 /* Hide scrollbars while keeping scroll functionality */
 .hide-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */

@@ -9,7 +9,7 @@
     <div v-else-if="sensorsWithData.length === 0" class="flex items-center justify-center h-64">
       <div class="text-center text-slate-500 dark:text-slate-400">
         <span class="material-symbols-outlined text-4xl mb-2 block opacity-50">thermostat</span>
-        <p>Aucun capteur de température disponible</p>
+        <p>{{ $t('globalMeters.noTemperatureSensors') || 'Aucun capteur de température disponible' }}</p>
       </div>
     </div>
     <div v-else class="w-full overflow-visible h-full flex flex-col">
@@ -20,7 +20,7 @@
 
       <!-- Chart Info -->
       <div class="mt-1 text-center text-xs text-slate-600 dark:text-slate-400 flex-shrink-0">
-        <p>Température sur 24 heures (Moyennes horaires)</p>
+        <p>{{ $t('globalMeters.temperature24Hours') || 'Température sur 24 heures (Moyennes horaires)' }}</p>
       </div>
     </div>
   </div>
@@ -28,6 +28,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Line as LineChart } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -43,6 +44,8 @@ import {
 import { getMeterColorByIndex } from '@/utils/meterColors'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
+
+const { t } = useI18n()
 
 interface SensorData {
   deviceUUID: string

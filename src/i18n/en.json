@@ -872,7 +872,11 @@
     "meters": "meters",
     "energyMeter": "Energy Meter",
     "noMetersSelected": "No meters selected. Click 'Select Meters' to choose meters to display.",
-    "selectMetersToVisualize": "Click 'Select Meters' to choose meters to display",
+    "selectMetersToVisualize": "Select Meters to Visualize",
+    "noMetersDescription": "Choose the meters to display to visualize their real-time data and track their energy consumption.",
+    "quickTip": "Quick Tip",
+    "tipDescription": "You can select up to 8 meters for an optimal overview.",
+    "fetchingMeterData": "Fetching meter data...",
     "selectMetersToCompare": "Select one or more meters to compare",
     "power": "Power (kW)",
     "energy": "Energy (kWh)",
@@ -894,6 +898,8 @@
     "temperatureChart": "Temperature Monitoring",
     "zonesTemperatures": "Zones Temperatures",
     "autoRefresh": "Auto-refreshing every 5 seconds",
-    "tvDisplayMode": "Factory Display Mode"
+    "tvDisplayMode": "Factory Display Mode",
+    "noTemperatureSensors": "No temperature sensors available",
+    "temperature24Hours": "Temperature over 24 hours (Hourly Averages)"
   }
 }
