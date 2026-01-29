@@ -917,12 +917,15 @@ const chartBaseOptions = {
       }
     },
     tooltip: {
-      backgroundColor: '#0f172a',
-      borderColor: '#1e293b',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#e5e7eb',
       borderWidth: 1,
       padding: 10,
-      titleColor: '#e2e8f0',
-      bodyColor: '#cbd5e1'
+      titleColor: '#1f2937',
+      bodyColor: '#374151'
+    },
+    datalabels: {
+      display: false
     }
   },
   elements: {
@@ -1435,7 +1438,7 @@ const getChartOptions = (zone: Zone) => {
       xaxis: { lines: { show: false } }
     },
     tooltip: {
-      theme: 'dark',
+      theme: 'light',
       x: {
         format: 'HH:mm'
       },
@@ -1444,6 +1447,10 @@ const getChartOptions = (zone: Zone) => {
         title: {
           formatter: () => 'Temperature'
         }
+      },
+      style: {
+        fontSize: '12px',
+        fontFamily: 'inherit'
       }
     }
   }
