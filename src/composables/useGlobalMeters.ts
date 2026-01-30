@@ -58,7 +58,8 @@ export function useGlobalMeters() {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:4000/api/telemetry/global-meters', {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+      const response = await fetch(`${apiBaseUrl}/api/telemetry/global-meters`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +97,8 @@ export function useGlobalMeters() {
     error.value = null
 
     try {
-      const response = await fetch(`http://localhost:4000/api/telemetry/global-meters/${deviceUUID}?debug=${debug}`, {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+      const response = await fetch(`${apiBaseUrl}/api/telemetry/global-meters/${deviceUUID}?debug=${debug}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -147,7 +149,8 @@ export function useGlobalMeters() {
     error.value = null
 
     try {
-      const response = await fetch('http://localhost:4000/api/telemetry/global-meters/temperature-chart', {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+      const response = await fetch(`${apiBaseUrl}/api/telemetry/global-meters/temperature-chart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
