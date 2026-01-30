@@ -28,13 +28,14 @@ export interface EquipmentTelemetryResponse {
 /**
  * Fetch latest telemetry for all customer devices in a single request
  * This is more efficient than making individual requests for each device
+ * Endpoint: GET /api/telemetry/equipmentTelemetry
  */
 export async function fetchAllDevicesLatestTelemetry(
   keys?: string[]
 ): Promise<DeviceTelemetryData[]> {
   try {
     const keysParam = keys ? `?keys=${keys.join(',')}` : ''
-    const url = `${API_BASE_URL}/api/telemetry/latest${keysParam}`
+    const url = `${API_BASE_URL}/api/telemetry/equipmentTelemetry${keysParam}`
 
     const response = await fetch(url, {
       method: 'GET',
