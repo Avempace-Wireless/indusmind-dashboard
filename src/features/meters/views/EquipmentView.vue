@@ -127,9 +127,17 @@
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
-                  <span class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                    <span class="flex h-2 w-2 rounded-full bg-green-600 dark:bg-green-400"></span>
-                    {{ $t('equipment.table.online') }}
+                  <span :class="[
+                    'inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-xs font-medium',
+                    getDeviceStatus(device).isOnline
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                      : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-300'
+                  ]">
+                    <span :class="[
+                      'flex h-2 w-2 rounded-full',
+                      getDeviceStatus(device).isOnline ? 'bg-green-600 dark:bg-green-400' : 'bg-gray-600 dark:bg-gray-400'
+                    ]"></span>
+                    {{ getDeviceStatus(device).label }}
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-white">
@@ -139,7 +147,7 @@
                   {{ getDeviceUnit(device) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                  {{ formatLastUpdate(device.updatedAt) }}
+                  {{ formatLastUpdate(device) }}
                 </td>
               </tr>
             </tbody>
@@ -200,22 +208,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { getAllIndusmindCustomerDevices, type Device } from '@/services/deviceAPI'
+import {
+  fetchAllDevicesLatestTelemetry,
+  formatTelemetryValue,
+  isDeviceActive,
+  type DeviceTelemetryData
+} from '@/services/equipmentTelemetryAPI'
 
 const { t } = useI18n()
 
 const devices = ref<Device[]>([])
+const deviceTelemetry = ref<Map<string, DeviceTelemetryData>>(new Map())
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const searchQuery = ref('')
 const selectedType = ref('')
 const currentPage = ref(1)
 const itemsPerPage = 10
+let telemetryInterval: ReturnType<typeof setInterval> | null = null
 
-const onlineCount = computed(() => devices.value.length)
+const onlineCount = computed(() => {
+  let count = 0
+  devices.value.forEach(device => {
+    const telemetry = deviceTelemetry.value.get(device.deviceUUID)
+    if (telemetry && telemetry.active) count++
+  })
+  return count
+})
 
 const getDeviceTypeEnum = (device: Device): string => {
   if (device.name.includes('PM2200')) return 'meter'
@@ -289,19 +312,69 @@ const nextPage = () => {
 }
 
 const getDeviceValue = (device: Device): string => {
-  return Math.random() < 0.5 ? (Math.random() * 5000 + 1000).toFixed(1) : '--'
+  const telemetry = deviceTelemetry.value.get(device.deviceUUID)
+  if (!telemetry || !telemetry.telemetry) return '--'
+
+  const type = getDeviceTypeEnum(device)
+  let primaryKey = 'ActivePowerTotal'
+
+  if (type === 'meter') {
+    primaryKey = 'ActivePowerTotal'
+  } else if (type === 'sensor') {
+    primaryKey = 'Temperature'
+  } else if (type === 'controller') {
+    primaryKey = 'active'
+  }
+
+  const value = telemetry.telemetry[primaryKey]?.value
+
+  return formatTelemetryValue(value, primaryKey)
+}
+
+const getDeviceStatus = (device: Device): { label: string; isOnline: boolean } => {
+  const telemetry = deviceTelemetry.value.get(device.deviceUUID)
+  if (!telemetry) {
+    return { label: t('equipment.table.offline'), isOnline: false }
+  }
+
+  const active = isDeviceActive(telemetry.lastActivityTime)
+  return {
+    label: active ? t('equipment.table.online') : t('equipment.table.offline'),
+    isOnline: active
+  }
+}
+
+const getLastUpdate = (device: Device): number | null => {
+  const telemetry = deviceTelemetry.value.get(device.deviceUUID)
+  if (!telemetry) return null
+
+  const type = getDeviceTypeEnum(device)
+  let primaryKey = 'ActivePowerTotal'
+
+  if (type === 'meter') {
+    primaryKey = 'ActivePowerTotal'
+  } else if (type === 'sensor') {
+    primaryKey = 'Temperature'
+  } else if (type === 'controller') {
+    primaryKey = 'active'
+  }
+
+  return telemetry.telemetry[primaryKey]?.ts || telemetry.lastActivityTime || null
 }
 
 const getDeviceUnit = (device: Device): string => {
   const type = getDeviceTypeEnum(device)
   if (type === 'meter') return 'kW'
   if (type === 'sensor') return '°C'
-  return '-'
+  return '--'
 }
 
-const formatLastUpdate = (dateString: string): string => {
+const formatLastUpdate = (device: Device): string => {
+  const lastUpdate = getLastUpdate(device)
+  if (!lastUpdate) return '--'
+
   try {
-    const date = new Date(dateString)
+    const date = new Date(lastUpdate)
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
     const diffMins = Math.floor(diffMs / 60000)
@@ -319,11 +392,34 @@ const formatLastUpdate = (dateString: string): string => {
   }
 }
 
+const fetchTelemetryData = async () => {
+  try {
+    // Fetch telemetry for all devices in a single bulk request
+    const telemetryList = await fetchAllDevicesLatestTelemetry()
+
+    // Convert array to map for quick lookup
+    const telemetryMap = new Map<string, DeviceTelemetryData>()
+    telemetryList.forEach(data => {
+      telemetryMap.set(data.deviceUUID, data)
+    })
+
+    deviceTelemetry.value = telemetryMap
+  } catch (err) {
+    console.error('Error fetching telemetry data:', err)
+  }
+}
+
 const fetchDevices = async () => {
   try {
     isLoading.value = true
     error.value = null
     devices.value = await getAllIndusmindCustomerDevices()
+
+    // Fetch initial telemetry data using bulk API
+    await fetchTelemetryData()
+
+    // Set up auto-refresh every 10 seconds
+    telemetryInterval = setInterval(fetchTelemetryData, 10000)
   } catch (err) {
     error.value = err instanceof Error ? err.message : t('equipment.fetchError')
     console.error('Error fetching devices:', err)
@@ -334,5 +430,11 @@ const fetchDevices = async () => {
 
 onMounted(() => {
   fetchDevices()
+})
+
+onUnmounted(() => {
+  if (telemetryInterval) {
+    clearInterval(telemetryInterval)
+  }
 })
 </script>

@@ -371,6 +371,7 @@
       "unit": "Unit",
       "lastUpdate": "Last Update",
       "online": "Online",
+      "offline": "Offline",
       "justNow": "Just now",
       "minutesAgo": "{n} minute(s) ago",
       "hoursAgo": "{n} hour(s) ago",
