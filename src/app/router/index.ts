@@ -31,8 +31,8 @@ router.beforeEach((to, from, next) => {
     // Redirect to login if not authenticated
     next({ name: 'Login', query: { redirect: to.fullPath } })
   } else if (to.name === 'Login' && isAuthenticated) {
-    // Redirect to dashboard if already logged in
-    next({ name: 'Dashboard' })
+    // Redirect to global-meters if already logged in
+    next({ name: 'global-meters' })
   } else {
     next()
   }

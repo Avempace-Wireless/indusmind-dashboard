@@ -50,11 +50,13 @@ import BotIcon from './BotIcon.vue'
 import CallIcon from './CallIcon.vue'
 import LinearIcon from './LinearIcon.vue'
 import EnergyIcon from './EnergyIcon.vue'
+import CurrentIcon from './CurrentIcon.vue'
 
 export {
   CallIcon,
   LinearIcon,
   EnergyIcon,
+  CurrentIcon,
   BotIcon,
   CartIcon,
   BellIcon,

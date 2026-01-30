@@ -67,6 +67,9 @@ const initChart = () => {
     }
   })
 
+  const isDark = document.documentElement.classList.contains('dark')
+  const textColor = isDark ? '#d1d5db' : '#374151'
+
   const options: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -74,11 +77,32 @@ const initChart = () => {
     scales: {
       x: {
         type: 'category',
-        ticks: { maxRotation: 0 },
+        ticks: { maxRotation: 0, color: textColor },
       },
-      y: { beginAtZero: false }
+      y: {
+        beginAtZero: false,
+        ticks: { color: textColor }
+      }
     },
-    plugins: { legend: { position: 'top' } }
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          color: textColor
+        }
+      },
+      tooltip: {
+        backgroundColor: isDark ? '#1e293b' : '#ffffff',
+        titleColor: textColor,
+        bodyColor: textColor,
+        borderColor: isDark ? '#475569' : '#cbd5e1',
+        borderWidth: 1,
+        padding: 12
+      },
+      datalabels: {
+        display: false
+      }
+    }
   }
 
   chartInstance = new ChartJS(ctx, {

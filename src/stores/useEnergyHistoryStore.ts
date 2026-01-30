@@ -109,13 +109,12 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Auto Resolution
   // ===========================
   const effectiveResolution = computed(() => {
-    // Auto-switch: 1 date = hourly, multiple = daily
-    if (selectedDates.value.length === 1) {
+    // Auto-switch: less than 8 days = hourly, 8+ days = daily
+    if (selectedDates.value.length < 8) {
       return 'hourly' as const
-    } else if (selectedDates.value.length > 1) {
+    } else {
       return 'daily' as const
     }
-    return resolution.value
   })
 
   const resolutionLabel = computed(() =>
@@ -248,52 +247,187 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   const chartData = computed(() => {
     const datasets: Array<{
       label: string
-      data: number[]
+      data: (number | null)[]
       borderColor: string
       backgroundColor: string
       yAxisID: string
       metricType: MetricType
+      spanGaps?: boolean
       date?: string
     }> = []
 
-    if (effectiveResolution.value === 'hourly') {
-      // Hourly: show all hours in range with series per date per metric
-      const hours = Array.from({ length: hourTo.value - hourFrom.value + 1 }, (_, i) => hourFrom.value + i)
+    // Log basic state
+    console.log('[Chart Data] Computing chart data:', {
+      effectiveResolution: effectiveResolution.value,
+      selectedDatesCount: selectedDates.value.length,
+      selectedDates: selectedDates.value,
+      visibleCompteurs: visibleCompteurs.value.map(c => c.id),
+      historicalDataSize: historicalData.value.size,
+      historicalDataSample: Array.from(historicalData.value.entries()).map(([id, data]) => ({
+        id,
+        dates: data.map(d => d.date)
+      }))
+    })
 
-      // Build series per active meter for the selected metric across the selected date (first selected date)
+    if (effectiveResolution.value === 'hourly') {
+      // Hourly: show actual timestamps from API (all data points with exact times)
       const metric = selectedMetric.value
-      const dateStr = selectedDates.value[0]
-      visibleCompteurs.value.forEach((compteur, idx) => {
+      let dateStr = selectedDates.value[0]
+
+      // If no date selected, use the first available date from stored data
+      if (!dateStr && historicalData.value.size > 0) {
+        for (const [_, data] of historicalData.value.entries()) {
+          const firstEntry = data.find(d => d.metricType === metric.type)
+          if (firstEntry) {
+            dateStr = firstEntry.date
+            break
+          }
+        }
+      }
+
+      // If the selected date has no data, use the first available date
+      let dayData = dateStr ? getMetricDataForDate(dateStr, metric.type, visibleCompteurs.value[0]?.id) : null
+      if (!dayData && visibleCompteurs.value.length > 0) {
+        // Find the first date with actual data
+        for (const [deviceId, data] of historicalData.value.entries()) {
+          const firstDataEntry = data.find(d => d.metricType === metric.type)
+          if (firstDataEntry) {
+            dateStr = firstDataEntry.date
+            dayData = firstDataEntry
+            break
+          }
+        }
+      }
+
+      console.log('[Chart] Hourly data generation:', {
+        selectedDateStr: selectedDates.value[0],
+        usedDateStr: dateStr,
+        metricType: metric.type,
+        found: !!dayData,
+        dataPoints: dayData?.hourlyData.length || 0,
+        visibleCompteurs: visibleCompteurs.value.map(c => c.id),
+        historicalDataKeys: Array.from(historicalData.value.keys())
+      })
+
+      // Collect all unique timestamps with their data
+      const timestampMap = new Map<number, {
+        timestamp: Date
+        values: Map<string, number | null>
+      }>()
+
+      // Gather all data points from all compteurs
+      visibleCompteurs.value.forEach((compteur) => {
         const dayData = dateStr ? getMetricDataForDate(dateStr, metric.type, compteur.id) : null
+
         if (dayData) {
-          const filteredData = filterDataByHourRange(dayData.hourlyData)
+          // Use all hourly data WITHOUT filtering by hour range
+          // (preserve all API timestamps)
+          dayData.hourlyData.forEach(d => {
+            if (d.timestamp) {
+              const tsMs = d.timestamp.getTime()
+              if (!timestampMap.has(tsMs)) {
+                timestampMap.set(tsMs, {
+                  timestamp: d.timestamp,
+                  values: new Map()
+                })
+              }
+              const entry = timestampMap.get(tsMs)!
+              entry.values.set(compteur.id, d.value === 0 ? null : d.value)
+            }
+          })
+        }
+      })
+
+      // Convert to sorted array by timestamp
+      const sortedTimestamps = Array.from(timestampMap.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([_, entry]) => entry)
+
+      console.log('[Chart] Generated timestamps:', {
+        count: sortedTimestamps.length,
+        sampleTimestamps: sortedTimestamps.slice(0, 3).map(t => ({
+          time: t.timestamp.toISOString(),
+          hour: t.timestamp.getHours()
+        }))
+      })
+
+      // ✅ AGGREGATE BY HOUR (Average): track sums and counts per hour
+      const hourlyAggregated = new Map<number, { hour: number; sums: Map<string, number>; counts: Map<string, number> }>()
+
+      visibleCompteurs.value.forEach((compteur) => {
+        const d = dateStr ? getMetricDataForDate(dateStr, metric.type, compteur.id) : null
+        if (!d || !d.hourlyData) return
+        d.hourlyData.forEach(h => {
+          const hour = h.hour
+          if (!hourlyAggregated.has(hour)) {
+            hourlyAggregated.set(hour, { hour, sums: new Map(), counts: new Map() })
+          }
+          const entry = hourlyAggregated.get(hour)!
+          const prevSum = entry.sums.get(compteur.id) || 0
+          const prevCount = entry.counts.get(compteur.id) || 0
+          entry.sums.set(compteur.id, prevSum + (h.value ?? 0))
+          entry.counts.set(compteur.id, prevCount + 1)
+        })
+      })
+
+      console.log('[Chart] Aggregated by hour (stores version average):', {
+        hourCount: hourlyAggregated.size,
+        hours: Array.from(hourlyAggregated.keys()).sort((a, b) => a - b),
+      })
+
+      if (hourlyAggregated.size > 0) {
+        visibleCompteurs.value.forEach((compteur, idx) => {
+          const hourlySeries: (number | null)[] = Array.from({ length: 24 }, (_, h) => {
+            const agg = hourlyAggregated.get(h)
+            if (!agg) return null
+            const sum = agg.sums.get(compteur.id)
+            const count = agg.counts.get(compteur.id) || 0
+            return sum !== undefined && count > 0 ? sum / count : null
+          })
           const color = getMeterColor(compteur.id, idx)
           datasets.push({
             label: `${compteur.name}`,
-            data: filteredData.map(d => d.value),
+            data: hourlySeries,
             borderColor: color,
             backgroundColor: hexToRgba(color, 0.1),
             yAxisID: metric.yAxisPosition === 'left' ? 'y' : 'y1',
             metricType: metric.type,
             date: dateStr,
           })
-        }
-      })
+        })
 
-      return {
-        labels: hours.map(h => `${h.toString().padStart(2, '0')}:00`),
-        datasets,
+        return {
+          labels: Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`),
+          datasets,
+        }
       }
+
+      // Fallback: empty
+      return { labels: [], datasets: [] }
     } else {
       // Daily: show one dataset per metric with data points for each selected date
-      // Build one dataset per meter for selected metric with points across selected dates
+      // Only include dates that have actual data - skip dates with no data
       const metric = selectedMetric.value
+
+      // Filter to only dates that have data
+      const datesWithData = selectedDates.value.filter(dateStr => {
+        return visibleCompteurs.value.some(compteur =>
+          getMetricDataForDate(dateStr, metric.type, compteur.id) !== null
+        )
+      })
+
       visibleCompteurs.value.forEach((compteur, idx) => {
-        const dataPoints: number[] = []
-        selectedDates.value.forEach(dateStr => {
+        const dataPoints: (number | null)[] = []
+        datesWithData.forEach(dateStr => {
           const dayData = getMetricDataForDate(dateStr, metric.type, compteur.id)
-          const total = dayData ? calculateFilteredTotal(dayData.hourlyData) : 0
-          dataPoints.push(total)
+          if (!dayData) {
+            // This shouldn't happen since we filtered, but handle it just in case
+            dataPoints.push(null)
+          } else {
+            const total = calculateFilteredTotal(dayData.hourlyData)
+            // Convert zero to null to show gaps instead of zero bars
+            dataPoints.push(total === 0 ? null : total)
+          }
         })
         const color = getMeterColor(compteur.id, idx)
         datasets.push({
@@ -307,7 +441,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       })
 
       return {
-        labels: selectedDates.value,
+        labels: datesWithData,
         datasets,
       }
     }
@@ -371,24 +505,32 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         visibleCompteurs.value.forEach(compteur => {
           const data = dateStr ? getMetricDataForDate(dateStr, metric.type, compteur.id) : null
           const hourData = data?.hourlyData.find(h => h.hour === hour)
-          row[compteur.id] = hourData?.value || 0
+          row[compteur.id] = hourData?.value || null
         })
 
         return row
       })
     } else {
-      // Daily table: rows per date
-      return selectedDates.value.map(dateStr => {
+      // Daily table: rows per date - only show dates that have data
+      const metric = selectedMetric.value
+
+      // Filter to only dates that have actual data
+      const datesWithData = selectedDates.value.filter(dateStr => {
+        return visibleCompteurs.value.some(compteur =>
+          getMetricDataForDate(dateStr, metric.type, compteur.id) !== null
+        )
+      })
+
+      return datesWithData.map(dateStr => {
         const row: any = {
           date: dateStr,
           time: dateStr,
         }
 
         // Add columns for each active meter (daily totals) for the selected metric
-        const metric = selectedMetric.value
         visibleCompteurs.value.forEach(compteur => {
           const data = getMetricDataForDate(dateStr, metric.type, compteur.id)
-          const total = data ? calculateFilteredTotal(data.hourlyData) : 0
+          const total = data ? calculateFilteredTotal(data.hourlyData) : null
           row[compteur.id] = total
         })
 
@@ -564,16 +706,17 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       // TODO: Replace with actual API call
       // const response = await energyHistoryAPI.fetchData(query)
 
-      // Mock data generation for now
-      const mockData = generateMockHistoricalData(query)
+      // Don't generate mock data - wait for actual API data
+      // Mock data generation is commented out to show gaps for missing data
+      // const mockData = generateMockHistoricalData(query)
 
       // Store data in cache (group by compteur ID from metricId)
-      mockData.forEach(dailyData => {
-        // Extract compteur ID from metricId (format: compteurId-metricType)
-        const compteurId = dailyData.metricId.split('-')[0]
-        const existing = historicalData.value.get(compteurId) || []
-        historicalData.value.set(compteurId, [...existing, dailyData])
-      })
+      // Only store actual data from API, don't fill gaps with mock data
+      // mockData.forEach(dailyData => {
+      //   const compteurId = dailyData.metricId.split('-')[0]
+      //   const existing = historicalData.value.get(compteurId) || []
+      //   historicalData.value.set(compteurId, [...existing, dailyData])
+      // })
 
     } catch (err) {
       error.value = 'Failed to fetch historical data'
@@ -598,6 +741,110 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     }
 
     await fetchHistoricalData(query)
+  }
+
+  /**
+   * Process API response and store data by date and metric type
+   * Aggregates raw timestamp data into daily buckets
+   */
+  function processAPIResponse(apiResponse: any) {
+    if (!apiResponse || !apiResponse.data) return
+
+    const deviceData = apiResponse.data || {}
+
+    // Clear historical data to avoid stale data from previous fetches
+    historicalData.value.clear()
+
+    Object.entries(deviceData).forEach(([deviceUUID, metricData]: [string, any]) => {
+      Object.entries(metricData).forEach(([metricType, dataPoints]: [string, any]) => {
+        if (!Array.isArray(dataPoints)) return
+
+        // Group data points by date
+        const dataByDate = new Map<string, HourlyDataPoint[]>()
+
+        dataPoints.forEach((point: any) => {
+          if (!point.hasData) return // Skip points without data
+
+          // Create date from UTC timestamp (milliseconds)
+          // JavaScript automatically converts to local timezone when calling getHours(), etc.
+          const date = new Date(point.timestamp)
+
+          // Get local date string
+          const dateStr = formatDate(date)
+
+          // Get local hour
+          const hour = date.getHours()
+
+          if (!dataByDate.has(dateStr)) {
+            dataByDate.set(dateStr, [])
+          }
+
+          dataByDate.get(dateStr)!.push({
+            hour,
+            value: point.value,
+            timestamp: date, // Store the date object (JavaScript handles timezone automatically)
+          })
+        })
+
+        // Store aggregated data
+        const compteurId = deviceUUID // Use UUID as compteur ID
+        const existing = historicalData.value.get(compteurId) || []
+
+        dataByDate.forEach((hourlyData, dateStr) => {
+          // Check if this date+metric already exists
+          const exists = existing.some(d => d.date === dateStr && d.metricType === metricType as MetricType)
+          if (!exists) {
+            // Calculate aggregated values
+            const values = hourlyData.map(h => h.value).filter(v => v !== null && v !== undefined)
+            const totalValue = values.reduce((sum, val) => sum + (val || 0), 0)
+            const averageValue = values.length > 0 ? totalValue / values.length : 0
+            const peakValue = values.length > 0 ? Math.max(...values) : 0
+            const minValue = values.length > 0 ? Math.min(...values) : 0
+            const peakHour = hourlyData.findIndex(h => h.value === peakValue)
+            const minHour = hourlyData.findIndex(h => h.value === minValue)
+
+            existing.push({
+              metricId: `${compteurId}-${metricType}`,
+              date: dateStr,
+              metricType: metricType as MetricType,
+              hourlyData,
+              totalValue,
+              averageValue,
+              peakValue,
+              peakHour: peakHour >= 0 ? peakHour : 0,
+              minValue,
+              minHour: minHour >= 0 ? minHour : 0,
+            })
+          }
+        })
+
+        historicalData.value.set(compteurId, existing)
+      })
+    })
+
+    console.log('[Store] Processed API response:', {
+      deviceCount: Object.keys(deviceData).length,
+      historicalDataSize: historicalData.value.size,
+      timezone: {
+        local: new Date().toString(),
+        offset: new Date().getTimezoneOffset(),
+        tzString: Intl.DateTimeFormat().resolvedOptions().timeZone
+      },
+      sampledData: Array.from(historicalData.value.entries()).map(([id, data]) => ({
+        deviceId: id,
+        dateCount: data.length,
+        dates: data.map(d => ({
+          date: d.date,
+          metricType: d.metricType,
+          dataPoints: d.hourlyData.length,
+          sampleTimestamps: d.hourlyData.slice(0, 3).map(h => ({
+            hour: h.hour,
+            timestamp: h.timestamp?.toISOString(),
+            value: h.value
+          }))
+        }))
+      }))
+    })
   }
 
   // ===========================
@@ -648,17 +895,25 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
   function getMetricDataForDate(dateStr: string, metricType: MetricType, compteurIdOverride?: string): DailyMetricData | null {
     // Get data for specific date and metric type
-    // For now, use first compteur's data
     if (selectedCompteurs.value.length === 0) return null
 
     const compteurId = compteurIdOverride || selectedCompteurs.value[0].id
     const compteurData = historicalData.value.get(compteurId) || []
 
     const found = compteurData.find(d => d.date === dateStr && d.metricType === metricType)
-    if (found) return found
 
-    // Generate mock data if not found
-    return generateMockDailyData(dateStr, metricType, compteurId)
+    if (!found) {
+      // If not found with compteur ID, try with any available data
+      // This handles cases where the device UUID differs from compteur ID
+      for (const [deviceId, data] of historicalData.value.entries()) {
+        const match = data.find(d => d.date === dateStr && d.metricType === metricType)
+        if (match) {
+          return match
+        }
+      }
+    }
+
+    return found || null
   }
 
   function filterDataByHourRange(hourlyData: HourlyDataPoint[]): HourlyDataPoint[] {
@@ -947,6 +1202,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     // Actions - Data
     fetchHistoricalData,
     refreshData,
+    processAPIResponse,
 
     // Actions - Export
     exportToCSV,

@@ -26,7 +26,7 @@ export const routes: RouteRecordRaw[] = [
   // Dashboard Routes
   {
     path: '/',
-    redirect: '/dashboard',
+    redirect: '/global-meters',
   },
   {
     path: '/dashboard',
@@ -52,6 +52,15 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/features/puissance/views/PuissanceView.vue'),
     meta: {
       title: 'puissance.pageTitle',
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/current',
+    name: 'current',
+    component: () => import('@/features/current/views/CurrentView.vue'),
+    meta: {
+      title: 'current.pageTitle',
       requiresAuth: true,
     },
   },
@@ -116,6 +125,16 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/views/SettingsView.vue'),
     meta: {
       title: 'Settings',
+      requiresAuth: true,
+    },
+  },
+  // Global Meters Overview
+  {
+    path: '/global-meters',
+    name: 'global-meters',
+    component: () => import('@/features/meters/views/GlobalMetersView.vue'),
+    meta: {
+      title: 'globalMeters.pageTitle',
       requiresAuth: true,
     },
   },

@@ -35,7 +35,7 @@
           <div class="flex-1 overflow-y-auto p-8">
             <!-- Period Selector -->
             <div class="mb-4">
-              <PeriodSelector
+              <CurrentPeriodSelector
                 :selected-period="selectedPeriod"
                 :meter-color="meterColor"
                 @period-change="onPeriodChange"
@@ -45,7 +45,7 @@
             <!-- No Data State -->
             <div v-if="periodData.labels.length === 0" class="flex items-center justify-center h-96 bg-white dark:bg-slate-800 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
               <div class="text-center">
-                <p class="text-gray-500 dark:text-gray-400 text-lg">{{ t('puissance.labels.noElementData') }}</p>
+                <p class="text-gray-500 dark:text-gray-400 text-lg">{{ $t('current.noData.description') }}</p>
               </div>
             </div>
 
@@ -57,7 +57,7 @@
 
               <!-- Range Slider inside chart card -->
               <div class="mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
-                <RangeSlider
+                <CurrentRangeSlider
                   :model-value="{ start: xStart, end: xEnd }"
                   :max="Math.max(0, periodData.labels.length - 1)"
                   :thumb-color="meterColor"
@@ -67,22 +67,18 @@
             </div>
 
             <!-- Statistics -->
-            <div v-if="periodData.labels.length > 0" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div v-if="periodData.labels.length > 0" class="grid grid-cols-3 gap-4">
               <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
-                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ t('puissance.labels.average') }}</p>
-                <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ avgValue.toFixed(1) }} kW</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ $t('current.average') }}</p>
+                <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ avgValue.toFixed(2) }} A</p>
               </div>
               <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
-                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ t('puissance.labels.peak') }}</p>
-                <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ maxValue.toFixed(1) }} kW</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ $t('current.peak') }}</p>
+                <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ maxValue.toFixed(2) }} A</p>
               </div>
               <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
-                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ t('puissance.labels.minimum') }}</p>
-                <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ minValue.toFixed(1) }} kW</p>
-              </div>
-              <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
-                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ t('puissance.labels.total') }}</p>
-                <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ totalValue.toFixed(1) }} kWh</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wide font-semibold">{{ $t('current.minimum') }}</p>
+                <p class="text-2xl font-bold mt-2" :style="{ color: meterColor }">{{ minValue.toFixed(2) }} A</p>
               </div>
             </div>
           </div>
@@ -94,13 +90,13 @@
               class="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-slate-700 transition"
             >
               <span class="material-symbols-outlined inline mr-2 text-lg align-text-bottom">download</span>
-              {{ t('common.export') }}
+              {{ $t('common.export') }}
             </button>
             <button
               @click="closeModal"
               class="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium hover:shadow-lg transition"
             >
-              {{ t('common.close') }}
+              {{ $t('common.close') }}
             </button>
           </div>
         </div>
@@ -110,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   Chart as ChartJS,
@@ -126,8 +122,8 @@ import {
   Legend,
   type ChartOptions,
 } from 'chart.js'
-import PeriodSelector from './PeriodSelector.vue'
-import RangeSlider from './RangeSlider.vue'
+import CurrentPeriodSelector from './CurrentPeriodSelector.vue'
+import CurrentRangeSlider from './CurrentRangeSlider.vue'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, BarController, LineElement, LineController, PointElement, Title, Tooltip, Legend)
 
@@ -137,15 +133,14 @@ interface Props {
   chartSubtitle: string
   meterName: string
   meterColor: string
-  data: number[]
+  data: (number | null)[]
   labels: string[]
-  hourlyData?: { labels: string[]; values: number[] }
-  dailyData?: { labels: string[]; values: number[] }
-  weeklyData?: { labels: string[]; values: number[] }
-  monthlyData?: { labels: string[]; values: number[] }
-  yearlyData?: { labels: string[]; values: number[] }
+  hourlyData?: { labels: string[]; values: (number | null)[] }
+  dailyData?: { labels: string[]; values: (number | null)[] }
+  weeklyData?: { labels: string[]; values: (number | null)[] }
+  monthlyData?: { labels: string[]; values: (number | null)[] }
+  yearlyData?: { labels: string[]; values: (number | null)[] }
 }
-
 
 const props = defineProps<Props>()
 
@@ -187,6 +182,7 @@ const visibleData = computed(() => {
   const end = Math.max(start, Math.min(xEnd.value, data.length - 1))
   return data.slice(start, end + 1)
 })
+
 const onRangeChange = (newRange: { start: number; end: number }) => {
   xStart.value = newRange.start
   xEnd.value = newRange.end
@@ -213,7 +209,7 @@ const periodData = computed(() => {
 // Dynamic chart title based on period (i18n)
 const dynamicChartTitle = computed(() => {
   try {
-    return t(`puissance.chartTitles.${selectedPeriod.value}`, { meter: props.meterName })
+    return t(`current.chartTitles.${selectedPeriod.value}`, { meter: props.meterName })
   } catch (e) {
     return props.chartTitle
   }
@@ -222,7 +218,7 @@ const dynamicChartTitle = computed(() => {
 // Dynamic subtitle based on period (i18n)
 const dynamicSubtitle = computed(() => {
   try {
-    return t(`puissance.subtitles.${selectedPeriod.value}`)
+    return t(`current.subtitles.${selectedPeriod.value}`)
   } catch (e) {
     return props.chartSubtitle
   }
@@ -240,24 +236,24 @@ const closeModal = () => {
 }
 
 const avgValue = computed(() => {
-  const data = periodData.value.values
+  const data = periodData.value.values.filter(v => v !== null) as number[]
   if (data.length === 0) return 0
   return data.reduce((a, b) => a + b, 0) / data.length
 })
 
 const maxValue = computed(() => {
-  const data = periodData.value.values
+  const data = periodData.value.values.filter(v => v !== null) as number[]
   return data.length === 0 ? 0 : Math.max(...data)
 })
 
 const minValue = computed(() => {
-  const data = periodData.value.values
+  const data = periodData.value.values.filter(v => v !== null) as number[]
   return data.length === 0 ? 0 : Math.min(...data)
 })
 
-
 const totalValue = computed(() => {
-  return props.data.reduce((a, b) => a + b, 0)
+  const data = props.data.filter(v => v !== null) as number[]
+  return data.reduce((a, b) => a + b, 0)
 })
 
 const initDetailChart = () => {
@@ -274,7 +270,7 @@ const initDetailChart = () => {
   const textColor = isDark ? '#d1d5db' : '#374151'
   const gridColor = isDark ? '#334155' : '#e5e7eb'
 
-  const chartOptions: ChartOptions<'bar'> = {
+  const chartOptions: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -294,6 +290,15 @@ const initDetailChart = () => {
         borderWidth: 2,
         padding: 12,
         displayColors: true,
+        callbacks: {
+          label: (context) => {
+            const value = context.raw as number | null
+            if (value === null || value === undefined) {
+              return `${t('common.noData')}`
+            }
+            return `${(value as number).toFixed(2)} A`
+          }
+        }
       },
       datalabels: {
         display: false
@@ -304,7 +309,7 @@ const initDetailChart = () => {
         ticks: {
           color: textColor,
           font: { size: 11 },
-          callback: (value) => `${value} kW`,
+          callback: (value) => `${value} A`,
         },
         grid: {
           color: gridColor,
@@ -339,17 +344,24 @@ const initDetailChart = () => {
   }
 
   detailChartInstance = new ChartJS(ctx, {
-    type: 'bar',
+    type: 'line',
     data: {
       labels: visibleLabels.value.map(formatLabel),
       datasets: [
         {
           label: dynamicChartTitle.value,
           data: visibleData.value,
-          backgroundColor: props.meterColor,
-          borderRadius: 6,
-          borderSkipped: false,
-          hoverBackgroundColor: props.meterColor,
+          borderColor: props.meterColor,
+          backgroundColor: `${props.meterColor}20`,
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          spanGaps: false,
+          pointBackgroundColor: props.meterColor,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 7,
         },
       ],
     },

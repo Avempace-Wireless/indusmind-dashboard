@@ -4,6 +4,7 @@
  *
  * Features:
  * - Fetches sensors from device API
+ * - Fetches telemetry data (temperature, humidity, dew point)
  * - Enforces max 8 sensor selection limit
  * - Persists selection across views and page reloads
  * - Provides color mapping for chart consistency
@@ -13,6 +14,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { MOCK_SENSORS, SENSOR_COLOR_PALETTE, getAllSensors } from '@/data/mockData'
 import type { Sensor } from '@/data/mockData'
+import { getAllIndusmindCustomerDevices } from '@/services/deviceAPI'
+import { fetchThermalDashboardData, type ThermalDashboardData } from '@/services/thermalTelemetryAPI'
+import { useApiData, useMockData } from '@/config/dataMode'
 
 /**
  * Maximum number of sensors that can be selected for visualization
@@ -31,8 +35,11 @@ export const useSensorsStore = defineStore('sensors', () => {
   const allSensors = ref<Sensor[]>([])
   const selectedSensorIds = ref<string[]>([])
   const isLoading = ref(false)
+  const isFetchingTelemetry = ref(false)
   const error = ref<string | null>(null)
+  const telemetryError = ref<string | null>(null)
   const lastModified = ref<Date | null>(null)
+  const thermalData = ref<ThermalDashboardData | null>(null)
 
   // Color palette for sensors (different from meters)
   const colorPalette = SENSOR_COLOR_PALETTE
@@ -47,21 +54,116 @@ export const useSensorsStore = defineStore('sensors', () => {
   // ===========================
 
   /**
-   * Fetch all available sensors from mock data
+   * Fetch all available sensors from API or mock data
+   * Filters devices to get only temperature sensors (names containing "T_Sensor")
    * Called on app startup or when data refresh is needed
    */
   async function fetchSensors() {
     try {
       isLoading.value = true
       error.value = null
-      allSensors.value = getAllSensors()
+
+      if (useApiData()) {
+        // Fetch from API and filter for temperature sensors
+        const devices = await getAllIndusmindCustomerDevices()
+
+        if (devices && devices.length > 0) {
+          // Filter devices: only keep temperature sensors
+          const tempSensors = devices.filter((device: any) =>
+            device.name.includes('T_Sensor') || device.label?.includes('Zone')
+          )
+
+          // Map API devices to Sensor format
+          allSensors.value = tempSensors.map((device: any, index: number) => ({
+            id: device.id?.toString() || device.deviceUUID,
+            name: device.name,
+            label: device.label || device.name,
+            deviceUUID: device.deviceUUID,
+            accessToken: device.accessToken,
+            zone: device.label || `Zone ${index + 1}`,
+            minTemp: 18, // Default values, could be fetched from telemetry
+            maxTemp: 28,
+            avgTemp: 22,
+            readings: [],
+            timeSeries: { hourly: [], daily: [], monthly: [] },
+            assignedToCustomer: device.assignedToCustomer || false,
+            customerId: device.customerId || 0,
+            createdAt: device.createdAt || new Date().toISOString(),
+            updatedAt: device.updatedAt || new Date().toISOString()
+          }))
+
+          console.log('[SensorsStore] Fetched temperature sensors from API:', allSensors.value.length)
+        } else {
+          // Fallback to mock data if API fails
+          console.warn('[SensorsStore] API returned no data, using mock sensors')
+          allSensors.value = getAllSensors()
+        }
+      } else {
+        // Use mock data
+        allSensors.value = getAllSensors()
+        console.log('[SensorsStore] Using mock sensors:', allSensors.value.length)
+      }
+
       // Restore previously selected sensors if available
       restoreSelection()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch sensors'
-      console.error('Error fetching sensors:', err)
+      console.error('[SensorsStore] Error fetching sensors:', err)
+      // Fallback to mock data on error
+      allSensors.value = getAllSensors()
     } finally {
       isLoading.value = false
+    }
+  }
+
+  /**
+   * Fetch telemetry data for all available sensors
+   * Fetches temperature, humidity, dew point, and historical readings
+   * Called to refresh real-time sensor data
+   */
+  async function fetchSensorsTelemetry() {
+    try {
+      isFetchingTelemetry.value = true
+      telemetryError.value = null
+
+      const sensorsToFetch = useApiData() ? allSensors.value : []
+
+      if (sensorsToFetch.length === 0) {
+        console.log('[SensorsStore] No sensors to fetch telemetry for')
+        thermalData.value = null
+        return
+      }
+
+      // Convert Sensor interface to Device format for API
+      const devices = sensorsToFetch.map((sensor: any) => ({
+        id: sensor.id,
+        name: sensor.name,
+        label: sensor.label,
+        deviceUUID: sensor.deviceUUID,
+        accessToken: sensor.accessToken,
+        assignedToCustomer: sensor.assignedToCustomer,
+        customerId: sensor.customerId,
+        createdAt: sensor.createdAt,
+        updatedAt: sensor.updatedAt,
+      }))
+
+      console.log('[SensorsStore] Fetching telemetry for', devices.length, 'sensors')
+      thermalData.value = await fetchThermalDashboardData(false)
+
+      if (thermalData.value.status === 'error') {
+        telemetryError.value = thermalData.value.message || 'Failed to fetch telemetry'
+        console.error('[SensorsStore] Telemetry fetch error:', telemetryError.value)
+      } else if (thermalData.value.status === 'partial') {
+        console.warn('[SensorsStore] Partial telemetry data:', thermalData.value.message)
+      }
+
+      console.log('[SensorsStore] Telemetry fetched:', thermalData.value.sensors.length, 'sensors')
+    } catch (err) {
+      telemetryError.value = err instanceof Error ? err.message : 'Failed to fetch telemetry'
+      console.error('[SensorsStore] Error fetching telemetry:', err)
+      thermalData.value = null
+    } finally {
+      isFetchingTelemetry.value = false
     }
   }
 
@@ -269,15 +371,19 @@ export const useSensorsStore = defineStore('sensors', () => {
     searchSensors,
 
     // Getters
-      availableSensors,
+    availableSensors,
     selectedSensors,
     selectedSensorColors,
     canSelectMore,
     stats,
+    thermalData,
+    isFetchingTelemetry,
+    telemetryError,
 
     // Methods
     getSensorById,
     getSensorColor,
     isSensorSelected,
+    fetchSensorsTelemetry,
   }
 })

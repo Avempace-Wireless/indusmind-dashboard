@@ -20,6 +20,7 @@ export interface MeterMetadata {
   translationKey?: string
   lastReadTime?: Date
   elements?: string[] // Element IDs (e.g., ['L1', 'L2', 'L3'])
+  deviceUUID?: string // ThingsBoard device UUID for API calls
 }
 
 /**
@@ -73,7 +74,8 @@ export const useMetersStore = defineStore('meters', () => {
       status: meter.status,
       linkedEquipment: meter.linkedEquipment,
       translationKey: meter.translationKey,
-      elements: meter.elements?.map(el => el.id) as any
+      elements: meter.elements?.map(el => el.id) as any,
+      deviceUUID: meter.deviceUUID
     }))
 
     // Update last modified to trigger reactivity

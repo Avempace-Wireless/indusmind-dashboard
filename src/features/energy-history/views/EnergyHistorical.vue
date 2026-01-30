@@ -135,18 +135,49 @@
 
           <!-- Chart Canvas -->
           <div class="relative" style="height: 400px;">
+            <!-- Loading State -->
+            <div v-if="store.loading" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/30 rounded-lg">
+              <div class="flex flex-col items-center gap-3">
+                <div class="animate-spin">
+
+                </div>
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">{{ t('common.loading') }}</p>
+              </div>
+            </div>
+            <!-- Error State -->
+            <div v-else-if="store.error" class="absolute inset-0 flex flex-col items-center justify-center bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <span class="material-symbols-outlined text-5xl mb-3 text-red-400 opacity-50">error</span>
+              <p class="text-sm font-medium text-red-700 dark:text-red-300">{{ t('common.error') }}</p>
+              <p class="text-xs text-red-600 dark:text-red-400 mt-1 max-w-xs text-center">{{ store.error }}</p>
+              <button
+                @click="refreshData"
+                class="mt-3 px-4 py-2 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition"
+              >
+                {{ t('common.retry') }}
+              </button>
+            </div>
             <!-- Empty State -->
-            <div v-if="!hasChartData" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+            <div v-else-if="!hasChartData" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
               <span class="material-symbols-outlined text-6xl mb-4 opacity-30">bar_chart</span>
               <p class="text-lg font-medium">{{ emptyStateMessage }}</p>
               <p class="text-sm mt-2">{{ t('energyHistory.emptyState.hint') }}</p>
+              <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-blue-700 dark:text-blue-300 max-w-sm">
+                <strong>Debug Info:</strong>
+                <div class="mt-1 font-mono text-xs">
+                  <div>Meters: {{ visibleCompteurs.length }}</div>
+                  <div>Dates: {{ selectedDates.length }}</div>
+                  <div>Metrics: {{ enabledMetrics.filter(m => m.enabled).length }}</div>
+                  <div>Datasets: {{ chartData.datasets.length }}</div>
+                  <div>Labels: {{ chartData.labels.length }}</div>
+                </div>
+              </div>
             </div>
             <!-- Chart -->
-            <canvas v-show="hasChartData" ref="chartCanvas"></canvas>
+            <canvas v-show="hasChartData && !store.loading && !store.error" ref="chartCanvas"></canvas>
           </div>
 
           <!-- Chart Legend (Interactive) -->
-          <div class="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div v-if="chartData.datasets.length > 0" class="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               v-for="dataset in chartData.datasets"
               :key="dataset.label"
@@ -374,6 +405,29 @@
 
       </div>
     </div>
+
+    <!-- Debug Panel (Development Only) -->
+    <div v-if="false" class="mt-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 text-xs font-mono">
+      <h4 class="font-bold mb-2 text-gray-900 dark:text-white">DEBUG INFO</h4>
+      <div class="grid grid-cols-2 gap-2 text-gray-700 dark:text-gray-300">
+        <div><strong>Store Loading:</strong> {{ store.loading }}</div>
+        <div><strong>Store Error:</strong> {{ store.error || 'None' }}</div>
+        <div><strong>Selected Dates:</strong> {{ selectedDates.length }}</div>
+        <div><strong>Visible Compteurs:</strong> {{ visibleCompteurs.length }}</div>
+        <div><strong>Enabled Metrics:</strong> {{ enabledMetrics.filter(m => m.enabled).length }}</div>
+        <div><strong>Chart Datasets:</strong> {{ chartData.datasets.length }}</div>
+        <div><strong>Chart Labels:</strong> {{ chartData.labels.length }}</div>
+        <div><strong>Has Chart Data:</strong> {{ hasChartData }}</div>
+        <div><strong>Effective Resolution:</strong> {{ effectiveResolution }}</div>
+        <div><strong>Hour Range:</strong> {{ hourFrom }}-{{ hourTo }}</div>
+      </div>
+      <div v-if="chartData.datasets.length > 0" class="mt-2 pt-2 border-t border-gray-300 dark:border-gray-600">
+        <strong>Datasets:</strong>
+        <div v-for="(ds, idx) in chartData.datasets" :key="idx" class="ml-2 mt-1">
+          {{ ds.label }}: {{ ds.data.length }} points
+        </div>
+      </div>
+    </div>
   </AdminLayout>
   <!-- Table Zoom Overlay -->
   <Teleport to="body">
@@ -424,18 +478,20 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler, LineController, BarController } from 'chart.js'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { useEnergyHistoryStore } from '@/features/energy-history/store/useEnergyHistoryStore'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
+import { useEnergyHistory } from '@/composables/useEnergyHistory'
 import { useMockData } from '@/config/dataMode'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 // Register Chart.js components
-Chart.register(LineController, BarController, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler)
+Chart.register(LineController, BarController, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler, ChartDataLabels)
 
 // ===========================
 // Store Integration
@@ -447,6 +503,19 @@ const dashboardStore = useDashboardStore()
 const { selectedMeterIds } = storeToRefs(metersStore)
 const dashboardLoading = computed(() => dashboardStore.loading)
 const mockMode = useMockData()
+
+// ===========================
+// Energy History Data Fetching
+// ===========================
+const {
+  isLoading: energyHistoryLoading,
+  error: energyHistoryError,
+  data: energyHistoryData,
+  fetchEnergyHistory,
+  getDeviceMetricData,
+  getAggregatedMetricData,
+  clearCache: clearEnergyHistoryCache
+} = useEnergyHistory()
 
 // Use the same composable as DashboardView and PuissanceView for consistency
 const {
@@ -497,6 +566,9 @@ const {
   visibleCompteurs,
   activeCompteurIds,
   selectedMetric,
+  loading,
+  error,
+  historicalData,
 } = storeToRefs(store)
 
 const {
@@ -516,6 +588,7 @@ const {
   exportToCSV,
   exportToPDF,
   refreshData,
+  processAPIResponse,
 } = store
 
 // ===========================
@@ -809,18 +882,48 @@ const hasChartData = computed(() => {
   const hasDatasets = chartData.value.datasets.length > 0
   const hasLabels = chartData.value.labels.length > 0
 
-  console.log('hasChartData computed:', {
-    hasValidData: hasValid,
-    datasetsLength: chartData.value.datasets.length,
-    labelsLength: chartData.value.labels.length,
-    finalResult: hasValid && hasDatasets && hasLabels,
-    chartData: {
-      labels: chartData.value.labels?.length || 0,
-      datasets: chartData.value.datasets?.length || 0,
-    }
-  })
+  const result = hasValid && hasDatasets && hasLabels
 
-  return hasValid && hasDatasets && hasLabels
+  // Enhanced logging for debugging
+  if (!result) {
+    console.warn('[EnergyHistorical] Chart data incomplete:', {
+      hasValidData: hasValid,
+      visibleCompteurs: visibleCompteurs.value.length,
+      selectedDates: selectedDates.value.length,
+      enabledMetrics: enabledMetrics.value.filter(m => m.enabled).length,
+      datasetsLength: chartData.value.datasets.length,
+      labelsLength: chartData.value.labels.length,
+      hasData: result,
+      historicalDataSize: historicalData.value.size,
+      storeLoading: store.loading,
+      storeError: store.error,
+    })
+  }
+
+  return result
+})
+
+/**
+ * Compute missing hours (hourly mode): list hours 00–23 with no data
+ */
+const missingHours = computed(() => {
+  if (effectiveResolution.value !== 'hourly') return [] as string[]
+  if (chartData.value.datasets.length === 0) return [] as string[]
+
+  const hoursWithData = new Set<number>()
+  // If any dataset has a non-null value for an hour, consider it present
+  for (let hour = 0; hour < 24; hour++) {
+    const hasAny = chartData.value.datasets.some(ds => ds.data[hour] !== null && ds.data[hour] !== undefined)
+    if (hasAny) hoursWithData.add(hour)
+  }
+
+  const missing: string[] = []
+  for (let hour = 0; hour < 24; hour++) {
+    if (!hoursWithData.has(hour)) {
+      missing.push(`${hour.toString().padStart(2, '0')}:00`)
+    }
+  }
+  return missing
 })
 
 /**
@@ -861,6 +964,22 @@ function initChart() {
     return
   }
 
+  // Log raw chart data before initialization
+  console.log('[Chart Init] Raw chartData:', {
+    labels: chartData.value.labels,
+    labelsJSON: JSON.stringify(chartData.value.labels),
+    labelsSorted: JSON.stringify([...chartData.value.labels].sort()),
+    datasetsCount: chartData.value.datasets.length,
+    datasets: chartData.value.datasets.map(ds => ({
+      label: ds.label,
+      dataLength: ds.data.length,
+      dataValues: ds.data,
+      yAxisID: ds.yAxisID
+    }))
+  })
+  console.log('[Vue] Chart labels received:', chartData.value.labels)
+  console.log('[Vue] Are labels sorted?', JSON.stringify(chartData.value.labels) === JSON.stringify([...chartData.value.labels].sort()))
+
   // Prepare datasets (filter hidden ones)
   const visibleDatasets = chartData.value.datasets
     .filter(ds => !hiddenDatasets.value.includes(ds.label))
@@ -882,6 +1001,7 @@ function initChart() {
           tension: 0.4,
           pointRadius: 4,
           pointHoverRadius: 6,
+          spanGaps: false, // Don't connect across null values (keep gaps empty)
           type: 'line' as const,
         }
       }
@@ -892,6 +1012,7 @@ function initChart() {
         tension: 0.4,
         pointRadius: 3,
         pointHoverRadius: 5,
+        spanGaps: false, // Don't connect across null values (keep gaps empty)
         type: chartType.value,
       }
     })
@@ -914,6 +1035,9 @@ function initChart() {
         intersect: false,
       },
       plugins: {
+        datalabels: {
+          display: false,
+        },
         legend: {
           display: false, // Using custom legend
         },
@@ -953,6 +1077,10 @@ function initChart() {
           },
           ticks: {
             color: '#6b7280',
+            // For many labels, show fewer to avoid crowding
+            maxRotation: chartData.value.labels.length > 14 ? 45 : 0,
+            minRotation: 0,
+            maxTicksLimit: Math.max(8, Math.ceil(chartData.value.labels.length / 3)),
           },
         },
         y: {
@@ -979,6 +1107,11 @@ function initChart() {
       },
     },
   })
+
+  // After chart init, log missing hours in hourly mode
+  if (effectiveResolution.value === 'hourly' && missingHours.value.length > 0) {
+    console.warn('[Chart] Missing hourly data for:', missingHours.value)
+  }
 }
 
 function toggleDataset(label: string) {
@@ -1060,6 +1193,109 @@ function removeDate(dateStr: string) {
 }
 
 // ===========================
+// Dynamic Data Fetching
+// ===========================
+
+/**
+ * Fetch energy history data from new API based on current selections
+ * This complements the store's refreshData() method with real backend data
+ */
+async function fetchEnergyHistoryData() {
+  if (visibleCompteurs.value.length === 0 || selectedDates.value.length === 0) {
+    console.log('[EnergyHistorical] Skipping fetch - no compteurs or dates selected')
+    return
+  }
+
+  try {
+    // Sort dates to ensure correct order
+    const sortedDates = [...selectedDates.value].sort()
+
+    // Convert first date to start of day in milliseconds
+    const firstDate = new Date(sortedDates[0])
+    firstDate.setHours(0, 0, 0, 0)
+    const startDate = firstDate.getTime()
+
+    // Convert last date to end of day in milliseconds
+    const lastDate = new Date(sortedDates[sortedDates.length - 1])
+    lastDate.setHours(23, 59, 59, 999)
+    const endDate = lastDate.getTime()
+
+    // Get enabled metric types
+    const metricTypes = enabledMetrics.value
+      .filter(m => m.enabled)
+      .map(m => {
+        if (m.type === 'energy') return 'energy'
+        if (m.type === 'co2') return 'co2'
+        if (m.type === 'cost') return 'cost'
+        if (m.type === 'consumption') return 'consumption'
+        return null
+      })
+      .filter((m): m is 'energy' | 'co2' | 'cost' | 'consumption' => m !== null)
+
+    if (metricTypes.length === 0) {
+      console.log('[EnergyHistorical] No enabled metrics')
+      return
+    }
+
+    // Determine resolution based on number of selected dates
+    const resolution = selectedDates.value.length < 8 ? 'hourly' : 'daily'
+
+    console.log('[EnergyHistorical] Fetching data:', {
+      selectedDateStrings: sortedDates,
+      startDate: new Date(startDate).toISOString(),
+      endDate: new Date(endDate).toISOString(),
+      startTimestamp: startDate,
+      endTimestamp: endDate,
+      compteurs: visibleCompteurs.value.map(c => ({ id: c.id, deviceUUID: c.deviceUUID })),
+      metricTypes,
+      resolution,
+      timeRange: `${hourFrom.value}:00 - ${hourTo.value}:59`
+    })
+
+    // Fetch from new API
+    const result = await fetchEnergyHistory({
+      deviceUUIDs: visibleCompteurs.value.map(c => c.deviceUUID || c.id),
+      startDate,
+      endDate,
+      metricTypes,
+      resolution,
+      hourFrom: hourFrom.value > 0 ? hourFrom.value : undefined,
+      hourTo: hourTo.value < 23 ? hourTo.value : undefined
+    }, false) // Don't use cache to ensure fresh data
+
+    // Process API response into store so chartData can render
+    if (result.success) {
+      processAPIResponse(result)
+    }
+
+    // Debug: compute present hours from raw API to check gaps (e.g., 13–15)
+    const hoursPresent = new Set<number>()
+    Object.values(result.data).forEach(deviceData => {
+      Object.values(deviceData).forEach(metricArray => {
+        metricArray.forEach(dp => {
+          const h = new Date(dp.timestamp).getHours()
+          hoursPresent.add(h)
+        })
+      })
+    })
+
+    console.log('[EnergyHistorical] Successfully fetched energy history data:', {
+      success: result.success,
+      deviceCount: result.meta.deviceUUIDs.length,
+      metrics: result.meta.metricTypes,
+      resolution: result.meta.resolution,
+      dataStructure: Object.keys(result.data),
+      hoursPresent: Array.from(hoursPresent).sort((a,b)=>a-b),
+    })
+
+    return result
+  } catch (error) {
+    console.error('[EnergyHistorical] Error fetching energy history:', error)
+    // Continue using store data on error
+  }
+}
+
+// ===========================
 // Lifecycle Hooks
 // ===========================
 onMounted(async () => {
@@ -1128,18 +1364,8 @@ onMounted(async () => {
   // Initialize chart after data is loaded
   if (hasChartData.value) {
     initChart()
-  } else {
-    // If we are in mock mode and telemetry is unavailable, retry once with mock data to avoid an empty chart on first load
-    if (mockMode) {
-      console.log('Chart has no data in mock mode, retrying refreshData...')
-      await refreshData()
-      await nextTick()
-      await new Promise(resolve => setTimeout(resolve, 100))
-      if (hasChartData.value) {
-        initChart()
-      }
-    }
   }
+  // If no data, show empty state instead of falling back to mock data
 
   // Force chart re-initialization if canvas still not ready after a delay
   setTimeout(() => {
@@ -1256,9 +1482,26 @@ watch([hourFrom, hourTo], () => {
 })
 
 // Refresh data when dates or enabled metrics change
-watch([selectedDates, enabledMetrics], () => {
-  refreshData()
+watch([selectedDates, enabledMetrics], async () => {
+  console.log('[EnergyHistorical] Dates or metrics changed, refreshing data')
+  // Use new API-driven data fetching
+  await fetchEnergyHistoryData()
+  // Also update store for consistency
+  await refreshData()
 }, { deep: true })
+
+// Fetch API data when visible compteurs change
+watch(visibleCompteurs, async () => {
+  console.log('[EnergyHistorical] Visible compteurs changed, refreshing data')
+  await fetchEnergyHistoryData()
+  await refreshData()
+}, { deep: true })
+
+// Fetch API data when hour range changes
+watch([hourFrom, hourTo], async () => {
+  console.log('[EnergyHistorical] Hour range changed, refreshing data')
+  await refreshData()
+})
 </script>
 
 <style scoped>

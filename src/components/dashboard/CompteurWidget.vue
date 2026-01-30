@@ -50,9 +50,9 @@
       </div>
       <div class="flex items-baseline gap-2 mb-3">
         <span :class="['text-4xl font-bold', colorClasses.text]">
-          {{ formatValue(currentValue) }}
+          {{ formatNumericValue(currentValue) }}
         </span>
-        <span class="text-base font-medium text-slate-600 dark:text-slate-400">{{ unitForMode }}</span>
+        <span class="text-2xl font-medium text-slate-900 dark:text-slate-100">{{ unitForMode }}</span>
       </div>
 
       <!-- Mini Charts -->
@@ -714,6 +714,20 @@ function formatValue(value: number | null | undefined): string {
     return '0'
   }
   return formatTelemetryValue(value, keyConfig.value)
+}
+
+/**
+ * Format only the numeric value without unit
+ * Handles null/undefined values gracefully
+ */
+function formatNumericValue(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '0'
+  }
+  // Return just the number with appropriate decimal places
+  const config = keyConfig.value
+  const decimals = (config as any)?.decimals || 1
+  return value.toFixed(decimals)
 }
 
 /**

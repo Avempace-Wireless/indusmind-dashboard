@@ -192,8 +192,8 @@ const handleLogin = async () => {
 
   try {
     await authStore.login(email.value, password.value)
-    // Get redirect from query parameter or default to dashboard
-    const redirect = (route.query.redirect as string) || '/dashboard'
+    // Get redirect from query parameter or default to global-meters
+    const redirect = (route.query.redirect as string) || '/global-meters'
     await router.push(redirect)
   } catch (err) {
     console.error('Login failed:', err)

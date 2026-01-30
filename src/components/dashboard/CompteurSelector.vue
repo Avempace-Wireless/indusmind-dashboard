@@ -170,9 +170,7 @@
             v-if="totalCount === 0"
             class="flex flex-col items-center justify-center py-12 text-center"
           >
-            <span class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-5xl mb-3">
-              electrical_meter
-            </span>
+
             <p class="text-slate-600 dark:text-slate-400 text-sm font-medium">{{ $t('compteur.selector.noResults') }}</p>
           </div>
 

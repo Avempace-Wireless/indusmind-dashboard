@@ -567,6 +567,9 @@ function renderTelemetryChart() {
               return `${context.dataset.label}: ${typeof y === 'number' ? y.toFixed(1) : 0} ${unit}`
             }
           }
+        },
+        datalabels: {
+          display: false
         }
       },
       scales: {

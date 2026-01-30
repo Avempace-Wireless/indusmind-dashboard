@@ -100,7 +100,7 @@
     </div>
 
     <!-- Loading State - Improved with current meter info -->
-    <div v-if="!isMeterDataReady && validSelectedMeterIds.length > 0" class="flex items-center justify-center py-16">
+    <div v-if="(!isMeterDataReady || telemetryFetchStatus === 'loading') && validSelectedMeterIds.length > 0" class="flex items-center justify-center py-16">
       <div class="text-center">
         <div class="inline-block mb-4">
           <div class="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 dark:border-slate-700 border-t-teal-600"></div>
@@ -114,8 +114,8 @@
       </div>
     </div>
 
-    <!-- No Data Message - When meter has no elements/data -->
-    <div v-else-if="isMeterDataReady && currentMeterData && (!currentMeterData.elements || currentMeterData.elements.length === 0)" class="flex items-center justify-center py-16">
+    <!-- No Data Message - When meter has no elements/data AND not in API mode or no chart data -->
+    <div v-else-if="telemetryFetchStatus === 'success' && currentMeterData && (!currentMeterData.hourlyData.values || currentMeterData.hourlyData.values.length === 0) && (!currentMeterData.elements || currentMeterData.elements.length === 0)" class="flex items-center justify-center py-16">
       <div class="text-center max-w-md">
         <span class="material-symbols-outlined text-5xl mb-3 block text-slate-400">info</span>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ $t('puissance.labels.noElementData') }}</h3>
@@ -128,8 +128,8 @@
       </div>
     </div>
 
-    <!-- No API Data Available - When in API mode and no telemetry data -->
-    <div v-else-if="isMeterDataReady && !currentMeterData" class="flex items-center justify-center py-16">
+    <!-- No API Data Available - When in API mode and fetch completed but no telemetry data -->
+    <div v-else-if="telemetryFetchStatus === 'success' && !currentMeterData && validSelectedMeterIds.length > 0" class="flex items-center justify-center py-16">
       <div class="text-center max-w-md">
         <span class="material-symbols-outlined text-5xl mb-3 block text-amber-500">cloud_off</span>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">{{ $t('puissance.labels.noApiData') }}</h3>
@@ -144,7 +144,7 @@
           </p>
         </div>
         <button
-          @click="isLoadingTelemetry = true; fetchAllTelemetryData().finally(() => isLoadingTelemetry = false)"
+          @click="loadCurrentMeterData()"
           class="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-lg hover:shadow-lg transition-all duration-300 text-sm font-medium"
           :disabled="isLoadingTelemetry"
         >
@@ -160,9 +160,9 @@
       </div>
     </div>
 
-    <!-- Display Mode Toggle - Only show when data is ready AND has elements -->
+    <!-- Display Mode Toggle - Only show when data is ready AND has chart/element data -->
     <div
-      v-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0)"
+      v-if="telemetryFetchStatus === 'success' && currentMeterData && (currentMeterData.hourlyData.values?.length > 0 || currentMeterData.elements?.length > 0)"
       class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 px-1"
     >
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -208,8 +208,8 @@
       </div>
     </div>
 
-    <!-- Overview View: 2-Column Layout (Widgets Left, Charts Right) - Only if has elements -->
-    <div v-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0) && viewMode === 'overview'" class="space-y-8 animate-fadeIn">
+    <!-- Overview View: 2-Column Layout (Widgets Left, Charts Right) - Show if has chart or element data -->
+    <div v-if="telemetryFetchStatus === 'success' && currentMeterData && (currentMeterData.hourlyData.values?.length > 0 || currentMeterData.elements?.length > 0) && viewMode === 'overview'" class="space-y-8 animate-fadeIn">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Left Column: KPI Cards (1 col) -->
         <div v-if="displayElements.kpis" class="lg:col-span-1 space-y-4">
@@ -344,8 +344,8 @@
       </div>
     </div>
 
-    <!-- Charts View: Full Width Charts - Only if has elements -->
-    <div v-else-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0) && viewMode === 'charts'" class="space-y-8 animate-fadeIn">
+    <!-- Charts View: Full Width Charts - Show if has chart or element data -->
+    <div v-else-if="telemetryFetchStatus === 'success' && currentMeterData && (currentMeterData.hourlyData.values?.length > 0 || currentMeterData.elements?.length > 0) && viewMode === 'charts'" class="space-y-8 animate-fadeIn">
       <!-- Monthly Chart -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -418,8 +418,8 @@
       </div>
     </div>
 
-    <!-- Tables View: Full Width Tables - Only if has elements -->
-    <div v-else-if="isMeterDataReady && currentMeterData && (currentMeterData.elements && currentMeterData.elements.length > 0) && viewMode === 'tables'" class="space-y-8 animate-fadeIn">
+    <!-- Tables View: Full Width Tables - Show if has chart or element data -->
+    <div v-else-if="telemetryFetchStatus === 'success' && currentMeterData && (currentMeterData.hourlyData.values?.length > 0 || currentMeterData.elements?.length > 0) && viewMode === 'tables'" class="space-y-8 animate-fadeIn">
       <!-- Hourly Table -->
       <div>
         <div class="flex items-center justify-between mb-4">
@@ -673,9 +673,9 @@ onMounted(async () => {
     console.log('Restored selected meters for Puissance view:', selectedMeterIds.value)
   }
 
-  // Fetch telemetry data if API mode enabled
+  // Fetch telemetry data for current meter if API mode enabled
   if (useApiData()) {
-    await fetchAllTelemetryData()
+    await loadCurrentMeterData()
   }
 })
 
@@ -683,132 +683,98 @@ onMounted(async () => {
 // TELEMETRY DATA FETCHING
 // ===========================
 
-async function fetchAllTelemetryData() {
-  if (!useApiData()) return
+/**
+ * Load data for the currently active meter only
+ */
+async function loadCurrentMeterData() {
+  if (!useApiData() || !currentMeterId.value) {
+    console.log('[Puissance] Skipping data load - API mode disabled or no meter selected')
+    return
+  }
 
-  const metersWithUUID = validSelectedMeterIds.value
-    .map(id => allCompteurs.value.find(c => c.id === id))
-    .filter((c): c is NonNullable<typeof c> => c !== undefined && c.deviceUUID !== undefined)
-
-  if (metersWithUUID.length === 0) {
+  const meter = allCompteurs.value.find(c => c.id === currentMeterId.value)
+  if (!meter?.deviceUUID) {
+    console.log('[Puissance] Skipping data load - meter not found or no deviceUUID:', currentMeterId.value)
     telemetryFetchStatus.value = 'idle'
+    return
+  }
+
+  // Check if we already have cached data for this meter
+  if (telemetryCache.value.has(meter.id)) {
+    console.log('[Puissance] ✓ Using cached data for meter:', meter.name)
+    telemetryFetchStatus.value = 'success'
+    return
+  }
+
+  // Check if already loading to prevent duplicate requests
+  if (telemetryFetchStatus.value === 'loading') {
+    console.log('[Puissance] Already loading data, skipping duplicate request')
     return
   }
 
   telemetryFetchStatus.value = 'loading'
 
   try {
-    console.log(`[Puissance] Fetching KPI data for ${metersWithUUID.length} meters using new /puissance endpoint`)
-    console.log(`[Puissance] Meters to fetch:`, metersWithUUID.map(m => ({ id: m.id, name: m.name, deviceUUID: m.deviceUUID })))
+    console.log(`[Puissance] → Fetching KPI data from API for meter: ${meter.name} (deviceUUID: ${meter.deviceUUID})`)
 
-    // Fetch data for each meter in parallel
-    await Promise.all(
-      metersWithUUID.map(async meter => {
-        try {
-          console.log(`[Puissance] Fetching data for meter ID: ${meter.id}, deviceUUID: ${meter.deviceUUID}`)
-          const response = await fetchPuissanceKPIs(meter.deviceUUID!, { debug: false, useCache: true })
+    const response = await fetchPuissanceKPIs(meter.deviceUUID, { debug: false, useCache: true })
 
-          // Map the new API response format to the legacy cache structure
-          // API returns: { instantaneousPower: number, consumedX: number, xData: [{ts, value}] }
-          // View expects: { xData: [{key, ts, value}], instantaneousPower: [{key, ts, value}] }
-          telemetryCache.value.set(meter.id, {
-            meterId: meter.id,
-            // Direct KPI values (used by kpiValues object)
-            instantaneousConsumption: response.data.instantaneousPower,
-            consumedThisHour: response.data.consumedThisHour,
-            consumedToday: response.data.consumedToday,
-            consumedYesterday: response.data.consumedYesterday,
-            consumedThisMonth: response.data.consumedThisMonth,
-            consumedLastMonth: response.data.consumedLastMonth,
-            // Convert instantaneous power number to array format with key (for chart filtering)
-            instantaneousPower: response.data.instantaneousPower !== null
-              ? [{ key: 'ActivePowerTotal', ts: Date.now(), value: response.data.instantaneousPower }]
-              : [],
-            // Add key property to chart data arrays (view filters by key === 'ActivePowerTotal')
-            hourlyData: response.data.hourlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
-            dailyData: response.data.dailyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
-            monthlyData: response.data.monthlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value }))
-          })
+    // Map the new API response format to the legacy cache structure
+    const cachedData = {
+      meterId: meter.id,
+      // Direct KPI values (used by kpiValues object)
+      instantaneousConsumption: response.data.instantaneousPower,
+      consumedThisHour: response.data.consumedThisHour,
+      consumedToday: response.data.consumedToday,
+      consumedYesterday: response.data.consumedYesterday,
+      consumedThisMonth: response.data.consumedThisMonth,
+      consumedLastMonth: response.data.consumedLastMonth,
+      // Convert instantaneous power number to array format with key (for chart filtering)
+      instantaneousPower: response.data.instantaneousPower !== null
+        ? [{ key: 'ActivePowerTotal', ts: Date.now(), value: response.data.instantaneousPower }]
+        : [],
+      // Add key property to chart data arrays (view filters by key === 'ActivePowerTotal')
+      hourlyData: response.data.hourlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
+      dailyData: response.data.dailyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
+      monthlyData: response.data.monthlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value }))
+    }
 
-          console.log(`[Puissance] ✓ Cached data for ${meter.name}:`, {
-            meterId: meter.id,
-            kpis: {
-              instantaneous: response.data.instantaneousPower,
-              thisHour: response.data.consumedThisHour,
-              today: response.data.consumedToday
-            },
-            chartPoints: {
-              hourly: response.data.hourlyData.length,
-              daily: response.data.dailyData.length,
-              monthly: response.data.monthlyData.length
-            }
-          })
+    telemetryCache.value.set(meter.id, cachedData)
 
-          console.log(`[Puissance] Cache state after setting meter ${meter.id}:`, {
-            cacheSize: telemetryCache.value.size,
-            allKeys: Array.from(telemetryCache.value.keys()),
-            thisEntry: telemetryCache.value.get(meter.id)
-          })
-        } catch (err) {
-          console.error(`[Puissance] Failed to fetch ${meter.name}:`, err instanceof Error ? err.message : String(err))
-          console.error(`[Puissance] Full error:`, err)
-        }
-      })
-    )
+    // Force Vue reactivity by reassigning the Map reference
+    // This ensures computed properties that depend on telemetryCache are re-evaluated
+    telemetryCache.value = new Map(telemetryCache.value)
+
+    console.log(`[Puissance] ✓ Cached data for ${meter.name}:`, {
+      meterId: meter.id,
+      kpis: {
+        instantaneous: response.data.instantaneousPower,
+        thisHour: response.data.consumedThisHour,
+        today: response.data.consumedToday
+      },
+      chartPoints: {
+        hourly: response.data.hourlyData.length,
+        daily: response.data.dailyData.length,
+        monthly: response.data.monthlyData.length
+      }
+    })
 
     telemetryFetchStatus.value = 'success'
-    console.log(`[Puissance] ✓ Successfully fetched KPI data for all meters`)
-    console.log(`[Puissance] Final cache state:`, {
-      cacheSize: telemetryCache.value.size,
-      allKeys: Array.from(telemetryCache.value.keys()),
-      allEntries: Array.from(telemetryCache.value.entries()).map(([id, data]) => ({
-        id,
-        hasData: !!data,
-        kpis: data ? {
-          instantaneous: data.instantaneousConsumption,
-          thisHour: data.consumedThisHour
-        } : null
-      }))
-    })
-  } catch (error) {
-    console.error('[Puissance] Failed to fetch telemetry:', error)
+  } catch (err) {
+    console.error(`[Puissance] ✗ Failed to fetch ${meter.name}:`, err instanceof Error ? err.message : String(err))
     telemetryFetchStatus.value = 'failed'
   }
 }
 
 /**
  * Watch for current meter changes and fetch telemetry if needed
+ * Only runs when meter actually changes (not on initial mount)
  */
-watch(currentMeterId, async (newMeterId) => {
-  if (newMeterId && useApiData()) {
-    const meter = allCompteurs.value.find(c => c.id === newMeterId)
-    if (meter?.deviceUUID && !telemetryCache.value.has(meter.id)) {
-      // Fetch data for this meter
-      try {
-        const response = await fetchPuissanceKPIs(meter.deviceUUID, { debug: false, useCache: true })
-
-        // Map the new API response format to the legacy cache structure
-        telemetryCache.value.set(meter.id, {
-          meterId: meter.id,
-          // Direct KPI values
-          instantaneousConsumption: response.data.instantaneousPower,
-          consumedThisHour: response.data.consumedThisHour,
-          consumedToday: response.data.consumedToday,
-          consumedYesterday: response.data.consumedYesterday,
-          consumedThisMonth: response.data.consumedThisMonth,
-          consumedLastMonth: response.data.consumedLastMonth,
-          // Convert to array format with key property
-          instantaneousPower: response.data.instantaneousPower !== null
-            ? [{ key: 'ActivePowerTotal', ts: Date.now(), value: response.data.instantaneousPower }]
-            : [],
-          hourlyData: response.data.hourlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
-          dailyData: response.data.dailyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
-          monthlyData: response.data.monthlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value }))
-        })
-      } catch (err) {
-        console.error(`[Puissance] Failed to fetch ${meter.name}:`, err instanceof Error ? err.message : String(err))
-      }
-    }
+watch(currentMeterId, async (newMeterId, oldMeterId) => {
+  // Only fetch if meter actually changed and we're in API mode
+  if (newMeterId && useApiData() && newMeterId !== oldMeterId) {
+    console.log('[Puissance] Current meter changed:', { from: oldMeterId, to: newMeterId })
+    await loadCurrentMeterData()
   }
 })
 

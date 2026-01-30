@@ -238,6 +238,7 @@ import {
   LayoutDashboardIcon,
   LinearIcon,
   EnergyIcon,
+  CurrentIcon,
 } from '../../icons'
 import SidebarWidget from './SidebarWidget.vue'
 import BoxCubeIcon from '@/icons/BoxCubeIcon.vue'
@@ -254,6 +255,11 @@ const menuGroups = computed(() => [
     title: t('sidebar.monitoring'),
     items: [
       {
+        icon: PieChartIcon,
+        name: t('sidebar.globalMeters'),
+        path: '/global-meters',
+      },
+      {
         icon: GridIcon,
         name: t('sidebar.dashboard'),
         path: '/dashboard',
@@ -262,6 +268,11 @@ const menuGroups = computed(() => [
         icon: EnergyIcon,
         name: t('sidebar.puissance'),
         path: '/puissance',
+      },
+      {
+        icon: CurrentIcon,
+        name: t('sidebar.current'),
+        path: '/current',
       },
       {
         icon: CalenderIcon,
@@ -278,6 +289,26 @@ const menuGroups = computed(() => [
         name: t('sidebar.thermalManagement'),
         path: '/thermal-management',
       },
+    ],
+  },
+    {
+    title: t('sidebar.equipment'),
+    comingSoon: false,
+    items: [
+      {
+        icon: BoxCubeIcon,
+        name: t('sidebar.equipment'),
+        path: '/equipment',
+        disabled: false,
+      },
+
+/*       {
+        icon: PlugInIcon,
+        name: t('sidebar.maintenance'),
+        path: '/maintenance',
+        disabled: true,
+        comingSoon: true,
+      }, */
     ],
   },
   {
@@ -308,26 +339,6 @@ const menuGroups = computed(() => [
         path: '/reports',
         disabled: true,
       }
-    ],
-  },
-  {
-    title: t('sidebar.equipment'),
-    comingSoon: true,
-    items: [
-      {
-        icon: BoxCubeIcon,
-        name: t('sidebar.equipment'),
-        path: '/equipment',
-        disabled: true,
-      },
-
-/*       {
-        icon: PlugInIcon,
-        name: t('sidebar.maintenance'),
-        path: '/maintenance',
-        disabled: true,
-        comingSoon: true,
-      }, */
     ],
   },
 /*   {
