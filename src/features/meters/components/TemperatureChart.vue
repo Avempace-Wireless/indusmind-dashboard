@@ -112,7 +112,7 @@ const chartData = computed(() => {
       tension: 0.4, // Smooth curves
       pointRadius: 4,
       pointHoverRadius: 6,
-      fill: true,
+      fill: false,
       pointBackgroundColor: colors.point,
       pointBorderColor: '#fff',
       pointBorderWidth: 2,
