@@ -313,7 +313,7 @@ export function useTelemetry() {
       loading.value = true
       error.value = null
 
-      const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/telemetry/${deviceUUID}/kpis`
+      const apiUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api'}/telemetry/${deviceUUID}/kpis`
       const params = new URLSearchParams()
       params.append('startTs', startTs.toString())
       params.append('endTs', endTs.toString())

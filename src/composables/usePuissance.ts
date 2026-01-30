@@ -86,7 +86,7 @@ export function usePuissance() {
       if (options?.debug) params.append('debug', 'true')
 
       // Fetch from new API endpoint (note: no /api prefix, backend routes are mounted directly)
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000'
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
       const endpoint = `${apiBaseUrl}/telemetry/${deviceUUID}/puissance${params.toString() ? '?' + params.toString() : ''}`
 
       console.log(`[usePuissance] Fetching from: ${endpoint}`)
