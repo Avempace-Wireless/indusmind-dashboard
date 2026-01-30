@@ -93,11 +93,12 @@
         </div>
       </div>
 
-      <!-- Content Grid - Full page with cards left (1/2 or 2/3), charts right (1/2 or 1/3) -->
-      <div v-else class="flex flex-col md:flex-row gap-1 overflow-y-auto md:overflow-hidden pb-2" style="height: calc(100vh - 110px);">
-        <!-- Left Panel: Meter Cards - Dynamic width based on meter count -->
-        <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 flex flex-col min-h-0 overflow-y-auto md:overflow-hidden" :style="leftPanelStyle">
-          <div class="grid gap-1 md:gap-2 flex-1 min-h-0 auto-rows-fr" :style="getGridStyle()">
+      <!-- Content Grid: 2/3 (Left - Cards) + 1/3 (Right - Charts) - Responsive -->
+      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:h-[calc(100vh-110px)] h-auto">
+        <!-- Left Panel: Meter Cards (2/3 width on lg, full width below lg) -->
+        <div class="col-span-1 lg:col-span-2 flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 min-h-0 lg:overflow-y-auto">
+          <!-- Deterministic Grid: Adapts based on meter count -->
+          <div class="grid gap-1 md:gap-2 flex-1 min-h-0 p-0.5 md:p-1 auto-rows-fr" :style="getMetersGridStyle()">
             <div
               v-for="(compteur, index) in enrichedCompteurs"
               :key="compteur.id"
@@ -105,25 +106,36 @@
               :style="{
                 borderColor: getChartColor(index),
                 boxShadow: `0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 0 0 2px ${getChartColor(index)}15`,
-                minHeight: 'clamp(200px, 40vh, 350px)'
+                minHeight: 'clamp(200px, 40vh, 350px)',
+                ...getCardGridSpan(index, enrichedCompteurs.length)
               }"
             >
-              <!-- Card Header with color accent - Responsive -->
+              <!-- Top accent line -->
+              <div class="absolute top-0 left-0 right-0 h-1" :style="{ backgroundColor: getChartColor(index) }"></div>
+
+              <!-- Card Header with color accent and custom tooltip -->
               <div :class="[
-                'px-1 md:px-2 py-0.5 md:py-1 flex-shrink-0',
-                `border-b-2 border-${getMeterColorTailwind(index)}-400 dark:border-${getMeterColorTailwind(index)}-500`
-              ]" :style="{ backgroundColor: `${getChartColor(index)}08` }">
-                <div class="flex items-center gap-0.5 md:gap-1 mb-0.25">
-                  <span class="material-symbols-outlined" :style="{ fontSize: 'clamp(12px, 2vmin, 16px)', color: getChartColor(index) }">bolt</span>
-                  <h3 class="font-bold text-slate-900 dark:text-slate-50 flex-1 truncate" style="font-size: clamp(9px, 1.3vmin, 13px);">{{ compteur.name }}</h3>
-                  <span :class="[
-                    'inline-flex h-1.5 w-1.5 rounded-full flex-shrink-0',
-                    compteur.status === 'online'
-                      ? 'bg-green-500 animate-pulse shadow-[0_0_3px_rgba(34,197,94,0.5)]'
-                      : 'bg-red-500 shadow-[0_0_3px_rgba(239,68,68,0.5)]'
-                  ]"></span>
+                'px-4 py-1.5 flex-shrink-0 border-b-2 relative group/header flex items-start justify-between gap-2 overflow-hidden',
+                `border-${getMeterColorTailwind(index)}-400 dark:border-${getMeterColorTailwind(index)}-500`
+              ]" :style="{ backgroundColor: `${getChartColor(index)}08`, minHeight: '90px' }">
+                <div class="flex-1 min-w-0 overflow-hidden">
+                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight break-words pt-1">{{ compteur.name }}</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">{{ compteur.subtitle || $t('globalMeters.energyMeter') }}</p>
                 </div>
-                <p class="text-slate-600 dark:text-slate-300 font-medium" style="font-size: clamp(7px, 0.9vmin, 9px);">{{ compteur.subtitle || $t('globalMeters.energyMeter') }}</p>
+                <span :class="[
+                  'inline-flex h-1.5 w-1.5 rounded-full flex-shrink-0 mt-2',
+                  compteur.status === 'online'
+                    ? 'bg-green-500 animate-pulse shadow-[0_0_3px_rgba(34,197,94,0.5)]'
+                    : 'bg-red-500 shadow-[0_0_3px_rgba(239,68,68,0.5)]'
+                ]"></span>
+
+
+                <!-- Custom Tooltip -->
+                <div class="absolute bottom-full left-1/2 mb-3 px-3 py-2 bg-slate-900 dark:bg-slate-800 text-white text-sm rounded-md whitespace-nowrap z-50 opacity-0 invisible group-hover/header:opacity-100 group-hover/header:visible transition-all duration-150 shadow-lg" style="transform: translateX(-50%);">
+                  {{ compteur.name }}
+                  <!-- Tooltip arrow -->
+                  <div class="absolute top-full left-1/2 w-0 h-0" style="transform: translateX(-50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid rgb(15, 23, 42);"></div>
+                </div>
               </div>
 
               <!-- Card Content - Responsive Height -->
@@ -161,8 +173,8 @@
           </div>
         </div>
 
-        <!-- Right Panel: Charts - Takes remaining space -->
-        <div class="flex-1 grid grid-cols-1 gap-1 min-h-0 md:flex md:flex-col rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 md:p-1" :style="rightPanelStyle">
+        <!-- Right Panel: Charts (1/3 width on lg, 1/2 on sm, full width on mobile) -->
+        <div class="col-span-1 flex flex-col gap-1 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 lg:overflow-y-auto">
           <!-- Energy Chart -->
           <div class="overflow-hidden rounded-lg md:rounded-xl border border-green-300 md:border-2 dark:border-green-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
             <div class="border-b border-green-300 md:border-b-2 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
@@ -173,7 +185,7 @@
                 </h3>
               </div>
             </div>
-            <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-0">
+            <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
               <div v-if="enrichedCompteurs.length === 0 || enrichedCompteurs.every(m => m.hourlyData.length === 0)" class="w-full h-full flex items-center justify-center">
                 <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
               </div>
@@ -195,7 +207,7 @@
                 </h3>
               </div>
             </div>
-            <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 min-h-0">
+            <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
               <div v-if="temperatureChartData.length === 0" class="w-full h-full flex items-center justify-center">
                 <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
               </div>
@@ -400,24 +412,17 @@ const enrichedCompteurs = computed(() => {
   })
 })
 
-// Dynamic panel sizing based on meter count
+
+
+// Dynamic panel sizing based on meter count - STRICT 2/3 - 1/3 split
 const leftPanelStyle = computed(() => {
-  //const count = selectedCompteurs.value.length
-  const count = enrichedCompteurs.value.length
-  // When 8 meters, use 2/3 for cards and 1/3 for charts; otherwise 1/2 each
-  if (count === 8) {
-    return { flex: '0 0 66.666%' }
-  }
-  return { flex: '1' }
+  // Always 2/3 width (66.666%) to preserve consistent layout ratio
+  return { flex: '0 0 66.666%' }
 })
 
 const rightPanelStyle = computed(() => {
-  const count = enrichedCompteurs.value.length
-  // When 8 meters, use 1/3 for charts; otherwise 1/2
-  if (count === 8) {
-    return { flex: '0 0 33.333%' }
-  }
-  return { flex: '1' }
+  // Always 1/3 width (33.333%) to preserve consistent layout ratio
+  return { flex: '0 0 33.333%' }
 })
 
 // Methods
@@ -448,31 +453,84 @@ const getChartColor = (index: number) => {
   return colors[index % colors.length]
 }
 
-// Responsive grid style based on number of meters
-const getGridStyle = () => {
+// Helper function to make overflow items span properly
+const getCardGridSpan = (index: number, totalCount: number): Record<string, any> => {
+  // 5 meters: first row (0-2) at 33% each, second row (3-4) at 50% each
+  if (totalCount === 5) {
+    if (index <= 2) return { gridColumn: 'span 2' }  // Items 0-2: 2 cols = 33%
+    if (index >= 3) return { gridColumn: 'span 3' }  // Items 3-4: 3 cols = 50%
+  }
+
+  // 7 meters: first row (0-3) at 25% each, second row (4-6) at 33.33% each
+  if (totalCount === 7) {
+    if (index <= 3) return { gridColumn: 'span 3' }  // Items 0-3: 3 cols = 25%
+    if (index >= 4) return { gridColumn: 'span 4' }  // Items 4-6: 4 cols = 33.33%
+  }
+
+  // 3 meters: last item spans full
+  if (totalCount === 3 && index === 2) {
+    return { gridColumn: '1 / -1' }
+  }
+
+  return {}
+}
+
+// Deterministic grid style based on number of meters
+// No hard-coded widths per meter count - uses CSS Grid for automatic layout
+const getMetersGridStyle = () => {
   const count = enrichedCompteurs.value.length
 
-  // For small screens (mobile), allow scrolling with single column
+  // Responsive breakpoint for mobile
   if (window.innerWidth < 768) {
-    return 'grid-template-columns: 1fr; grid-auto-rows: minmax(200px, auto);'
+    // Mobile: single column, responsive height
+    return 'grid-template-columns: 1fr; grid-auto-rows: minmax(180px, auto);'
   }
 
-  // For medium+ screens, optimize layout based on meter count
-  if (count === 1) {
-    return 'grid-template-columns: 1fr; grid-auto-rows: 1fr;'
-  } else if (count === 2) {
-    return 'grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr;'
-  } else if (count === 3) {
-    return 'grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr;'
-  } else if (count === 4) {
-    return 'grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr;'
-  } else if (count === 8) {
-    // For 8 meters: 4 cards per line (2 rows of 4)
-    return 'grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr;'
-  } else {
-    // For 5-7 or 9+ meters, use responsive auto-fit
-    return 'grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); grid-auto-rows: 1fr;'
+  // Desktop: deterministic layouts based on meter count
+  // Each layout ensures cards are evenly distributed and fill width
+  switch (count) {
+    case 1:
+      // 1 meter: 1 widget full width
+      return 'grid-template-columns: 1fr; grid-auto-rows: 1fr;'
+
+    case 2:
+      // 2 meters: 1 per row (2 rows), full width each
+      return 'grid-template-columns: 1fr; grid-auto-rows: 1fr;'
+
+    case 3:
+      // 3 meters: 2 on first row, 1 on second row (full width shared)
+      // Use CSS Grid template to create uneven rows
+      return 'grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr;'
+
+    case 4:
+      // 4 meters: 2 per row (2 rows)
+      return 'grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr;'
+
+    case 5:
+      // 5 meters: 3 on first row (33% each), 2 on second row (50% each)
+      return 'grid-template-columns: repeat(6, 1fr); grid-auto-rows: 1fr;'
+
+    case 6:
+      // 6 meters: 3 per row (2 rows)
+      return 'grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr;'
+
+    case 7:
+      // 7 meters: 4 on first row (25% each), 3 on second row (33.33% each)
+      return 'grid-template-columns: repeat(12, 1fr); grid-auto-rows: 1fr;'
+
+    case 8:
+      // 8 meters: 4 per row (2 rows)
+      return 'grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr;'
+
+    default:
+      // Fallback for edge cases: responsive auto-fit
+      return 'grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); grid-auto-rows: 1fr;'
   }
+}
+
+// Keep old getGridStyle for any backward compatibility (deprecated)
+const getGridStyle = () => {
+  return getMetersGridStyle()
 }
 </script>
 
