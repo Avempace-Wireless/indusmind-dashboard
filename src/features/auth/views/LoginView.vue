@@ -62,11 +62,11 @@
         </div>
 
         <!-- Error Message -->
-        <div v-if="error" class="mb-5 p-3 bg-red-500/20 dark:bg-red-900/30 border border-red-400/50 rounded-lg flex items-center gap-2">
+        <div v-if="authStore.error" class="mb-5 p-3 bg-red-500/20 dark:bg-red-900/30 border border-red-400/50 rounded-lg flex items-center gap-2">
           <svg class="w-4 h-4 text-red-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
           </svg>
-          <p class="text-xs font-medium text-red-200">{{ t('auth.login.error') }}</p>
+          <p class="text-xs font-medium text-red-200">{{ t('auth.login.invalidCredentials') }}</p>
         </div>
 
         <form @submit.prevent="handleLogin" class="space-y-3">
@@ -76,7 +76,7 @@
               {{ t('auth.login.email') }}
             </label>
             <input
-              v-model="email"
+              v-model="username"
               type="email"
               :placeholder="t('auth.login.emailPlaceholder')"
               class="w-full px-3 py-2.5 border border-white/20 dark:border-emerald-500/30 rounded-lg
@@ -127,7 +127,7 @@
           <!-- Sign In Button -->
           <button
             type="submit"
-            :disabled="isLoading"
+            :disabled="authStore.loading"
             class="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 bg-size-200 bg-pos-0 hover:bg-pos-100
                    text-white font-bold py-3 rounded-lg transition-all duration-500
                    transform hover:scale-[1.02] active:scale-[0.98]
@@ -136,7 +136,7 @@
                    relative overflow-hidden group text-sm"
           >
             <span class="relative z-10 flex items-center justify-center gap-2">
-              <span v-if="!isLoading" class="flex items-center gap-2">
+              <span v-if="!authStore.loading" class="flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
                 </svg>
@@ -172,11 +172,9 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/features/auth/store/useAuthStore'
 
 const { t, locale } = useI18n()
-const email = ref('')
+const username = ref('')
 const password = ref('')
 const rememberMe = ref(false)
-const isLoading = ref(false)
-const error = ref(false)
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
@@ -187,19 +185,35 @@ onMounted(() => {
 })
 
 const handleLogin = async () => {
-  isLoading.value = true
-  error.value = false
+  console.log('[LoginView] handleLogin called')
+  console.log('[LoginView] Username:', username.value)
+  console.log('[LoginView] Password:', password.value ? '***' : 'empty')
+
+  // Validate inputs
+  if (!username.value) {
+    console.warn('[LoginView] Username is empty')
+    return
+  }
+
+  if (!password.value) {
+    console.warn('[LoginView] Password is empty')
+    return
+  }
 
   try {
-    await authStore.login(email.value, password.value)
+    console.log('[LoginView] Calling authStore.login()')
+
+    await authStore.login(username.value, password.value)
+
+    console.log('[LoginView] Login successful, redirecting...')
+
     // Get redirect from query parameter or default to global-meters
     const redirect = (route.query.redirect as string) || '/global-meters'
+    console.log('[LoginView] Redirecting to:', redirect)
     await router.push(redirect)
   } catch (err) {
-    console.error('Login failed:', err)
-    error.value = true
-  } finally {
-    isLoading.value = false
+    console.error('[LoginView] Login failed:', err)
+    // Error is already handled in authStore
   }
 }
 </script>

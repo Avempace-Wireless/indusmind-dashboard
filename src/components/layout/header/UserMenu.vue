@@ -5,12 +5,12 @@
       @click.prevent="toggleDropdown"
     >
       <div class="flex items-center justify-center h-9 w-9 rounded-full ring-2 ring-emerald-500/30 bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-xs">
-        IM
+        {{ getUserInitials() }}
       </div>
 
       <div class="hidden sm:flex flex-col items-start">
-        <span class="block font-semibold text-sm text-gray-900 dark:text-white leading-none">{{ t('user.manager') }}</span>
-        <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('user.profile') }}</span>
+        <span class="block font-semibold text-sm text-gray-900 dark:text-white leading-none">{{ authStore.user?.name || t('user.manager') }}</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">{{ authStore.user?.email || t('user.profile') }}</span>
       </div>
 
       <ChevronDownIcon :class="['w-4 h-4', { 'rotate-180': dropdownOpen }]" class="transition-transform" />
@@ -29,15 +29,15 @@
         v-if="dropdownOpen"
         class="absolute right-0 mt-2 w-72 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl"
       >
-        <!-- User Info Section -->
+    <!-- User Info Section -->
         <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3">
             <div class="flex items-center justify-center h-12 w-12 rounded-full ring-2 ring-emerald-500/30 bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-sm flex-shrink-0">
-              IM
+              {{ getUserInitials() }}
             </div>
             <div>
-              <p class="font-semibold text-gray-900 dark:text-white">{{ t('user.managerAccount') }}</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('user.managerEmail') }}</p>
+              <p class="font-semibold text-gray-900 dark:text-white">{{ authStore.user?.name || t('user.managerAccount') }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ authStore.user?.email || t('user.managerEmail') }}</p>
             </div>
           </div>
         </div>
@@ -126,6 +126,25 @@ const handleLogout = async () => {
   }
 }
 
+const getUserInitials = (): string => {
+  if (!authStore.user?.name) return 'IM'
+  const parts = authStore.user.name.split(' ')
+  return parts.map(part => part[0]).join('').toUpperCase().slice(0, 2)
+}
+
+const restoreUserData = () => {
+  try {
+    const storedUser = sessionStorage.getItem('user')
+    if (storedUser) {
+      const user = JSON.parse(storedUser)
+      authStore.setUser(user)
+      console.log('[UserMenu] User data restored from storage:', user)
+    }
+  } catch (error) {
+    console.error('[UserMenu] Failed to restore user data:', error)
+  }
+}
+
 const handleClickOutside = (event: MouseEvent) => {
   if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
     closeDropdown()
@@ -133,6 +152,7 @@ const handleClickOutside = (event: MouseEvent) => {
 }
 
 onMounted(() => {
+  restoreUserData()
   document.addEventListener('click', handleClickOutside)
 })
 

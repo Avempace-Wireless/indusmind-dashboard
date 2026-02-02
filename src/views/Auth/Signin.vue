@@ -41,6 +41,13 @@
                   Enter your email and password to sign in!
                 </p>
               </div>
+              <!-- Error Alert -->
+              <div
+                v-if="error"
+                class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/20 dark:border-red-900/30"
+              >
+                <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+              </div>
               <div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
                   <button
@@ -112,7 +119,7 @@
                         Email<span class="text-error-500">*</span>
                       </label>
                       <input
-                        v-model="email"
+                        v-model="username"
                         type="email"
                         id="email"
                         name="email"
@@ -229,9 +236,16 @@
                     <div>
                       <button
                         type="submit"
-                        class="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+                        :disabled="loading"
+                        class="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Sign In
+                        <span v-if="loading" class="mr-2">
+                          <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </span>
+                        {{ loading ? 'Signing in...' : 'Sign In' }}
                       </button>
                     </div>
                   </div>
@@ -274,23 +288,35 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
-const email = ref('')
+
+const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const keepLoggedIn = ref(false)
+
+const { login, loading, error, clearError } = useAuth()
 
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
 }
 
-const handleSubmit = () => {
-  // Handle form submission
-  console.log('Form submitted', {
-    email: email.value,
-    password: password.value,
-    keepLoggedIn: keepLoggedIn.value,
-  })
+const handleSubmit = async () => {
+  try {
+    clearError()
+
+    // Validate inputs
+    if (!username.value || !password.value) {
+      return
+    }
+
+    // Call login from composable
+    await login(username.value, password.value)
+  } catch (err: any) {
+    console.error('Sign in failed:', err)
+    // Error is already set in composable
+  }
 }
 </script>

@@ -33,8 +33,3 @@ coverage
 .github/*
 package-lock.json
 
-# Environment variables (keep only .env.example)
-.env.local
-.env.development
-.env
-# Note: .env.production is committed (contains public URLs only)
