@@ -62,7 +62,8 @@
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
       "orContinueWith": "Or continue with",
-      "error": "Invalid email or password"
+      "error": "Invalid email or password",
+      "invalidCredentials": "Invalid username or password"
     }
   },
   "user": {

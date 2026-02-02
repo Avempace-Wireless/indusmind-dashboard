@@ -22,7 +22,11 @@ export interface LoginCredentials {
  */
 export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
   try {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const endpoint = `${API_URL}/auth/login`
+    console.log('[authAPI] Calling login endpoint:', endpoint)
+    console.log('[authAPI] Credentials:', { username: credentials.username })
+
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -30,7 +34,11 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
       body: JSON.stringify(credentials)
     })
 
+    console.log('[authAPI] Response status:', response.status)
+
     const data = await response.json()
+
+    console.log('[authAPI] Response data:', { success: data.success, message: data.message })
 
     if (!response.ok) {
       throw new Error(data.message || 'Login failed')
@@ -38,7 +46,7 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
 
     return data
   } catch (error: any) {
-    console.error('[authAPI] Login error:', error)
+    console.error('[authAPI] Login error:', error.message)
     throw error
   }
 }

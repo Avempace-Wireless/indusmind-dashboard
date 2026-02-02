@@ -60,7 +60,8 @@
       "noAccount": "Pas encore de compte?",
       "signUp": "S'inscrire",
       "orContinueWith": "Ou continuer avec",
-      "error": "Email ou mot de passe invalide"
+      "error": "Email ou mot de passe invalide",
+      "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide"
     }
   },
   "user": {
