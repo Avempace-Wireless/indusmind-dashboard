@@ -720,7 +720,7 @@
     "currentTemp": "Temperature",
     "maxTemp": "Max Temp",
     "minTemp": "Min Temp",
-    "manual": "Manual",
+    "manuel": "Manual",
     "auto": "Auto",
     "powerOn": "ACTIVE",
     "powerOff": "INACTIVE",
@@ -798,6 +798,29 @@
       "limitsDisabled": "Limits are disabled. Enable to edit temperatures.",
       "manageSensors": "Manage Sensors",
       "sensorsLabel": "Sensors"
+    },
+    "mode": {
+      "updating": "Updating...",
+      "updateSuccess": "Mode updated successfully",
+      "updateError": "Failed to update mode",
+      "updateErrorBrief": "Update failed"
+    },
+    "error": {
+      "apiError": "Thermal API Error",
+      "network": "Network Error",
+      "retry": "Retry",
+      "retrying": "Retrying...",
+      "checkConnection": "Please check your internet connection and try again.",
+      "invalidRequest": "Invalid request",
+      "unauthorized": "Unauthorized",
+      "forbidden": "Access forbidden",
+      "serverError": "Server error",
+      "timeout": "Connection timeout",
+      "updateFailed": "Update failed",
+      "tryAgain": "Please try again.",
+      "loginRequired": "Please log in again.",
+      "noPermission": "You don't have permission to perform this action.",
+      "tryLater": "Please try again later."
     }
   },
   "current": {

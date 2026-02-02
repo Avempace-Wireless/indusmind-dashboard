@@ -102,6 +102,7 @@ export interface Sensor {
   customerId: number
   createdAt: string
   updatedAt: string
+  mode?: 'manuel' | 'auto' // Operating mode
 }
 
 export interface Controller {

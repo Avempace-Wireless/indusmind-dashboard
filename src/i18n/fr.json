@@ -723,7 +723,7 @@
     "currentTemp": "Température",
     "maxTemp": "Temp. Max",
     "minTemp": "Temp. Min",
-    "manual": "Manuel",
+    "manuel": "Manuel",
     "auto": "Auto",
     "powerOn": "ACTIF",
     "powerOff": "INACTIF",
@@ -800,7 +800,31 @@
       "resetDefaults": "Réinitialiser aux valeurs par défaut",
       "limitsDisabled": "Les limites sont désactivées. Activez-les pour modifier les températures.",
       "manageSensors": "Gérer les Capteurs",
-      "sensorsLabel": "Capteurs"
+      "sensorsLabel": "Capteurs"    },
+    "mode": {
+      "updating": "Mise à jour en cours...",
+      "updateSuccess": "Mode mis à jour avec succès",
+      "updateError": "Impossible de mettre à jour le mode",
+      "updateError": "Impossible de mettre à jour le mode",
+      "updateErrorRetry": "Impossible de mettre à jour le mode. Veuillez réessayer.",
+      "updateErrorBrief": "Échec de la mise à jour"
+    },
+    "error": {
+      "apiError": "Erreur API Thermique",
+      "network": "Erreur Réseau",
+      "retry": "Réessayer",
+      "retrying": "Nouvelle tentative...",
+      "checkConnection": "Veuillez vérifier votre connexion Internet et réessayer.",
+      "invalidRequest": "Demande invalide",
+      "unauthorized": "Non autorisé",
+      "forbidden": "Accès interdit",
+      "serverError": "Erreur serveur",
+      "timeout": "Délai d'expiration de la connexion",
+      "updateFailed": "Mise à jour échouée",
+      "tryAgain": "Veuillez réessayer.",
+      "loginRequired": "Veuillez vous reconnecter.",
+      "noPermission": "Vous n'avez pas la permission d'effectuer cette action.",
+      "tryLater": "Veuillez réessayer plus tard."
     }
   },
   "current": {

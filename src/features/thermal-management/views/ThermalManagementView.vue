@@ -18,22 +18,24 @@
 
         <!-- Error Banner (Thermal API) -->
         <div v-if="thermalError"
-          class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-900/20">
-          <div class="flex items-start justify-between">
-            <div class="flex items-start gap-3">
-              <svg class="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor"
-                viewBox="0 0 20 20">
+          class="rounded-lg border-l-4 border-l-red-600 border border-red-200 bg-gradient-to-r from-red-50 to-red-50/50 p-4 shadow-sm dark:border-l-red-500 dark:border-red-900/30 dark:bg-gradient-to-r dark:from-red-950/50 dark:to-red-950/20">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-start gap-3 flex-1">
+              <svg class="h-6 w-6 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
                   clip-rule="evenodd" />
               </svg>
-              <div>
-                <h3 class="text-sm font-semibold text-red-800 dark:text-red-200">Thermal API Error</h3>
-                <p class="mt-1 text-sm text-red-700 dark:text-red-300">{{ thermalError }}</p>
+              <div class="flex-1">
+                <h3 class="text-sm font-bold text-red-900 dark:text-red-200">
+                  {{ t('thermal.error.apiError') }}
+                </h3>
+                <p class="mt-3 text-sm text-red-700 dark:text-red-300 leading-relaxed">
+                  {{ t('thermal.error.checkConnection') }}
+                </p>
               </div>
             </div>
-            <button @click="thermalError = null"
-              class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+            <button @click="thermalError = null" class="flex-shrink-0 text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/30 p-1 rounded-md transition-colors">
               <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd"
                   d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -41,9 +43,9 @@
               </svg>
             </button>
           </div>
-          <div v-if="dataMode === 'api'" class="mt-3">
+          <div v-if="dataMode === 'api'" class="mt-4">
             <button @click="refreshThermalData" :disabled="isFetchingThermal"
-              class="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 dark:bg-red-700 dark:hover:bg-red-600">
+              class="inline-flex items-center gap-2 rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors dark:bg-red-700 dark:hover:bg-red-600">
               <svg v-if="isFetchingThermal" class="h-4 w-4 animate-spin" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -53,7 +55,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              {{ isFetchingThermal ? 'Refreshing...' : 'Retry' }}
+              {{ t('thermal.error.retry') }}
             </button>
           </div>
         </div>
@@ -314,9 +316,14 @@
             <!-- Controls Area with Mode Selection -->
             <div class="flex flex-col">
               <!-- Controls Content (Fixed Height) -->
-              <div class="min-h-[140px] sm:min-h-[160px] lg:min-h-[200px] flex items-center mb-3 sm:mb-4 lg:mb-5">
+              <div class="min-h-[140px] sm:min-h-[160px] lg:min-h-[200px] flex items-center justify-center mb-3 sm:mb-4 lg:mb-5">
+                <!-- No Data Message (Missing Critical Fields) -->
+                <div v-if="hasNoData(zone)" class="text-lg sm:text-xl font-semibold text-gray-500 dark:text-gray-400">
+                  N/A
+                </div>
+
                 <!-- Power Toggle Button (Manual Mode Only) -->
-                <div v-if="zone.mode === 'manual'" class="w-full flex justify-center">
+                <div v-else-if="zone.mode === 'manuel' && zone.powerStatus !== null" class="w-full flex justify-center">
                   <button @click="togglePower(zone.id)" :disabled="isControllingRelay[zone.sensorId || '']" :class="[
                     'group relative flex h-16 sm:h-20 lg:h-28 w-16 sm:w-20 lg:w-28 flex-col items-center justify-center rounded-full text-white shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
                     zone.power
@@ -358,7 +365,7 @@
                 </div>
 
                 <!-- Temperature Controls (Auto Mode Only) -->
-                <div v-if="zone.mode === 'auto'" class="w-full space-y-1.5 sm:space-y-2 lg:space-y-3">
+                <div v-else-if="zone.mode === 'auto'" class="w-full space-y-1.5 sm:space-y-2 lg:space-y-3">
                   <!-- Max Temperature -->
                   <div>
                     <label
@@ -443,38 +450,74 @@
 
               <!-- Mode Selection (Fixed Position) -->
               <div class="flex gap-1 sm:gap-1.5 lg:gap-2">
-                <button @click="setMode(zone.id, 'manual')" :class="[
-                  'group relative flex-1 overflow-hidden rounded-md sm:rounded-lg lg:rounded-xl px-1.5 sm:px-2 lg:px-4 py-1.5 sm:py-2 lg:py-3 text-xs font-bold uppercase tracking-wide shadow-md transition-all duration-300',
-                  zone.mode === 'manual'
+                <button @click="setMode(zone.id, 'manuel')" :disabled="isUpdatingMode[zone.id]" :class="[
+                  'group relative flex-1 overflow-hidden rounded-md sm:rounded-lg lg:rounded-xl px-1.5 sm:px-2 lg:px-4 py-1.5 sm:py-2 lg:py-3 text-xs font-bold uppercase tracking-wide shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed',
+                  zone.mode === 'manuel'
                     ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-blue-500/40'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
                 ]">
                   <span class="relative z-10 flex items-center justify-center gap-0.5 sm:gap-1">
-                    <svg class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3" fill="currentColor" viewBox="0 0 20 20">
+                    <svg v-if="isUpdatingMode[zone.id]" class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <svg v-else class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3" fill="currentColor" viewBox="0 0 20 20">
                       <path
                         d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
-                    <span class="hidden sm:inline">{{ t('thermal.manual') }}</span>
-                    <span class="sm:hidden">M</span>
+                    <span class="hidden sm:inline">{{ isUpdatingMode[zone.id] ? t('thermal.mode.updating') : t('thermal.manuel') }}</span>
+                    <span class="sm:hidden">{{ isUpdatingMode[zone.id] ? '...' : 'M' }}</span>
                   </span>
                 </button>
-                <button @click="setMode(zone.id, 'auto')" :class="[
-                  'group relative flex-1 overflow-hidden rounded-md sm:rounded-lg lg:rounded-xl px-1.5 sm:px-2 lg:px-4 py-1.5 sm:py-2 lg:py-3 text-xs font-bold uppercase tracking-wide shadow-md transition-all duration-300',
+                <button @click="setMode(zone.id, 'auto')" :disabled="isUpdatingMode[zone.id]" :class="[
+                  'group relative flex-1 overflow-hidden rounded-md sm:rounded-lg lg:rounded-xl px-1.5 sm:px-2 lg:px-4 py-1.5 sm:py-2 lg:py-3 text-xs font-bold uppercase tracking-wide shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed',
                   zone.mode === 'auto'
                     ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-purple-500/40'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600',
                 ]">
                   <span class="relative z-10 flex items-center justify-center gap-0.5 sm:gap-1">
-                    <svg class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3" fill="currentColor" viewBox="0 0 20 20">
+                    <svg v-if="isUpdatingMode[zone.id]" class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <svg v-else class="h-2.5 sm:h-3 lg:h-3 w-2.5 sm:w-3 lg:w-3" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd"
                         d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
                         clip-rule="evenodd" />
                     </svg>
-                    <span class="hidden sm:inline">{{ t('thermal.auto') }}</span>
-                    <span class="sm:hidden">A</span>
+                    <span class="hidden sm:inline">{{ isUpdatingMode[zone.id] ? t('thermal.mode.updating') : t('thermal.auto') }}</span>
+                    <span class="sm:hidden">{{ isUpdatingMode[zone.id] ? '...' : 'A' }}</span>
                   </span>
                 </button>
               </div>
+
+              <!-- Mode Update Error Message -->
+              <transition name="fade">
+                <div v-if="modeUpdateError[zone.id]" class="mt-2">
+                  <div v-if="modeUpdateError[zone.id]?.includes('Network') || modeUpdateError[zone.id]?.includes('fetch') || modeUpdateError[zone.id]?.includes('ECONNREFUSED')"
+                    class="rounded-md bg-orange-50 p-2 dark:bg-orange-900/20">
+                    <div class="flex items-start gap-1.5">
+                      <svg class="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                      </svg>
+                      <div>
+                        <p class="text-xs sm:text-sm font-semibold text-orange-800 dark:text-orange-200">{{ t('thermal.error.network') }}</p>
+                        <p class="text-xs text-orange-700 dark:text-orange-300 mt-1">{{ t('thermal.error.checkConnection') }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="text-xs sm:text-sm text-red-700 dark:text-red-300">
+                    <div class="flex items-start gap-1.5">
+                      <svg class="h-3.5 w-3.5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clip-rule="evenodd" />
+                      </svg>
+                      <span>{{ modeUpdateError[zone.id] }}</span>
+                    </div>
+                  </div>
+                </div>
+              </transition>
             </div>
 
             <!-- Status Indicator Bar -->
@@ -623,7 +666,7 @@
                 </span>
                 <span class="px-3 py-1 rounded-full text-xs font-semibold"
                   :class="chartModalZone.mode === 'auto' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'">
-                  {{ chartModalZone.mode === 'auto' ? t('thermal.auto') : t('thermal.manual') }}
+                  {{ chartModalZone.mode === 'auto' ? t('thermal.auto') : t('thermal.manuel') }}
                 </span>
               </div>
             </div>
@@ -639,7 +682,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
 import { dataMode } from '@/config/dataMode'
-import { fetchThermalDashboardData } from '@/services/thermalTelemetryAPI'
+import { fetchThermalDashboardData, updateSensorMode } from '@/services/thermalTelemetryAPI'
 import { fetchThermalChartData, type SensorChartData, controlThermalRelay } from '@/services/thermalChartAPI'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js'
 import { Line as LineChart, Bar as BarChart } from 'vue-chartjs'
@@ -666,6 +709,10 @@ const chartDataMap = ref<Map<string, SensorChartData['data']>>(new Map())
 const isControllingRelay = ref<Record<string, boolean>>({})
 const relayError = ref<string | null>(null)
 
+// Mode update state
+const isUpdatingMode = ref<Record<number, boolean>>({})
+const modeUpdateError = ref<Record<number, string | null>>({})
+
 // UI State
 const showSensorSelector = ref(false)
 const chartModalZoneId = ref<number | null>(null)
@@ -680,8 +727,9 @@ interface Zone {
   currentTemp: number | null     // Actual temperature from API
   maxTemp: number | null
   minTemp: number | null
+  active: boolean | null         // Sensor operational status from API
   power: boolean
-  mode: 'manual' | 'auto'
+  mode: 'manuel' | 'auto' | null
   powerStatus: boolean | null    // Sensor active/inactive status from API
   sensorId?: string
   sensorLabel?: string
@@ -709,6 +757,11 @@ const thermalSensors = computed(() => {
 // Separate label and name for display
 const getSensorLabel = (sensor: Sensor) => sensor.label || sensor.name
 const getSensorName = (sensor: Sensor) => sensor.name
+
+// Check if a zone has missing essential data
+const hasNoData = (zone: Zone): boolean => {
+  return zone.powerStatus === null || zone.active === null || zone.minTemp === null || zone.maxTemp === null || zone.mode === null
+}
 
 // Display only real sensors from API (no padding)
 const sensorsForDisplay = computed<Sensor[]>(() => {
@@ -1100,7 +1153,7 @@ const autoColumnsPerRow = computed(() => {
   return Math.min(Math.max(best.cols, 1), 4)
 })
 
-// Sync slider to auto-columns when zones change, but allow manual override
+// Sync slider to auto-columns when zones change, but allow manuel override
 watch(autoColumnsPerRow, (newAuto) => {
   columnsPerRow.value = newAuto
 })
@@ -1478,11 +1531,82 @@ const getChartSeries = (zone: Zone) => {
   ]
 }
 
-const setMode = (zoneId: number, mode: 'manual' | 'auto') => {
+const setMode = async (zoneId: number, mode: 'manuel' | 'auto') => {
   const zone = zones.value.find((z) => z.id === zoneId)
-  if (zone) {
-    zone.mode = mode
+  if (zone && zone.sensorId) {
+    // Set loading state
+    isUpdatingMode.value[zoneId] = true
+    modeUpdateError.value[zoneId] = null
+
+    try {
+      // Call the API to update mode on the backend
+      const result = await updateSensorMode(zone.sensorId, mode)
+
+      if (result.success) {
+        // Update local state only if API call succeeds
+        zone.mode = mode
+        console.log(`[ThermalView] Mode updated to '${mode}' for zone ${zone.sensorLabel}`)
+      } else {
+        console.error(`[ThermalView] Failed to update mode: ${result.message}`)
+        // Build comprehensive error message
+        const errorMessage = buildErrorMessage(result.message, 'mode_update')
+        modeUpdateError.value[zoneId] = errorMessage
+        // Clear error after 5 seconds
+        setTimeout(() => {
+          modeUpdateError.value[zoneId] = null
+        }, 5000)
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      console.error(`[ThermalView] Error updating mode:`, error)
+      // Build comprehensive error message
+      const errorMessage = buildErrorMessage(errorMsg, 'network')
+      modeUpdateError.value[zoneId] = errorMessage
+      // Clear error after 5 seconds
+      setTimeout(() => {
+        modeUpdateError.value[zoneId] = null
+      }, 5000)
+    } finally {
+      // Clear loading state
+      isUpdatingMode.value[zoneId] = false
+    }
   }
+}
+
+// Build comprehensive error message based on error type
+const buildErrorMessage = (error: string, type: string): string => {
+  // Network errors
+  if (error.includes('Network') || error.includes('fetch') || error.includes('ECONNREFUSED') || error.includes('ERR_NETWORK')) {
+    return `${t('thermal.error.network')} • ${t('thermal.error.checkConnection')}`
+  }
+
+  // API validation errors (400)
+  if (error.includes('400') || error.includes('Invalid') || error.includes('validation')) {
+    return `${t('thermal.error.invalidRequest')} • ${t('thermal.error.tryAgain')}`
+  }
+
+  // Unauthorized (401)
+  if (error.includes('401') || error.includes('Unauthorized') || error.includes('token')) {
+    return `${t('thermal.error.unauthorized')} • ${t('thermal.error.loginRequired')}`
+  }
+
+  // Forbidden (403)
+  if (error.includes('403') || error.includes('Forbidden') || error.includes('permission')) {
+    return `${t('thermal.error.forbidden')} • ${t('thermal.error.noPermission')}`
+  }
+
+  // Server errors (500)
+  if (error.includes('500') || error.includes('Server') || error.includes('Internal')) {
+    return `${t('thermal.error.serverError')} • ${t('thermal.error.tryLater')}`
+  }
+
+  // Timeout errors
+  if (error.includes('timeout') || error.includes('Timeout')) {
+    return `${t('thermal.error.timeout')} • ${t('thermal.error.tryAgain')}`
+  }
+
+  // Default: show generic error with original message
+  return `${t('thermal.error.updateFailed')} • ${error.substring(0, 50)}`
 }
 
 // Build zones based on sensors (ensure at least 8)
@@ -1519,8 +1643,9 @@ function buildZonesFromSensors(sensors: Sensor[]) {
       currentTemp: avg,  // Use avgTemp as current temperature for mock data
       maxTemp: max,
       minTemp: min,
+      active: i % 3 !== 2,  // Mock sensor active status
       power: i % 3 !== 2, // Every third zone is off (grey/red)
-      mode: 'auto',
+      mode: sensor.mode || 'auto',  // Use mode from sensor data or default to 'auto'
       powerStatus: i % 3 !== 2,  // Mock sensor status (active by default)
       sensorId: sensor.id,
       sensorLabel: getSensorLabel(sensor),
@@ -1582,19 +1707,23 @@ function buildZonesFromThermalAPI(thermalData: any) {
       maxTemp = Math.round((currentTemp + 3) * 10) / 10
     }
 
-    // Map mode: "manuel" → "manual", default to "auto" if null
-    let mode: 'manual' | 'auto' = 'auto'
+    // Map mode: "manuel" → "manuel", preserve null if no mode configured
+    let mode: 'manuel' | 'auto' | null = null
     if (sensor.mode === 'manuel' || sensor.mode === 'manual') {
-      mode = 'manual'
+      mode = 'manuel'  // Normalize both spellings to 'manuel'
     } else if (sensor.mode === 'auto') {
       mode = 'auto'
     }
+    // If sensor.mode is null or undefined, mode stays null
+
+    console.log(`[ThermalView] Zone ${i + 1} (${sensor.name}): API mode='${sensor.mode}' → normalized mode='${mode}'`)
 
     built.push({
       id: i + 1,
       currentTemp: currentTemp,  // Store actual temperature from API
       maxTemp: Number(maxTemp),  // Use API maxTemp or calculated
       minTemp: Number(minTemp),  // Use API minTemp or calculated
+      active: sensor.active ?? null,  // Store sensor operational status from API
       power: sensor.powerStatus !== false,
       mode: mode,  // Use API mode, properly mapped
       powerStatus: sensor.powerStatus,  // Store sensor active/inactive status
