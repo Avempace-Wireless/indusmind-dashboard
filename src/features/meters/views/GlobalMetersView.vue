@@ -26,48 +26,19 @@
       />
 
       <!-- Main Content: Full responsive layout -->
-      <div v-if="selectedCompteurs.length === 0" class="flex-1 flex flex-col items-center justify-center p-8 animate-fadeIn" style="min-height: calc(100vh - 200px);">
-        <div class="max-w-md w-full text-center">
-          <!-- Icon with gradient background -->
-          <div class="relative inline-flex items-center justify-center mb-6">
-            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 blur-2xl rounded-full"></div>
-            <div class="relative bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-slate-800 dark:to-slate-700 p-6 rounded-2xl border-2 border-blue-200 dark:border-cyan-900 shadow-lg">
-              <span class="material-symbols-outlined text-blue-600 dark:text-cyan-400" style="font-size: 64px;">devices</span>
-            </div>
-          </div>
-
-          <!-- Title & Description -->
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-            {{ $t('globalMeters.selectMetersToVisualize') || 'Sélectionner des compteurs' }}
-          </h2>
-          <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed">
-            {{ $t('globalMeters.noMetersDescription') || 'Choisissez les compteurs à afficher pour visualiser leurs données en temps réel et suivre leur consommation énergétique.' }}
-          </p>
-
-          <!-- Action Button -->
-          <button
-            @click="showCompteurSelector = true"
-            class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-          >
-            <span class="material-symbols-outlined text-xl">add_circle</span>
-            {{ $t('globalMeters.selectMeters') || 'Sélectionner des compteurs' }}
-          </button>
-
-          <!-- Info Card -->
-          <div class="mt-8 bg-blue-50 dark:bg-slate-800/50 border border-blue-200 dark:border-slate-700 rounded-lg p-4">
-            <div class="flex items-start gap-3 text-left">
-              <span class="material-symbols-outlined text-blue-600 dark:text-cyan-400 text-xl flex-shrink-0 mt-0.5">info</span>
-              <div class="flex-1">
-                <h4 class="text-sm font-semibold text-blue-900 dark:text-cyan-100 mb-1">
-                  {{ $t('globalMeters.quickTip') || 'Astuce' }}
-                </h4>
-                <p class="text-xs text-blue-700 dark:text-cyan-300">
-                  {{ $t('globalMeters.tipDescription') || 'Vous pouvez sélectionner jusqu\'à 8 compteurs pour une vue d\'ensemble optimale.' }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div v-if="selectedCompteurs.length === 0" class="col-span-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-slate-900 p-12 text-center">
+        <span class="material-symbols-outlined text-gray-400 dark:text-gray-500 text-5xl mb-4">
+          dashboard
+        </span>
+        <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">{{ $t('dashboard.noMetersSelected.title') }}</p>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mb-6">{{ $t('dashboard.noMetersSelected.description') }}</p>
+        <button
+          @click="showCompteurSelector = true"
+          class="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-3 text-sm font-bold text-white transition-colors shadow-lg"
+        >
+          <span class="material-symbols-outlined text-lg">add</span>
+          {{ $t('dashboard.noMetersSelected.action') }}
+        </button>
       </div>
 
       <!-- Loading State -->
@@ -186,7 +157,7 @@
               </div>
             </div>
             <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
-              <div v-if="enrichedCompteurs.length === 0 || enrichedCompteurs.every(m => m.hourlyData.length === 0)" class="w-full h-full flex items-center justify-center">
+              <div v-if="enrichedCompteurs.length === 0 || enrichedCompteurs.every(m => !m.hourlyDataDifferential || m.hourlyDataDifferential.length === 0)" class="w-full h-full flex items-center justify-center">
                 <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
               </div>
               <EnergyConsumptionChart
@@ -282,12 +253,12 @@ onMounted(() => {
     currentTime.value = new Date()
   }, 1000)
 
-  // Refresh global meters data every 10 seconds when meters are selected
-  refreshInterval = setInterval(() => {
-    if (selectedCompteurs.value.length > 0) {
+  // Refresh global meters data every 10 seconds when meters are selected and initial load is complete
+/*   refreshInterval = setInterval(() => {
+    if (selectedCompteurs.value.length > 0 && !isFirstLoad.value) {
       fetchGlobalMetersData(false)
     }
-  }, 10000)
+  }, 10000) */
 
   // Initial fetch if meters are already selected
   if (selectedCompteurs.value.length > 0) {
@@ -329,30 +300,51 @@ async function fetchGlobalMetersData(showLoader = true) {
     return
   }
 
-  if (showLoader && isFirstLoad.value) {
+  const shouldShowLoader = showLoader && isFirstLoad.value
+  if (shouldShowLoader) {
     isLoadingAPI.value = true
   }
-  const response = await fetchGlobalMeters(deviceUUIDs, false)
-  if (showLoader && isFirstLoad.value) {
-    isLoadingAPI.value = false
-    isFirstLoad.value = false
-  }
 
-  if (response && response.success) {
-    globalMetersList.value = response.data
-    console.log('[GlobalMetersView] Updated meter data from API:', globalMetersList.value)
+  try {
+    const response = await fetchGlobalMeters(deviceUUIDs, false)
+    
+    if (response && response.success) {
+      globalMetersList.value = response.data
+      console.log('[GlobalMetersView] Updated meter data from API:', globalMetersList.value)
+    } else {
+      console.error('[GlobalMetersView] API response not successful:', response)
+      globalMetersList.value = []
+    }
+  } catch (error) {
+    console.error('[GlobalMetersView] Error fetching global meters:', error)
+    globalMetersList.value = []
+  } finally {
+    // Always clear loading state if it was set
+    if (shouldShowLoader) {
+      isLoadingAPI.value = false
+      isFirstLoad.value = false
+    }
   }
 }
 
 // Fetch temperature chart data
 async function fetchTemperatureData() {
-  isLoadingTemperature.value = true
-  const response = await fetchTemperatureChart()
-  isLoadingTemperature.value = false
+  try {
+    isLoadingTemperature.value = true
+    const response = await fetchTemperatureChart()
 
-  if (response && response.success) {
-    temperatureChartData.value = response.data.sensors
-    console.log('[GlobalMetersView] Updated temperature chart data:', temperatureChartData.value)
+    if (response && response.success) {
+      temperatureChartData.value = response.data.sensors
+      console.log('[GlobalMetersView] Updated temperature chart data:', temperatureChartData.value)
+    } else {
+      console.error('[GlobalMetersView] Temperature API response not successful:', response)
+      temperatureChartData.value = []
+    }
+  } catch (error) {
+    console.error('[GlobalMetersView] Error fetching temperature data:', error)
+    temperatureChartData.value = []
+  } finally {
+    isLoadingTemperature.value = false
   }
 }
 
@@ -379,7 +371,7 @@ const enrichedCompteurs = computed(() => {
     const apiData = globalMetersList.value.find((m) => m.deviceUUID === compteur.deviceUUID)
 
     if (apiData) {
-      // Use real API data
+      // Use real API data (differential approach)
       return {
         ...compteur,
         id: compteur.id,
@@ -389,9 +381,9 @@ const enrichedCompteurs = computed(() => {
         currentPower: apiData.instantaneous ?? undefined, // For ComparisonChart
         today: apiData.today ?? undefined,
         yesterday: apiData.yesterday ?? undefined,
-        hourlyData: apiData.hourlyData || [],
-        monthlyData: apiData.monthlyData || [],
-        yearlyData: apiData.yearlyData || [],
+        hourlyDataDifferential: apiData.hourlyDataDifferential || [],
+        monthlyDataDifferential: apiData.monthlyDataDifferential || [],
+        yearlyDataDifferential: apiData.yearlyDataDifferential || [],
       }
     } else {
       // No API data available - return undefined values that will display as "--"
@@ -404,9 +396,9 @@ const enrichedCompteurs = computed(() => {
         currentPower: undefined,
         today: undefined,
         yesterday: undefined,
-        hourlyData: [],
-        monthlyData: [],
-        yearlyData: [],
+        hourlyDataDifferential: [],
+        monthlyDataDifferential: [],
+        yearlyDataDifferential: [],
       }
     }
   })

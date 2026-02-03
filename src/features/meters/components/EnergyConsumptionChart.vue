@@ -47,10 +47,18 @@ interface ChartDataPoint {
   value: number
 }
 
+interface ChartDataPoint {
+  ts: number
+  value: number
+  accumulated?: number
+  previousAccumulated?: number
+  readableTime?: string
+}
+
 interface Meter {
   id: string
   name: string
-  yearlyData: ChartDataPoint[]
+  yearlyDataDifferential: ChartDataPoint[]
 }
 
 const props = defineProps<{
@@ -60,7 +68,7 @@ const props = defineProps<{
 
 // Filter meters that have yearly data
 const metersWithData = computed(() => {
-  return props.meters.filter(m => m.yearlyData && m.yearlyData.length > 0)
+  return props.meters.filter(m => m.yearlyDataDifferential && m.yearlyDataDifferential.length > 0)
 })
 
 // Color palette for meters
@@ -86,12 +94,12 @@ const chartData = computed(() => {
   }
 
   // Get the longest dataset to determine labels
-  const maxDataLength = Math.max(...metersWithData.value.map(m => m.yearlyData.length))
+  const maxDataLength = Math.max(...metersWithData.value.map(m => m.yearlyDataDifferential.length))
   const displayPoints = Math.min(90, maxDataLength) // Show last 90 days for better readability
 
   // Generate labels from timestamps (take from first meter)
   const firstMeter = metersWithData.value[0]
-  const labels = firstMeter.yearlyData
+  const labels = firstMeter.yearlyDataDifferential
     .slice(-displayPoints)
     .map(point => {
       const date = new Date(point.ts)
@@ -104,7 +112,7 @@ const chartData = computed(() => {
   // Create datasets for each meter
   const datasets = metersWithData.value.map((meter, index) => {
     const colors = getMeterColor(index)
-    const data = meter.yearlyData.slice(-displayPoints).map(point => point.value)
+    const data = meter.yearlyDataDifferential.slice(-displayPoints).map(point => point.value)
 
     return {
       label: meter.name,
@@ -127,8 +135,8 @@ const chartData = computed(() => {
 const maxDataValue = computed(() => {
   let max = 0
   metersWithData.value.forEach(meter => {
-    const displayPoints = Math.min(90, meter.yearlyData.length)
-    meter.yearlyData.slice(-displayPoints).forEach(point => {
+    const displayPoints = Math.min(90, meter.yearlyDataDifferential.length)
+    meter.yearlyDataDifferential.slice(-displayPoints).forEach(point => {
       if (point.value > max) max = point.value
     })
   })
@@ -177,9 +185,9 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
             // Get the data point index
             const index = context[0].dataIndex
             const firstMeter = metersWithData.value[0]
-            if (firstMeter && firstMeter.yearlyData[index]) {
-              const displayPoints = Math.min(90, firstMeter.yearlyData.length)
-              const dataPoint = firstMeter.yearlyData.slice(-displayPoints)[index]
+            if (firstMeter && firstMeter.yearlyDataDifferential[index]) {
+              const displayPoints = Math.min(90, firstMeter.yearlyDataDifferential.length)
+              const dataPoint = firstMeter.yearlyDataDifferential.slice(-displayPoints)[index]
               const date = new Date(dataPoint.ts)
               // Format as DD/MM/YYYY
               const day = date.getDate().toString().padStart(2, '0')
