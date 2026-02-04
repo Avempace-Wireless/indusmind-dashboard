@@ -10,9 +10,9 @@ export interface PuissanceKPIs {
 }
 
 export interface PuissanceChartData {
-  hourly: Array<{ ts: number; value: number }>
-  daily: Array<{ ts: number; value: number }>
-  monthly: Array<{ ts: number; value: number }>
+  hourly: Array<{ ts: number; tsReadable: string; value: number }>
+  daily: Array<{ ts: number; tsReadable: string; value: number }>
+  monthly: Array<{ ts: number; tsReadable: string; value: number }>
 }
 
 export interface PuissanceResponse {
@@ -24,9 +24,9 @@ export interface PuissanceResponse {
     consumedYesterday: number | null
     consumedThisMonth: number | null
     consumedLastMonth: number | null
-    hourlyData: Array<{ ts: number; value: number }>
-    dailyData: Array<{ ts: number; value: number }>
-    monthlyData: Array<{ ts: number; value: number }>
+    hourlyData: Array<{ ts: number; tsReadable: string; value: number }>
+    dailyData: Array<{ ts: number; tsReadable: string; value: number }>
+    monthlyData: Array<{ ts: number; tsReadable: string; value: number }>
   }
   meta: {
     deviceUUID: string
@@ -39,6 +39,8 @@ export interface PuissanceResponse {
       keys: string[]
       startTs: number
       endTs: number
+      startTsReadable?: string
+      endTsReadable?: string
       interval?: number
       agg?: string
       resultPoints: number

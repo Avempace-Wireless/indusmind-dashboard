@@ -461,7 +461,9 @@
       "monthlyPower": "Monthly Power – Current Year",
       "monthlyAverage": "Average Monthly Power",
       "dailyPower": "Daily Power – Current Month",
-      "hourlyPower": "Power Hour by Hour – Today"
+      "dailyAverage": "Average Daily Power",
+      "hourlyPower": "Power Hour by Hour – Today",
+      "hourlyAverage": "Average Hourly Power"
     },
     "chartTitles": {
       "hour": "{meter} - Hourly Power",

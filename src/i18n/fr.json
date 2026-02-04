@@ -466,7 +466,9 @@
       "monthlyPower": "Puissance mensuelle – Année en cours",
       "monthlyAverage": "Puissance moyenne mensuelle",
       "dailyPower": "Puissance journalière – Mois en cours",
-      "hourlyPower": "Puissance heure par heure – Aujourd'hui"
+      "dailyAverage": "Puissance moyenne journalière",
+      "hourlyPower": "Puissance heure par heure – Aujourd'hui",
+      "hourlyAverage": "Puissance moyenne horaire"
     },
     "chartTitles": {
       "hour": "{meter} - Puissance horaire",
