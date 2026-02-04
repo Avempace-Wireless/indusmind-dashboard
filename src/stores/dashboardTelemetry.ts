@@ -5,16 +5,17 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useTelemetry, TELEMETRY_KEYS } from '@/composables/useTelemetry'
+import { useTelemetryDynamic, TELEMETRY_KEYS } from '@/composables/useTelemetryDynamic'
 import type { Compteur } from '@/services/deviceAPI'
 
 export const useDashboardTelemetryStore = defineStore('dashboardTelemetry', () => {
-  const { 
-    fetchInstantaneous, 
-    fetchTodayHourly, 
+  const {
+    fetchInstantaneous,
+    fetchTodayHourly,
+    fetchYesterdayHourly,
     fetchCurrentValue,
-    fetchChartData 
-  } = useTelemetry()
+    fetchChartData
+  } = useTelemetryDynamic()
 
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -52,11 +53,22 @@ export const useDashboardTelemetryStore = defineStore('dashboardTelemetry', () =
               ['ActivePowerTotal']
             )
 
-            // Fetch today's hourly readings
+            // Fetch today's hourly readings using differential method
             const todayReadings = await fetchTodayHourly(
               compteur.deviceUUID!,
-              ['ActiveEnergyTotal']
+              ['AccumulatedActiveEnergyDelivered']
             )
+
+            // Fetch yesterday's hourly readings using differential method
+            const yesterdayReadings = await fetchYesterdayHourly(
+              compteur.deviceUUID!,
+              ['AccumulatedActiveEnergyDelivered']
+            )
+
+            // Calculate yesterday's total energy consumption
+            const yesterdayEnergy = yesterdayReadings.length > 0
+              ? yesterdayReadings.reduce((sum, d) => sum + d.value, 0)
+              : 0
 
             return {
               id: compteur.id,
@@ -64,9 +76,10 @@ export const useDashboardTelemetryStore = defineStore('dashboardTelemetry', () =
               name: compteur.name,
               instantaneous: currentPower,
               today: todayEnergy,
-              yesterday: 0, // Can fetch from yesterday's range
+              yesterday: yesterdayEnergy,
               instantReadings,
               todayReadings,
+              yesterdayReadings,
             }
           } catch (err) {
             console.error(`Failed to fetch data for ${compteur.name}:`, err)

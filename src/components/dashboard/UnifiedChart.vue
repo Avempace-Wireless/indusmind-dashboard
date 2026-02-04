@@ -85,8 +85,9 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Chart, LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler } from 'chart.js'
 import { getMeterColorByIndex } from '@/utils/meterColors'
-import { useTelemetry, TELEMETRY_KEYS } from '@/composables/useTelemetry'
+import { useTelemetryDynamic, TELEMETRY_KEYS } from '@/composables/useTelemetryDynamic'
 import { useApiData, useHybridMode, useMockData } from '@/config/dataMode'
+import { getTimeRange } from '@/config/telemetryConfig'
 
 Chart.register(LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler)
 
@@ -119,8 +120,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-// Telemetry composable for real data
-const { fetchChartData, loading: telemetryLoading } = useTelemetry()
+// Telemetry composable for real data - use dynamic version with differential support
+const { fetchHourlyDifferential, fetchChartData, loading: telemetryLoading } = useTelemetryDynamic()
 const telemetryChartData = ref<any>(null)
 
 // Disable telemetry calls in pure mock mode to avoid empty charts
@@ -369,34 +370,71 @@ async function loadTelemetryChartData() {
 
   try {
     // Map period to API format
-    const periodMap: Record<PeriodValue, '1h' | '6h' | '24h' | '7d' | '30d'> = {
-      'today': '24h',
-      'yesterday': '24h',
-      '7days': '7d',
-      '30days': '30d'
+    const periodMap: Record<PeriodValue, 'today' | 'yesterday' | '7days' | '30days'> = {
+      'today': 'today',
+      'yesterday': 'yesterday',
+      '7days': '7days',
+      '30days': '30days'
     }
 
     const apiPeriod = periodMap[props.period]
-
-    // Determine keys based on mode and period
-    let keys: string[]
-    if (props.mode === 'energy') {
-      // Use hourly energy delta for shorter periods, daily delta for 7d/30d
-      keys = (apiPeriod === '7d' || apiPeriod === '30d')
-        ? [...TELEMETRY_KEYS.ENERGY_DELTA_DAY]
-        : [...TELEMETRY_KEYS.ENERGY_DELTA_HOUR]
-    } else {
-      keys = ['temperature']
-    }
+    const { startTs, endTs } = getTimeRange(apiPeriod)
 
     // Fetch data for all compteurs in parallel
     const promises = compteursWithUUID.map(async (compteur, index) => {
       try {
-        const data = await fetchChartData(
-          compteur.deviceUUID!,
-          apiPeriod,
-          keys
-        )
+        let data: any
+
+        if (props.mode === 'energy') {
+          // Use differential method for hourly/daily periods
+          if (props.period === 'today' || props.period === 'yesterday') {
+            // Fetch hourly energy consumption using differential method
+            const hourlyData = await fetchHourlyDifferential(
+              compteur.deviceUUID!,
+              startTs,
+              endTs,
+              ['AccumulatedActiveEnergyDelivered']
+            )
+
+            // Transform to chart format with labels and datasets
+            const labels = hourlyData.map(d => {
+              const date = new Date(d.ts)
+              return `${date.getHours().toString().padStart(2, '0')}:00`
+            })
+
+            data = {
+              labels,
+              datasets: [
+                {
+                  label: compteur.name,
+                  data: hourlyData.map(d => d.value),
+                  timestamps: hourlyData.map(d => d.ts)
+                }
+              ]
+            }
+          } else {
+            // For longer periods (7d, 30d), use daily aggregation
+            data = await fetchChartData(
+              compteur.deviceUUID!,
+              ['AccumulatedActiveEnergyDelivered'],
+              startTs,
+              endTs,
+              24 * 60 * 60 * 1000, // 1 day interval
+              'MAX'
+            )
+          }
+        } else {
+          // Temperature data
+          data = await fetchChartData(
+            compteur.deviceUUID!,
+            ['temperature'],
+            startTs,
+            endTs,
+            60 * 60 * 1000, // 1 hour interval
+            'AVG'
+          )
+        }
+
         return {
           compteur,
           data,
@@ -421,55 +459,14 @@ async function loadTelemetryChartData() {
       return
     }
 
-    // Filter data to only include hourly boundaries for today/yesterday periods
-    const shouldFilterHourly = (props.period === 'today' || props.period === 'yesterday')
+    // Filter out null results (failed fetches)
+    const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null)
 
-    if (shouldFilterHourly && results[0]!.data.labels) {
-      // Get timestamps from labels (assuming labels contain formatted time strings)
-      // We need to filter based on actual data timestamps
-      const firstDataset = results[0]!.data.datasets[0]
-      if (firstDataset && firstDataset.data) {
-        // Filter to only include data points at exact hour boundaries
-        const hourlyIndices: number[] = []
-        results[0]!.data.labels.forEach((label: string, index: number) => {
-          // Check if label represents an exact hour (e.g., "14:00" not "14:18")
-          // Match patterns like "14:00", "14h00", or just "14h"
-          if (label.includes(':00') || /^\d{1,2}h$/.test(label) || label.endsWith('h00')) {
-            hourlyIndices.push(index)
-          }
-        })
-
-        console.log('[UnifiedChart] Filtering to hourly boundaries:', {
-          originalCount: results[0]!.data.labels.length,
-          filteredCount: hourlyIndices.length,
-          originalLabels: results[0]!.data.labels,
-          filteredLabels: hourlyIndices.map(i => results[0]!.data.labels[i])
-        })
-
-        // If we have hourly data, filter all results
-        if (hourlyIndices.length > 0) {
-          results.forEach(result => {
-            if (result && result.data.labels && result.data.datasets) {
-              // Filter labels
-              result.data.labels = hourlyIndices.map(i => result.data.labels[i])
-
-              // Filter all datasets
-              result.data.datasets.forEach((dataset: any) => {
-                if (dataset.data) {
-                  dataset.data = hourlyIndices.map(i => dataset.data[i])
-                }
-              })
-            }
-          })
-        }
-      }
-    }
-
-    // Use first result's labels (all should have same timestamps)
-    const labels = results[0]!.data.labels || []
+    // Use first valid result's labels (all should have same timestamps)
+    const labels = validResults.length > 0 ? validResults[0].data.labels || [] : []
 
     // Check if we have actual data
-    const hasData = results.some(r => r!.data.datasets.some((ds: any) => ds.data.some((v: number) => v > 0)))
+    const hasData = validResults.some(r => r.data.datasets.some((ds: any) => ds.data.some((v: number) => v > 0)))
 
     if (!hasData || labels.length === 0) {
       console.warn('[UnifiedChart] API returned empty data')
@@ -483,8 +480,7 @@ async function loadTelemetryChartData() {
     }
 
     // Build datasets from telemetry data
-    const datasets = results.map((result) => {
-      if (!result) return null
+    const datasets = validResults.map((result) => {
       const { compteur, data, colorIndex } = result
       const colorConfig = getMeterColorByIndex(colorIndex)
 
@@ -499,7 +495,7 @@ async function loadTelemetryChartData() {
         borderWidth: 2,
         borderRadius: 4
       }
-    }).filter((ds): ds is NonNullable<typeof ds> => ds !== null)
+    })
 
     telemetryChartData.value = { labels, datasets }
     console.log('[UnifiedChart] Loaded telemetry chart data:', telemetryChartData.value)

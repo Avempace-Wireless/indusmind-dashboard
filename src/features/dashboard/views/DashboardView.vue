@@ -286,6 +286,8 @@ const {
 const {
   fetchBatchTelemetry,
   fetchCurrentValue,
+  fetchTelemetry,
+  fetchHourlyDifferential,
   loading: telemetryLoading,
   error: telemetryError,
 } = useTelemetryDynamic()
@@ -568,7 +570,6 @@ async function fetchTelemetryData() {
   try {
     // Get instantaneous config from telemetryConfig
     const instantConfig = DEFAULT_WIDGET_CONFIG.instantaneousReadings
-    const dailyConfig = DEFAULT_WIDGET_CONFIG.dailyReadings
 
     // Calculate time ranges
     const now = Date.now()
@@ -602,17 +603,6 @@ async function fetchTelemetryData() {
           orderBy: 'DESC' as const
         }
       },
-      // Yesterday's hourly readings (yesterday's breakdown)
-      {
-        deviceUUID: compteur.deviceUUID!,
-        config: {
-          keys: [DEFAULT_WIDGET_CONFIG.dailyReadings.keys[0]], // Use deltaHourEnergyConsumtion for hourly
-          startTs: yesterdayStart,
-          endTs: yesterdayEnd,
-          interval: 60 * 60 * 1000, // 1 hour
-          agg: 'SUM' as const
-        }
-      },
       // Instantaneous readings (time-series chart data)
       {
         deviceUUID: compteur.deviceUUID!,
@@ -623,27 +613,71 @@ async function fetchTelemetryData() {
           interval: instantConfig.interval,
           agg: instantConfig.agg
         }
-      },
-      // Daily hourly readings (today's hourly breakdown)
-      {
-        deviceUUID: compteur.deviceUUID!,
-        config: {
-          keys: dailyConfig.keys,
-          startTs: todayStart,
-          endTs: todayEnd,
-          interval: dailyConfig.interval,
-          agg: dailyConfig.agg
-        }
       }
     ])
 
-    console.log(`[DashboardView] Batch fetching ${batchRequests.length} requests for ${compteursWithUUID.length} devices`)
+    // ========================================================================
+    // DIFFERENTIAL METHOD: Fetch today's hourly readings using accumulated energy
+    // ========================================================================
+    // Calculate hour boundaries for today
+    const hoursInDay = Math.ceil((now - todayStart) / (60 * 60 * 1000))
+    const boundaryTimestamps: number[] = [todayStart] // Start with midnight
 
-    // Execute batch fetch (parallel, with caching & deduplication)
+    for (let i = 1; i <= hoursInDay; i++) {
+      boundaryTimestamps.push(todayStart + i * 60 * 60 * 1000)
+    }
+
+    // Build parallel requests for each hour boundary using ±1 minute windows
+    const hourlyDifferentialRequests = compteursWithUUID.flatMap(compteur =>
+      boundaryTimestamps.map((timestamp) => ({
+        deviceUUID: compteur.deviceUUID!,
+        config: {
+          keys: ['AccumulatedActiveEnergyDelivered'],
+          startTs: timestamp - 60 * 1000, // 1 minute before
+          endTs: timestamp + 60 * 1000, // 1 minute after
+          limit: 1,
+          agg: 'NONE' as const,
+          orderBy: 'DESC' as const
+        }
+      }))
+    )
+
+    // Add hourly differential requests to batch
+    batchRequests.push(...hourlyDifferentialRequests)
+
+    console.log(`[DashboardView] Batch requests breakdown:`)
+    console.log(`  - Static requests: ${batchRequests.length - hourlyDifferentialRequests.length}`)
+    console.log(`  - Hourly differential requests (today): ${hourlyDifferentialRequests.length}`)
+    console.log(`  - Total: ${batchRequests.length}`)
+
+    console.log(`[DashboardView] Fetching ${batchRequests.length} requests for ${compteursWithUUID.length} devices in parallel`)
+
+    // Execute batch fetch (parallel API calls)
     const results = await fetchBatchTelemetry(batchRequests)
 
-    console.log('[DashboardView] Raw batch results from fetchBatchTelemetry:', results)
+    console.log('[DashboardView] ✓ Batch results received:', results)
     console.log('[DashboardView] Results type:', typeof results, 'isMap:', results instanceof Map)
+
+    // Fetch yesterday's hourly readings separately using differential method
+    console.log('[DashboardView] Fetching yesterday hourly readings (differential method)...')
+    const yesterdayDifferentialMap = new Map<string, typeof results>()
+
+    for (const compteur of compteursWithUUID) {
+      try {
+        const yesterdayReadings = await fetchHourlyDifferential(
+          compteur.deviceUUID!,
+          yesterdayStart,
+          yesterdayEnd
+        )
+        const tempResults = new Map<string, any>()
+        tempResults.set(compteur.deviceUUID!, yesterdayReadings)
+        yesterdayDifferentialMap.set(compteur.deviceUUID!, tempResults)
+      } catch (err) {
+        console.error(`[DashboardView] Failed to fetch yesterday differential for ${compteur.name}:`, err)
+      }
+    }
+
+    console.log('[DashboardView] Yesterday differential results:', yesterdayDifferentialMap)
 
     // Process results and update cache
     let hasAnyData = false
@@ -674,20 +708,73 @@ async function fetchTelemetryData() {
         .sort((a, b) => b.ts - a.ts)
         .slice(0, 1)
 
-      // Yesterday's hourly readings (from yesterday with hourly intervals)
-      const yesterdayReadings = deviceData
-        .filter(d => d.key === DEFAULT_WIDGET_CONFIG.dailyReadings.keys[0] && d.ts >= yesterdayStart && d.ts < todayStart)
-        .sort((a, b) => a.ts - b.ts) // oldest first for charts
+      // Yesterday's hourly readings using differential method (fetched separately)
+      const yesterdayReadings = yesterdayDifferentialMap.get(compteur.deviceUUID!)?.get(compteur.deviceUUID!) || []
+
+      console.log(`[DashboardView] Yesterday readings (differential) for ${compteur.name}:`, {
+        readingsCount: yesterdayReadings.length,
+        data: yesterdayReadings.map(d => ({
+          time: new Date(d.ts).toLocaleTimeString(),
+          value: d.value
+        }))
+      })
 
       // Instantaneous readings (last hour, 5-min intervals, ActivePowerTotal)
       const instantReadings = deviceData
         .filter(d => instantConfig.keys.includes(d.key) && d.ts > now - instantConfig.timeRange)
         .sort((a, b) => a.ts - b.ts)
 
-      // Today's hourly readings (today, hourly intervals, SUM aggregation)
-      const todayReadings = deviceData
-        .filter(d => dailyConfig.keys.includes(d.key) && d.ts >= todayStart && d.ts < todayEnd)
+      // Today's hourly readings using differential method
+      // Extract accumulated values at each hour boundary, then compute differences
+      const accumulatedValues = deviceData
+        .filter(d => d.key === 'AccumulatedActiveEnergyDelivered')
         .sort((a, b) => a.ts - b.ts)
+
+      console.log(`[DashboardView] Differential calculation for ${compteur.name}:`, {
+        accumulatedValuesCount: accumulatedValues.length,
+        boundaryTimestampsCount: boundaryTimestamps.length,
+        accumulatedValues: accumulatedValues.map(v => ({
+          ts: new Date(v.ts).toLocaleTimeString(),
+          value: v.value
+        }))
+      })
+
+      // Group accumulated values by hour boundary (should get 1 per boundary ideally)
+      const boundaryValues: (number | null)[] = []
+      for (const boundary of boundaryTimestamps) {
+        // Find closest value to this boundary (from ±1 minute window)
+        const closest = accumulatedValues.find(v => Math.abs(v.ts - boundary) <= 60 * 1000)
+        boundaryValues.push(closest ? closest.value : null)
+      }
+
+      // Compute hourly consumption using differential method
+      const todayReadings: typeof deviceData = []
+      for (let i = 0; i < hoursInDay; i++) {
+        const currentValue = boundaryValues[i + 1] // Value at end of hour
+        const previousValue = boundaryValues[i] // Value at start of hour
+        const hourEndTimestamp = boundaryTimestamps[i + 1]
+
+        // Skip if we don't have current value
+        if (currentValue === null) continue
+
+        // If we don't have previous value, return 0 (can't compute difference)
+        const consumption = previousValue === null ? 0 : currentValue - previousValue
+
+        todayReadings.push({
+          ts: hourEndTimestamp,
+          value: Math.max(0, consumption), // Ensure non-negative
+          key: 'AccumulatedActiveEnergyDelivered'
+        })
+      }
+
+      console.log(`[DashboardView] Today hourly readings (differential) for ${compteur.name}:`, {
+        hoursProcessed: hoursInDay,
+        consumptionPoints: todayReadings.length,
+        data: todayReadings.map(d => ({
+          time: new Date(d.ts).toLocaleTimeString(),
+          value: d.value
+        }))
+      })
 
       // Calculate total yesterday energy consumption
       const yesterdayEnergyTotal = yesterdayReadings.length > 0

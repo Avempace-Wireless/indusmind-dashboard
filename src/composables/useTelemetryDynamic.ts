@@ -60,6 +60,75 @@ function isCacheValid(cache: TelemetryCache): boolean {
   return Date.now() - cache.fetchedAt < CACHE_TTL
 }
 
+/**
+ * Helper: Calculate hourly consumption using differential method
+ * @param deviceUUID - Device to fetch from
+ * @param startTs - Start of period (e.g., midnight)
+ * @param endTs - End of period (e.g., now)
+ * @param fetchFn - Fetch function to use
+ * @returns Array of hourly consumption values
+ */
+async function calculateDifferentialConsumption(
+  deviceUUID: string,
+  startTs: number,
+  endTs: number,
+  fetchFn: (deviceUUID: string, config: TelemetryFetchConfig) => Promise<TelemetryDataPoint[]>,
+  key: string = 'AccumulatedActiveEnergyDelivered'
+): Promise<TelemetryDataPoint[]> {
+  const now = Date.now()
+
+  // Calculate hour boundaries
+  const hoursInPeriod = Math.ceil((endTs - startTs) / (60 * 60 * 1000))
+  const boundaryTimestamps: number[] = [startTs]
+
+  for (let i = 1; i <= hoursInPeriod; i++) {
+    boundaryTimestamps.push(startTs + i * 60 * 60 * 1000)
+  }
+
+  // Fetch all accumulated values in parallel with ±1 minute tolerance
+  const fetchPromises = boundaryTimestamps.map((timestamp) =>
+    fetchFn(deviceUUID, {
+      keys: [key],
+      startTs: timestamp - 60 * 1000, // 1 minute before
+      endTs: timestamp + 60 * 1000, // 1 minute after
+      agg: 'MAX',
+      limit: 1,
+      orderBy: 'DESC'
+    }).catch(() => []) // Handle timeouts gracefully
+  )
+
+  const responses = await Promise.all(fetchPromises)
+
+  // Extract accumulated values at each boundary
+  const boundaryValues = responses.map((data) => {
+    if (data.length === 0) return null
+    return data[0].value
+  })
+
+  // Compute consumption for each hour
+  const consumptionData: TelemetryDataPoint[] = []
+
+  for (let i = 0; i < hoursInPeriod; i++) {
+    const currentValue = boundaryValues[i + 1] // Value at end of hour
+    const previousValue = boundaryValues[i] // Value at start of hour
+    const hourEndTimestamp = boundaryTimestamps[i + 1]
+
+    // Skip if we don't have current value
+    if (currentValue === null) continue
+
+    // If we don't have previous value, return 0 (can't compute difference)
+    const consumption = previousValue === null ? 0 : currentValue - previousValue
+
+    consumptionData.push({
+      ts: hourEndTimestamp,
+      value: Math.max(0, consumption), // Ensure non-negative
+      key
+    })
+  }
+
+  return consumptionData
+}
+
 export function useTelemetryDynamic() {
   const loading = ref(false)
   const error = ref<Error | null>(null)
@@ -269,22 +338,116 @@ export function useTelemetryDynamic() {
   }
 
   /**
-   * Fetch hourly data for today (midnight to now)
+   * Fetch hourly data for today using differential method
+   * Computes hourly consumption as: currentHourValue - previousHourValue
+   * Uses AccumulatedActiveEnergyDelivered instead of delta keys
    */
   async function fetchTodayHourly(
     deviceUUID: string,
-    keys: string[]
+    keys: string[] = ['AccumulatedActiveEnergyDelivered']
   ): Promise<TelemetryDataPoint[]> {
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const now = Date.now()
+    const midnightToday = new Date()
+    midnightToday.setHours(0, 0, 0, 0)
+    const midnightTodayMs = midnightToday.getTime()
 
-    return fetchTelemetry(deviceUUID, {
-      keys,
-      startTs: today.getTime(),
-      endTs: now.getTime(),
-      interval: TIME_INTERVALS.ONE_HOUR,
-      agg: 'SUM'
+    console.log(`[useTelemetryDynamic] Fetching today hourly (differential) for ${deviceUUID.substring(0, 20)}...`)
+
+    const result = await calculateDifferentialConsumption(
+      deviceUUID,
+      midnightTodayMs,
+      now,
+      fetchTelemetry,
+      keys[0]
+    )
+
+    console.log(`[useTelemetryDynamic] Today hourly result:`, {
+      consumptionPoints: result.length,
+      data: result.map(dp => ({
+        time: new Date(dp.ts).toLocaleTimeString(),
+        value: dp.value
+      }))
     })
+
+    return result
+  }
+
+  /**
+   * Fetch hourly data for yesterday using differential method
+   * Computes hourly consumption as: currentHourValue - previousHourValue
+   * Uses AccumulatedActiveEnergyDelivered instead of delta keys
+   */
+  async function fetchYesterdayHourly(
+    deviceUUID: string,
+    keys: string[] = ['AccumulatedActiveEnergyDelivered']
+  ): Promise<TelemetryDataPoint[]> {
+    const now = Date.now()
+    const midnightToday = new Date()
+    midnightToday.setHours(0, 0, 0, 0)
+    const midnightTodayMs = midnightToday.getTime()
+
+    // Yesterday: from midnight yesterday to midnight today
+    const yesterdayStart = midnightTodayMs - 24 * 60 * 60 * 1000
+    const yesterdayEnd = midnightTodayMs
+
+    console.log(`[useTelemetryDynamic] Fetching yesterday hourly (differential) for ${deviceUUID.substring(0, 20)}...`)
+
+    const result = await calculateDifferentialConsumption(
+      deviceUUID,
+      yesterdayStart,
+      yesterdayEnd,
+      fetchTelemetry,
+      keys[0]
+    )
+
+    console.log(`[useTelemetryDynamic] Yesterday hourly result:`, {
+      consumptionPoints: result.length,
+      data: result.map(dp => ({
+        time: new Date(dp.ts).toLocaleTimeString(),
+        value: dp.value
+      }))
+    })
+
+    return result
+  }
+
+  /**
+   * Fetch hourly data for any custom period using differential method
+   * Computes hourly consumption as: currentHourValue - previousHourValue
+   * Uses AccumulatedActiveEnergyDelivered
+   *
+   * @param deviceUUID - Device to fetch from
+   * @param startTs - Start of period (timestamp ms)
+   * @param endTs - End of period (timestamp ms)
+   * @param keys - Optional, defaults to ['AccumulatedActiveEnergyDelivered']
+   * @returns Array of hourly consumption values
+   */
+  async function fetchHourlyDifferential(
+    deviceUUID: string,
+    startTs: number,
+    endTs: number,
+    keys: string[] = ['AccumulatedActiveEnergyDelivered']
+  ): Promise<TelemetryDataPoint[]> {
+    console.log(`[useTelemetryDynamic] Fetching hourly differential for ${deviceUUID.substring(0, 20)}... from ${new Date(startTs).toLocaleString()} to ${new Date(endTs).toLocaleString()}`)
+
+    const result = await calculateDifferentialConsumption(
+      deviceUUID,
+      startTs,
+      endTs,
+      fetchTelemetry,
+      keys[0]
+    )
+
+    console.log(`[useTelemetryDynamic] Hourly differential result:`, {
+      period: `${new Date(startTs).toLocaleDateString()} - ${new Date(endTs).toLocaleDateString()}`,
+      consumptionPoints: result.length,
+      data: result.slice(0, 3).map(dp => ({
+        time: new Date(dp.ts).toLocaleTimeString(),
+        value: dp.value
+      }))
+    })
+
+    return result
   }
 
   /**
@@ -456,6 +619,8 @@ export function useTelemetryDynamic() {
     fetchCurrentValue,
     fetchInstantaneous,
     fetchTodayHourly,
+    fetchYesterdayHourly,
+    fetchHourlyDifferential,
     fetchChartData,
 
     // Cache management

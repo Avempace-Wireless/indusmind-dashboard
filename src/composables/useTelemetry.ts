@@ -84,37 +84,97 @@ export function useTelemetry() {
   }
 
   /**
-   * Fetch today's hourly data
+   * Fetch today's hourly data using differential method
+   * Computes hourly consumption as: hourlyValue - previousHourValue
+   * Uses AccumulatedActiveEnergyDelivered instead of delta keys
    */
   async function fetchTodayHourly(
     deviceUUID: string,
-    keys: string[] = [...TELEMETRY_KEYS.ENERGY_DELTA_HOUR]
+    keys: string[] = ['AccumulatedActiveEnergyDelivered']
   ): Promise<TelemetryReading[]> {
     try {
       loading.value = true
       error.value = null
 
-      const { startTs, endTs, interval } = getTimeRange('24h')
+      const key = keys[0] // Use first key (AccumulatedActiveEnergyDelivered)
+      const now = Date.now()
 
-      const response = await fetchDeviceTelemetry(deviceUUID, {
-        keys,
-        startTs,
-        endTs,
-        interval,
-        agg: 'AVG',
-        orderBy: 'ASC',
+      // Calculate hour boundaries for today
+      const midnightToday = new Date()
+      midnightToday.setHours(0, 0, 0, 0)
+      const midnightTodayMs = midnightToday.getTime()
+
+      // Calculate how many complete + partial hours we have today
+      const hoursInDay = Math.ceil((now - midnightTodayMs) / (60 * 60 * 1000))
+
+      // Create timestamps for boundaries: midnight, 01:00, 02:00, ..., up to current hour
+      // We need hoursInDay + 1 values (start and end of each hour)
+      const boundaryTimestamps: number[] = [midnightTodayMs] // Start with midnight
+
+      for (let i = 1; i <= hoursInDay; i++) {
+        boundaryTimestamps.push(midnightTodayMs + i * 60 * 60 * 1000)
+      }
+
+      // Fetch all accumulated values in parallel with ±1 minute tolerance window
+      const fetchPromises = boundaryTimestamps.map((timestamp) =>
+        fetchDeviceTelemetry(deviceUUID, {
+          keys: [key],
+          startTs: timestamp - 60 * 1000, // 1 minute before
+          endTs: timestamp + 60 * 1000, // 1 minute after
+          agg: 'MAX',
+          limit: 1,
+          orderBy: 'DESC',
+        }).catch(() => ({ data: { [key]: [] } })) // Handle timeouts gracefully
+      )
+
+      const responses = await Promise.all(fetchPromises)
+
+      // Extract accumulated values at each boundary
+      const boundaryValues = responses.map((response) => {
+        const dataPoints = response.data[key] || []
+        if (dataPoints.length === 0) return null
+        return parseFloat(String(dataPoints[0].value))
       })
 
-      const firstKey = keys[0]
-      const dataPoints = response.data[firstKey] || []
+      // Compute consumption for each hour using differential method
+      const consumptionData: TelemetryReading[] = []
 
-      const maxValue = Math.max(...dataPoints.map((dp) => parseFloat(String(dp.value))))
+      for (let i = 0; i < hoursInDay; i++) {
+        const currentValue = boundaryValues[i + 1] // Value at end of hour
+        const previousValue = boundaryValues[i] // Value at start of hour
 
-      return dataPoints.map((dp) => ({
-        timestamp: dp.ts,
-        value: parseFloat(String(dp.value)),
-        height: maxValue > 0 ? (parseFloat(String(dp.value)) / maxValue) * 100 : 0,
-      }))
+        const hourEndTimestamp = boundaryTimestamps[i + 1]
+
+        // Skip if we don't have current value
+        if (currentValue === null) continue
+
+        // If we don't have previous value, return 0 (can't compute difference)
+        const consumption = previousValue === null ? 0 : currentValue - previousValue
+
+        consumptionData.push({
+          timestamp: hourEndTimestamp,
+          value: Math.max(0, consumption), // Ensure non-negative
+          height: 0, // Will normalize after all values collected
+        })
+      }
+
+      // Normalize heights based on max value in today's consumption
+      const maxValue = Math.max(...consumptionData.map((dp) => dp.value), 0)
+      consumptionData.forEach((dp) => {
+        dp.height = maxValue > 0 ? (dp.value / maxValue) * 100 : 0
+      })
+console.log('[useTelemetry] Today hourly data:', {
+  boundaryCount: boundaryTimestamps.length,
+  hoursProcessed: hoursInDay,
+  consumptionPoints: consumptionData.length,
+  data: consumptionData,
+  timestamps: consumptionData.map(d => ({
+    time: new Date(d.timestamp).toLocaleTimeString(),
+    value: d.value,
+    height: d.height,
+  })),
+})
+      return consumptionData
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch today hourly data'
       console.error('[useTelemetry] Today hourly fetch error:', err)
