@@ -157,7 +157,7 @@
               </div>
             </div>
             <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
-              <div v-if="enrichedCompteurs.length === 0 || enrichedCompteurs.every(m => !m.hourlyDataDifferential || m.hourlyDataDifferential.length === 0)" class="w-full h-full flex items-center justify-center">
+              <div v-if="enrichedCompteurs.length === 0 || enrichedCompteurs.every(m => !m.yearlyDataDifferential || m.yearlyDataDifferential.length === 0)" class="w-full h-full flex items-center justify-center">
                 <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
               </div>
               <EnergyConsumptionChart
@@ -307,7 +307,7 @@ async function fetchGlobalMetersData(showLoader = true) {
 
   try {
     const response = await fetchGlobalMeters(deviceUUIDs, false)
-    
+
     if (response && response.success) {
       globalMetersList.value = response.data
       console.log('[GlobalMetersView] Updated meter data from API:', globalMetersList.value)

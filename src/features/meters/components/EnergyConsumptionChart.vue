@@ -20,7 +20,7 @@
 
       <!-- Chart Info -->
       <div class="mt-1 text-center text-xs text-slate-600 dark:text-slate-400 flex-shrink-0">
-        <p>{{ $t('globalMeters.yearlyEnergyConsumption') }} ({{ $t('globalMeters.dailyAverage') }})</p>
+        <p>{{ $t('globalMeters.yearlyEnergyConsumption') }} - Consommation Mensuelle</p>
       </div>
     </div>
   </div>
@@ -84,7 +84,31 @@ const getMeterColor = (index: number) => {
   return colors[index % colors.length]
 }
 
-// Prepare chart data - use last 90 days for better visibility
+// Extract all timestamps and labels for use in chart and tooltips
+const chartTimestamps = computed(() => {
+  if (metersWithData.value.length === 0) return []
+
+  const allTimestamps = new Set<number>()
+  metersWithData.value.forEach(meter => {
+    meter.yearlyDataDifferential.forEach(point => {
+      allTimestamps.add(point.ts)
+    })
+  })
+
+  return Array.from(allTimestamps).sort((a, b) => a - b)
+})
+
+const monthLabels = computed(() => {
+  return chartTimestamps.value.map(ts => {
+    const date = new Date(ts)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}/${month}/${year}`
+  })
+})
+
+// Prepare chart data - display all monthly data points
 const chartData = computed(() => {
   if (metersWithData.value.length === 0) {
     return {
@@ -93,26 +117,22 @@ const chartData = computed(() => {
     }
   }
 
-  // Get the longest dataset to determine labels
-  const maxDataLength = Math.max(...metersWithData.value.map(m => m.yearlyDataDifferential.length))
-  const displayPoints = Math.min(90, maxDataLength) // Show last 90 days for better readability
-
-  // Generate labels from timestamps (take from first meter)
-  const firstMeter = metersWithData.value[0]
-  const labels = firstMeter.yearlyDataDifferential
-    .slice(-displayPoints)
-    .map(point => {
-      const date = new Date(point.ts)
-      const day = date.getDate().toString().padStart(2, '0')
-      const month = (date.getMonth() + 1).toString().padStart(2, '0')
-      const year = date.getFullYear()
-      return `${day}/${month}/${year}`
-    })
+  const sortedTimestamps = chartTimestamps.value
+  const labels = monthLabels.value
 
   // Create datasets for each meter
   const datasets = metersWithData.value.map((meter, index) => {
     const colors = getMeterColor(index)
-    const data = meter.yearlyDataDifferential.slice(-displayPoints).map(point => point.value)
+
+    // Create a map of timestamp -> value for this meter
+    const valueMap = new Map<number, number>()
+    meter.yearlyDataDifferential.forEach(point => {
+      // Store value (0 if null/undefined to display all months)
+      valueMap.set(point.ts, point.value ?? 0)
+    })
+
+    // Map data to match all timestamps (0 if meter doesn't have data for that month)
+    const data = sortedTimestamps.map(ts => valueMap.get(ts) ?? 0)
 
     return {
       label: meter.name,
@@ -120,8 +140,10 @@ const chartData = computed(() => {
       backgroundColor: colors.bg,
       borderColor: colors.border,
       borderWidth: 2,
-      borderRadius: 4,
+      borderRadius: 6,
       borderSkipped: false,
+      barThickness: 'flex' as const,
+      maxBarThickness: 60,
     }
   })
 
@@ -135,19 +157,24 @@ const chartData = computed(() => {
 const maxDataValue = computed(() => {
   let max = 0
   metersWithData.value.forEach(meter => {
-    const displayPoints = Math.min(90, meter.yearlyDataDifferential.length)
-    meter.yearlyDataDifferential.slice(-displayPoints).forEach(point => {
+    meter.yearlyDataDifferential.forEach(point => {
       if (point.value > max) max = point.value
     })
   })
 
   // Round up to nearest nice number
-  if (max === 0) return 100
+  if (max === 0) return 100000
 
   // Calculate appropriate rounding based on magnitude
   const magnitude = Math.pow(10, Math.floor(Math.log10(max)))
-  const roundTo = magnitude >= 1000 ? 5000 : magnitude >= 100 ? 1000 : magnitude >= 10 ? 100 : 10
 
+  // For large values (100k+), round to nearest 100k or 500k
+  if (max >= 100000) {
+    const roundTo = magnitude >= 1000000 ? 500000 : 100000
+    return Math.ceil(max / roundTo) * roundTo
+  }
+
+  const roundTo = magnitude >= 1000 ? 5000 : magnitude >= 100 ? 1000 : magnitude >= 10 ? 100 : 10
   return Math.ceil(max / roundTo) * roundTo
 })
 
@@ -158,7 +185,10 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
     maintainAspectRatio: false,
     layout: {
       padding: {
-        bottom: 20,
+        top: 10,
+        bottom: 5,
+        left: 10,
+        right: 10,
       }
     },
     interaction: {
@@ -182,26 +212,21 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
         padding: 12,
         callbacks: {
           title: function(context) {
-            // Get the data point index
+            // Display day and month in tooltip (e.g., "31 Oct")
             const index = context[0].dataIndex
-            const firstMeter = metersWithData.value[0]
-            if (firstMeter && firstMeter.yearlyDataDifferential[index]) {
-              const displayPoints = Math.min(90, firstMeter.yearlyDataDifferential.length)
-              const dataPoint = firstMeter.yearlyDataDifferential.slice(-displayPoints)[index]
-              const date = new Date(dataPoint.ts)
-              // Format as DD/MM/YYYY
-              const day = date.getDate().toString().padStart(2, '0')
-              const month = (date.getMonth() + 1).toString().padStart(2, '0')
-              const year = date.getFullYear()
-              return `${day}/${month}/${year}`
-            }
-            return context[0].label
+            return monthLabels.value[index] || context[0].label
           },
           label: function(context) {
             const label = context.dataset.label || ''
             const value = context.parsed.y
             if (value === null || value === undefined) return `${label}: --`
-            return `${label}: ${value.toFixed(2)} kWh`
+
+            // Format large numbers with thousand separators
+            const formattedValue = value.toLocaleString('fr-FR', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2
+            })
+            return `${label}: ${formattedValue} kWh`
           }
         }
       },
@@ -216,43 +241,44 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
           maxRotation: 45,
           minRotation: 45,
           autoSkip: true,
-          maxTicksLimit: 20,
+          maxTicksLimit: 6,
           font: {
-            size: 9
+            size: 10,
+            weight: 'normal'
           },
-          callback: function(value, index, values) {
-            const label = this.getLabelForValue(Number(value))
-            // Show every 4th label to avoid crowding
-            if (index % 4 === 0) {
-              return label
-            }
-            return ''
-          }
+          color: 'rgba(71, 85, 105, 1)', // slate-600
         }
       },
       y: {
         stacked: false,
         beginAtZero: true,
         grid: {
-          color: 'rgba(0, 0, 0, 0.05)',
+          color: 'rgba(203, 213, 225, 0.3)', // slate-300 with opacity
+          drawTicks: false,
+        },
+        border: {
+          display: false,
         },
         ticks: {
-          maxTicksLimit: 6,
-          stepSize: 5000,
+          maxTicksLimit: 8,
           callback: function(value) {
             const numValue = Number(value)
-            // Use abbreviations for large numbers
+            // Use abbreviations for large numbers (e.g., 750k, 1.6M)
+            if (numValue >= 1000000) {
+              return (numValue / 1000000).toFixed(1) + 'M'
+            }
             if (numValue >= 1000) {
               return (numValue / 1000).toFixed(0) + 'k'
             }
             return numValue.toFixed(0)
           },
           font: {
-            size: 9
+            size: 10
           },
-          padding: 2,
+          padding: 8,
+          color: 'rgba(100, 116, 139, 1)', // slate-500
         },
-        // Better scaling for small values
+        // Better scaling for large values
         suggestedMin: 0,
         suggestedMax: maxDataValue.value,
       }
