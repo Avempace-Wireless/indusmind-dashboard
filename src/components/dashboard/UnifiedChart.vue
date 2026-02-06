@@ -8,23 +8,6 @@
       </div>
 
       <div class="flex items-center gap-4 flex-wrap">
-        <!-- Mode Switch -->
-        <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
-          <button
-            v-for="m in modes"
-            :key="m"
-            @click="emit('update:mode', m)"
-            :class="[
-              'px-4 py-1.5 rounded text-xs font-medium transition-all',
-              mode === m
-                ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-white'
-            ]"
-          >
-            {{ m === 'energy' ? $t('dashboard.energy') : $t('dashboard.temperature') }}
-          </button>
-        </div>
-
         <!-- Period Selector -->
         <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
           <button
@@ -46,15 +29,6 @@
 
     <!-- Chart body -->
     <div class="p-6 flex flex-col gap-6">
-      <!-- Current value header -->
-      <div class="flex items-baseline gap-4 flex-wrap">
-        <p class="text-slate-900 dark:text-white text-4xl font-bold font-mono tracking-tight">
-          {{ currentValue }}
-        </p>
-        <span class="text-slate-500 dark:text-slate-400 text-sm font-medium">
-          {{ mode === 'energy' ? $t('common.unit.kwh') : $t('common.unit.celsius') }}
-        </span>
-      </div>
 
       <!-- Canvas for Chart.js -->
       <div class="relative w-full h-80">
@@ -110,18 +84,21 @@ interface Props {
   period: PeriodValue
   subtitle: string
   selectedCompteurs: Compteur[]
+  isTemperatureApi?: boolean // If true, fetch real temperature data from API instead of mock
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isTemperatureApi: false
+})
+
 const emit = defineEmits<{
-  'update:mode': [mode: ChartMode]
   'update:period': [period: PeriodValue]
 }>()
 
 const { t } = useI18n()
 
 // Telemetry composable for real data - use dynamic version with differential support
-const { fetchHourlyDifferential, fetchChartData, loading: telemetryLoading } = useTelemetryDynamic()
+const { fetchAllDeviceDataUnified, fetchChartData, loading: telemetryLoading } = useTelemetryDynamic()
 const telemetryChartData = ref<any>(null)
 
 // Disable telemetry calls in pure mock mode to avoid empty charts
@@ -130,13 +107,10 @@ const useTelemetryData = ref<boolean>(shouldUseTelemetry.value)
 const isLoadingChart = ref(false)
 const hasNoData = ref(false)
 
-const modes: ChartMode[] = ['energy', 'temperature']
-
 const periods = computed(() => [
   { value: 'today', label: t('dashboard.period.today') },
   { value: 'yesterday', label: t('dashboard.period.yesterday') },
-  { value: '7days', label: t('dashboard.period.sevenDays') },
-  { value: '30days', label: t('dashboard.period.thirtyDays') }
+  { value: '7days', label: t('dashboard.period.sevenDays') }
 ] as const)
 
 const chartRef = ref<HTMLCanvasElement>()
@@ -330,7 +304,7 @@ watch([() => props.mode, () => props.period, () => props.selectedCompteurs.lengt
   if (useTelemetryData.value) {
     loadTelemetryChartData()
   } else {
-    renderChart()
+    hasNoData.value = true
   }
 }, { immediate: false, flush: 'post' })
 
@@ -338,12 +312,11 @@ watch([() => props.mode, () => props.period, () => props.selectedCompteurs.lengt
  * Load real telemetry data for chart
  */
 function fallbackToMockChart(reason: string) {
-  console.info('[UnifiedChart] Falling back to mock chart data:', reason)
+  console.info('[UnifiedChart] No data available:', reason)
   useTelemetryData.value = false
-  hasNoData.value = false
+  hasNoData.value = true
   isLoadingChart.value = false
   telemetryChartData.value = null
-  renderChart()
 }
 
 async function loadTelemetryChartData() {
@@ -380,230 +353,422 @@ async function loadTelemetryChartData() {
     const apiPeriod = periodMap[props.period]
     const { startTs, endTs } = getTimeRange(apiPeriod)
 
-    // Fetch data for all compteurs in parallel
-    const promises = compteursWithUUID.map(async (compteur, index) => {
-      try {
-        let data: any
+    // ========================================================================
+    // OPTIMIZED: Use /chartBatch endpoint for chart data
+    // Handles period-specific aggregation and differential calculation
+    // ========================================================================
+    console.log('[UnifiedChart] 🎯 Loading chart data for', compteursWithUUID.length, 'compteurs using /chartBatch')
 
-        if (props.mode === 'energy') {
-          // Use differential method for hourly/daily periods
-          if (props.period === 'today' || props.period === 'yesterday') {
-            // Fetch hourly energy consumption using differential method
-            const hourlyData = await fetchHourlyDifferential(
-              compteur.deviceUUID!,
-              startTs,
-              endTs,
-              ['AccumulatedActiveEnergyDelivered']
-            )
+    const { fetchChartBatch } = useTelemetryDynamic()
 
-            // Transform to chart format with labels and datasets
-            const labels = hourlyData.map(d => {
-              const date = new Date(d.ts)
-              return `${date.getHours().toString().padStart(2, '0')}:00`
-            })
+    // Build chart batch requests for all selected compteurs
+    const chartBatchRequests = compteursWithUUID.map(compteur => ({
+      deviceUUID: compteur.deviceUUID!,
+      keys: ['AccumulatedActiveEnergyDelivered'],
+      startTs,
+      endTs,
+      period: apiPeriod
+    }))
 
-            data = {
-              labels,
-              datasets: [
-                {
-                  label: compteur.name,
-                  data: hourlyData.map(d => d.value),
-                  timestamps: hourlyData.map(d => d.ts)
-                }
-              ]
+    console.log('[UnifiedChart] Batch requests:', {
+      count: chartBatchRequests.length,
+      period: apiPeriod,
+      timeRange: { start: new Date(startTs).toISOString(), end: new Date(endTs).toISOString() }
+    })
+
+    // Make ONE batch call for ALL compteurs with period-specific aggregation
+    const chartResults = await fetchChartBatch(chartBatchRequests)
+
+    console.log('[UnifiedChart] ✓ Received chart data for', chartResults.size, 'devices')
+
+    // Log DETAILED API response for debugging data mismatch
+    console.log('[UnifiedChart] 📊 DETAILED API RESPONSE:', {
+      deviceCount: chartResults.size,
+      devices: Array.from(chartResults.keys()),
+      allDeviceData: Array.from(chartResults.entries()).map(([uuid, dataPoints]: any) => ({
+        deviceUUID: uuid,
+        pointCount: Array.isArray(dataPoints) ? dataPoints.length : 'not-array',
+        allValues: Array.isArray(dataPoints) ? dataPoints.map((p: any) => p.value) : 'N/A',
+        timestamps: Array.isArray(dataPoints) ? dataPoints.map((p: any) => new Date(p.ts).toLocaleString('fr-FR')) : 'N/A'
+      }))
+    })
+
+    console.log('[UnifiedChart] Chart results (raw Map):', {
+      deviceCount: chartResults.size,
+      devices: Array.from(chartResults.keys()),
+      firstDeviceData: chartResults.size > 0 ? chartResults.values().next().value?.slice(0, 3) : null
+    })
+
+    // Process results for chart display
+    if (props.mode === 'energy') {
+      const energyData: Record<string, number[]> = {}
+      const timestampMap = new Map<number, string>() // Map ts -> formatted label
+      const allTimestamps = new Set<number>()
+      const deviceNameMap = new Map<string, string>() // Map deviceUUID -> compteur name
+
+      // Build device UUID to compteur name mapping
+      compteursWithUUID.forEach(compteur => {
+        if (compteur.deviceUUID) {
+          deviceNameMap.set(compteur.deviceUUID, compteur.name)
+        }
+      })
+
+      console.log('[UnifiedChart] Device name mapping:', {
+        count: deviceNameMap.size,
+        mapping: Array.from(deviceNameMap.entries()).map(([uuid, name]) => `${uuid} -> ${name}`)
+      })
+
+      // First pass: collect all unique timestamps from all devices
+      chartResults.forEach((dataPoints: any, deviceUUID: string) => {
+        const compteurName = deviceNameMap.get(deviceUUID)
+        console.log(`[UnifiedChart] Processing device ${deviceUUID} (${compteurName}):`, {
+          dataPointsCount: Array.isArray(dataPoints) ? dataPoints.length : 'not an array',
+          dataPoints: Array.isArray(dataPoints) ? dataPoints.slice(0, 2) : dataPoints
+        })
+
+        if (Array.isArray(dataPoints)) {
+          dataPoints.forEach((point: any) => {
+            if (point && point.ts) {
+              allTimestamps.add(point.ts)
             }
-          } else {
-            // For longer periods (7d, 30d), use daily aggregation
-            data = await fetchChartData(
-              compteur.deviceUUID!,
-              ['AccumulatedActiveEnergyDelivered'],
-              startTs,
-              endTs,
-              24 * 60 * 60 * 1000, // 1 day interval
-              'MAX'
-            )
+          })
+        }
+      })
+
+      // Sort all timestamps
+      const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
+      console.log('[UnifiedChart] Sorted timestamps:', {
+        count: sortedTimestamps.length,
+        samples: sortedTimestamps.slice(0, 3).map(ts => new Date(ts).toISOString())
+      })
+
+      // Generate labels from actual timestamps with date + time
+      sortedTimestamps.forEach((ts: number) => {
+        const date = new Date(ts)
+        let label: string
+
+        switch (props.period) {
+          case 'today':
+          case 'yesterday':
+            // Format: "05/02 14:30" (date + time, hourly data)
+            const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+            const dateStr = date.toLocaleDateString('fr-FR', { month: '2-digit', day: '2-digit' })
+            label = `${dateStr} ${time}`
+            break
+          case '7days':
+            // Format: "05/02 00:00" (date + time, daily data)
+            const dailyDateStr = date.toLocaleDateString('fr-FR', { month: '2-digit', day: '2-digit' })
+            const dailyTime = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+            label = `${dailyDateStr} ${dailyTime}`
+            break
+          case '30days':
+            // Format: "05/02 00:00" (date + time, daily data)
+            const monthDateStr = date.toLocaleDateString('fr-FR', { month: '2-digit', day: '2-digit' })
+            const monthTime = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+            label = `${monthDateStr} ${monthTime}`
+            break
+          default:
+            const defaultTime = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+            const defaultDateStr = date.toLocaleDateString('fr-FR', { month: '2-digit', day: '2-digit' })
+            label = `${defaultDateStr} ${defaultTime}`
+        }
+
+        timestampMap.set(ts, label)
+      })
+
+      const labels = sortedTimestamps.map(ts => timestampMap.get(ts) || String(ts))
+
+      console.log('[UnifiedChart] Labels generated:', {
+        count: labels.length,
+        samples: labels.slice(0, 3)
+      })
+
+      // Second pass: process each compteur's data in timestamp order
+      chartResults.forEach((dataPoints: any, deviceUUID: string) => {
+        const compteur = compteursWithUUID.find(c => c.deviceUUID === deviceUUID)
+        const compteurName = compteur?.name || deviceNameMap.get(deviceUUID) || deviceUUID
+
+        console.log(`[UnifiedChart] Processing device data for ${compteurName} (${deviceUUID}):`, {
+          dataPointsType: typeof dataPoints,
+          dataPointsIsArray: Array.isArray(dataPoints),
+          dataPointsLength: Array.isArray(dataPoints) ? dataPoints.length : 'N/A',
+          sampleData: Array.isArray(dataPoints) ? dataPoints.slice(0, 2) : dataPoints
+        })
+
+        if (!compteur || !Array.isArray(dataPoints)) {
+          console.warn(`[UnifiedChart] Skipping device - compteur: ${compteur?.name || 'NOT FOUND'}, dataPoints is array: ${Array.isArray(dataPoints)}`)
+          return
+        }
+
+        // Create a map of ts -> value for this compteur
+        const dataByTs = new Map<number, number>()
+        dataPoints.forEach((point: any) => {
+          if (point && point.ts !== undefined && point.value !== undefined) {
+            dataByTs.set(point.ts, typeof point.value === 'string' ? parseFloat(point.value) : point.value)
           }
+        })
+
+        console.log(`[UnifiedChart] Data map for ${compteur.name}:`, {
+          mappedPoints: dataByTs.size,
+          sampleMappings: Array.from(dataByTs.entries()).slice(0, 3).map(([ts, val]) => `${new Date(ts).toLocaleTimeString('fr-FR')}: ${val}`)
+        })
+
+        // Build data array aligned with sorted timestamps
+        const consumptionValues = sortedTimestamps.map(ts => dataByTs.get(ts) ?? 0)
+
+        if (consumptionValues.length > 0) {
+          energyData[compteur.name] = consumptionValues
+          console.log(`[UnifiedChart] ✓ Processed ${compteur.name}:`, {
+            dataPoints: consumptionValues.length,
+            nonZeroValues: consumptionValues.filter(v => v > 0).length,
+            firstValues: consumptionValues.slice(0, 3),
+            timestamps: sortedTimestamps.slice(0, 3).map(ts => new Date(ts).toLocaleString('fr-FR'))
+          })
         } else {
-          // Temperature data
-          data = await fetchChartData(
-            compteur.deviceUUID!,
-            ['temperature'],
-            startTs,
-            endTs,
-            60 * 60 * 1000, // 1 hour interval
-            'AVG'
-          )
+          console.warn(`[UnifiedChart] No consumption values for ${compteur.name}`)
         }
+      })
 
-        return {
-          compteur,
-          data,
-          colorIndex: index
-        }
-      } catch (err) {
-        console.error(`[UnifiedChart] Failed to fetch data for ${compteur.name}:`, err)
-        return null
+      // Update chart data
+      telemetryChartData.value = {
+        labels,
+        data: energyData
       }
-    })
 
-    const results = (await Promise.all(promises)).filter(Boolean)
+      console.log('[UnifiedChart] Chart data prepared:', {
+        labelCount: labels.length,
+        sampleLabels: labels.slice(0, 3),
+        deviceCount: Object.keys(energyData).length,
+        pointsPerDevice: Object.entries(energyData).map(([name, values]) => `${name}: ${values.length} (${values.filter(v => v > 0).length} non-zero)`)
+      })
 
-    if (results.length === 0) {
-      console.warn('[UnifiedChart] No telemetry data available')
-      if (useMockData() || useHybridMode()) {
-        fallbackToMockChart('telemetry returned empty results')
+      console.log('[UnifiedChart] Final energyData object:', energyData)
+
+      // Compare final rendered data with API response
+      console.log('[UnifiedChart] 🔍 DATA COMPARISON - BEFORE RENDERING:', {
+        'API returned': Array.from(chartResults.entries()).map(([uuid, points]: any) => ({
+          uuid: uuid.substring(0, 8),
+          apiPointCount: Array.isArray(points) ? points.length : 'N/A',
+          apiValues: Array.isArray(points) ? points.map((p: any) => p.value) : 'N/A'
+        })),
+        'Chart will render': Object.entries(energyData).map(([name, values]) => ({
+          compteurName: name,
+          renderedPointCount: values.length,
+          renderedValues: values
+        }))
+      })
+
+      hasNoData.value = Object.keys(energyData).length === 0
+    } else if (props.mode === 'temperature' && props.isTemperatureApi) {
+      // Temperature mode with API data - fetch real temperature sensors
+      console.log('[UnifiedChart] Temperature mode: fetching from API')
+
+      const { fetchChartBatch } = useTelemetryDynamic()
+
+      // Build temperature chart batch requests
+      const temperatureBatchRequests = [{
+        startTs,
+        endTs,
+        period: apiPeriod
+      }]
+
+      console.log('[UnifiedChart] Temperature batch request:', {
+        period: apiPeriod,
+        timeRange: { start: new Date(startTs).toISOString(), end: new Date(endTs).toISOString() }
+      })
+
+      try {
+        // Make API call to /api/telemetry/temperatureChartBatch
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+        const response = await fetch(`${baseUrl}/api/telemetry/temperatureChartBatch`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            requests: temperatureBatchRequests
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        const temperatureResult = await response.json()
+
+        console.log('[UnifiedChart] ✓ Received temperature data:', {
+          dataPoints: temperatureResult.Temperature?.length || 0,
+          response: temperatureResult
+        })
+
+        // Process temperature data for chart
+        const temperatureData: Record<string, number[]> = {}
+        const timestampMap = new Map<number, string>()
+        const allTimestamps = new Set<number>()
+        const sensorNameMap = new Map<string, string>()
+
+        // Build sensor name mapping from API response
+        if (Array.isArray(temperatureResult.Temperature)) {
+          temperatureResult.Temperature.forEach((point: any) => {
+            if (point.deviceUUID && point.sensorName) {
+              sensorNameMap.set(point.deviceUUID, point.sensorName)
+            }
+            if (point.ts) {
+              allTimestamps.add(point.ts)
+            }
+          })
+        }
+
+        console.log('[UnifiedChart] Temperature sensor mapping:', {
+          count: sensorNameMap.size,
+          sensors: Array.from(sensorNameMap.values())
+        })
+
+        // Sort all timestamps
+        const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b)
+        console.log('[UnifiedChart] Temperature timestamps:', {
+          count: sortedTimestamps.length,
+          samples: sortedTimestamps.slice(0, 3).map(ts => new Date(ts).toLocaleString('fr-FR'))
+        })
+
+        // Generate labels from timestamps
+        sortedTimestamps.forEach((ts: number) => {
+          const date = new Date(ts)
+          let label: string
+
+          switch (props.period) {
+            case 'today':
+            case 'yesterday':
+              const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+              const dateStr = date.toLocaleDateString('fr-FR', { month: '2-digit', day: '2-digit' })
+              label = `${dateStr} ${time}`
+              break
+            case '7days':
+              const dailyDateStr = date.toLocaleDateString('fr-FR', { month: '2-digit', day: '2-digit' })
+              const dailyTime = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+              label = `${dailyDateStr} ${dailyTime}`
+              break
+            default:
+              const defaultTime = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+              const defaultDateStr = date.toLocaleDateString('fr-FR', { month: '2-digit', day: '2-digit' })
+              label = `${defaultDateStr} ${defaultTime}`
+          }
+
+          timestampMap.set(ts, label)
+        })
+
+        const labels = sortedTimestamps.map(ts => timestampMap.get(ts) || String(ts))
+
+        console.log('[UnifiedChart] Temperature labels:', {
+          count: labels.length,
+          samples: labels.slice(0, 3)
+        })
+
+        // Group temperature data by sensor - use same pattern as energy chart
+        // First pass: create a map of ts -> dataByPoint for each sensor
+        const temperatureByTsAndSensor = new Map<string, Map<number, number>>()
+
+        if (Array.isArray(temperatureResult.Temperature)) {
+          temperatureResult.Temperature.forEach((point: any) => {
+            const sensorName = point.sensorName || 'Unknown Sensor'
+
+            if (!temperatureByTsAndSensor.has(sensorName)) {
+              temperatureByTsAndSensor.set(sensorName, new Map<number, number>())
+            }
+
+            const dataByTs = temperatureByTsAndSensor.get(sensorName)!
+            const value = typeof point.value === 'string' ? parseFloat(point.value) : point.value
+            dataByTs.set(point.ts, isNaN(value) ? 0 : value)
+          })
+        }
+
+        console.log('[UnifiedChart] Temperature data by sensor:', {
+          sensorCount: temperatureByTsAndSensor.size,
+          sensors: Array.from(temperatureByTsAndSensor.keys())
+        })
+
+        // Second pass: align each sensor's data to sorted timestamps
+        temperatureByTsAndSensor.forEach((dataByTs, sensorName) => {
+          const temperatureValues = sortedTimestamps.map(ts => dataByTs.get(ts) ?? 0)
+
+          if (temperatureValues.length > 0) {
+            temperatureData[sensorName] = temperatureValues
+            console.log(`[UnifiedChart] ✓ Processed sensor ${sensorName}:`, {
+              dataPoints: temperatureValues.length,
+              nonZeroValues: temperatureValues.filter(v => v !== 0).length,
+              minValue: Math.min(...temperatureValues.filter(v => v !== 0)),
+              maxValue: Math.max(...temperatureValues.filter(v => v !== 0)),
+              firstValues: temperatureValues.slice(0, 3)
+            })
+          } else {
+            console.warn(`[UnifiedChart] No temperature values for sensor ${sensorName}`)
+          }
+        })
+
+        console.log('[UnifiedChart] Final temperature data:', {
+          sensorCount: Object.keys(temperatureData).length,
+          sensors: Object.entries(temperatureData).map(([name, values]) => `${name}: ${values.length} points (${values.filter(v => v !== 0).length} non-zero)`)
+        })
+
+        telemetryChartData.value = {
+          labels,
+          data: temperatureData
+        }
+
+        // Mark that we're using telemetry data so renderChart() will use telemetryChartData
+        useTelemetryData.value = true
+        const hasTemperatureData = Object.keys(temperatureData).length > 0 && labels.length > 0
+        hasNoData.value = !hasTemperatureData
+
+        console.log('[UnifiedChart] Temperature API data ready for rendering:', {
+          useTelemetryData: useTelemetryData.value,
+          dataAvailable: !!telemetryChartData.value,
+          sensorCount: Object.keys(temperatureData).length
+        })
+      } catch (apiError) {
+        console.error('[UnifiedChart] Failed to fetch temperature API data:', apiError)
+        useTelemetryData.value = false
+        hasNoData.value = true
+        isLoadingChart.value = false
         return
       }
+    } else {
+      // Temperature mode without API enabled - show no data
+      console.log('[UnifiedChart] Temperature mode: API not enabled, showing no data')
+      useTelemetryData.value = false
       hasNoData.value = true
       isLoadingChart.value = false
       return
     }
 
-    // Filter out null results (failed fetches)
-    const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null)
-
-    // Use first valid result's labels (all should have same timestamps)
-    const labels = validResults.length > 0 ? validResults[0].data.labels || [] : []
-
-    // Check if we have actual data
-    const hasData = validResults.some(r => r.data.datasets.some((ds: any) => ds.data.some((v: number) => v > 0)))
-
-    if (!hasData || labels.length === 0) {
-      console.warn('[UnifiedChart] API returned empty data')
-      if (useMockData() || useHybridMode()) {
-        fallbackToMockChart('telemetry payload missing data')
-        return
-      }
-      hasNoData.value = true
-      isLoadingChart.value = false
-      return
+    // Render the chart with the fetched data only if we have data
+    if (!hasNoData.value) {
+      renderChart()
     }
-
-    // Build datasets from telemetry data
-    const datasets = validResults.map((result) => {
-      const { compteur, data, colorIndex } = result
-      const colorConfig = getMeterColorByIndex(colorIndex)
-
-      // Get data for first key
-      const dataValues = data.datasets[0]?.data || []
-      console.log('dataValues for', compteur.name, dataValues);
-      return {
-        label: compteur.name,
-        data: dataValues,
-        backgroundColor: colorConfig.hex,
-        borderColor: colorConfig.border,
-        borderWidth: 2,
-        borderRadius: 4
-      }
-    })
-
-    telemetryChartData.value = { labels, datasets }
-    console.log('[UnifiedChart] Loaded telemetry chart data:', telemetryChartData.value)
-    hasNoData.value = false
-    renderTelemetryChart()
   } catch (error) {
     console.error('[UnifiedChart] Failed to load telemetry chart data:', error)
-    if (useMockData() || useHybridMode()) {
-      fallbackToMockChart('telemetry request failed')
-    } else {
-      hasNoData.value = true
-    }
+    useTelemetryData.value = false
+    hasNoData.value = true
+    isLoadingChart.value = false
+    return
   } finally {
     isLoadingChart.value = false
   }
 }
 
-/**
- * Render chart with telemetry data
- */
-function renderTelemetryChart() {
-  if (!chartRef.value || !telemetryChartData.value) return
-
-  const ctx = chartRef.value.getContext('2d')
-  if (!ctx) return
-
-  // Destroy existing chart
-  if (chartInstance) {
-    chartInstance.destroy()
-  }
-
-  chartInstance = new Chart(ctx, {
-    type: props.mode === 'energy' ? 'bar' : 'line',
-    data: telemetryChartData.value,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: true,
-          position: 'bottom',
-          onClick: (e: any, legendItem: any, legend: any) => {
-            const index = legendItem.datasetIndex
-            const chart = legend.chart
-            const meta = chart.getDatasetMeta(index)
-            meta.hidden = !meta.hidden
-            chart.update()
-          },
-          labels: {
-            usePointStyle: true,
-            padding: 15,
-            color: isDarkMode.value ? '#cbd5e1' : '#64748b'
-          }
-        },
-        tooltip: {
-          backgroundColor: isDarkMode.value ? '#1e293b' : '#334155',
-          titleColor: '#f1f5f9',
-          bodyColor: '#f1f5f9',
-          borderColor: isDarkMode.value ? '#475569' : '#64748b',
-          borderWidth: 1,
-          callbacks: {
-            label: (context: any) => {
-              const y = context.parsed.y
-              const unit = props.mode === 'energy' ? 'kWh' : '°C'
-              return `${context.dataset.label}: ${typeof y === 'number' ? y.toFixed(1) : 0} ${unit}`
-            }
-          }
-        },
-        datalabels: {
-          display: false
-        }
-      },
-      scales: {
-        x: {
-          ticks: {
-            color: isDarkMode.value ? '#cbd5e1' : '#64748b'
-          },
-          grid: {
-            color: isDarkMode.value ? '#334155' : '#e2e8f0'
-          }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: {
-            color: isDarkMode.value ? '#cbd5e1' : '#64748b'
-          },
-          grid: {
-            color: isDarkMode.value ? '#334155' : '#e2e8f0'
-          }
-        }
-      }
-    }
-  })
-}
 
 onMounted(() => {
   if (useTelemetryData.value) {
     loadTelemetryChartData()
   } else {
-    renderChart()
+    // Don't show mock data - let the API load or show no data
+    hasNoData.value = true
   }
 
   // Watch for dark mode changes (only re-render, no API call)
   const observer = new MutationObserver(() => {
-    if (useTelemetryData.value && telemetryChartData.value) {
-      renderTelemetryChart()
-    } else {
-      renderChart()
+    if (!hasNoData.value && useTelemetryData.value) {
+      renderChart()  // Only re-render chart on dark mode change if we have data
     }
   })
   observer.observe(document.documentElement, {
@@ -627,7 +792,8 @@ watch(() => [props.period, props.mode], () => {
   if (useTelemetryData.value) {
     loadTelemetryChartData()
   } else {
-    renderChart()
+    // Show no data if not using telemetry
+    hasNoData.value = true
   }
 })
 
@@ -642,7 +808,16 @@ function renderChart() {
     chartInstance.destroy()
   }
 
-  const data = chartData.value as any
+  // USE TELEMETRY DATA IF AVAILABLE, OTHERWISE FALL BACK TO MOCK
+  const data = useTelemetryData.value && telemetryChartData.value
+    ? telemetryChartData.value
+    : chartData.value as any
+
+  console.log('[UnifiedChart renderChart] Using data source:', {
+    useTelemetryData: useTelemetryData.value,
+    hasTelemetryData: !!telemetryChartData.value,
+    source: useTelemetryData.value && telemetryChartData.value ? 'telemetry API' : 'mock/computed'
+  })
 
   if (props.mode === 'energy') {
     // Build datasets dynamically from selected compteurs with distinct colors
@@ -651,7 +826,17 @@ function renderChart() {
       const colorConfig = getMeterColorByIndex(index)
 
       const dataValues = data.data[compteur.name] || []
-      console.log('dataValues for', compteur.name, dataValues);
+
+      console.log('[UnifiedChart renderChart] dataValues for', compteur.name, ':', {
+        isArray: Array.isArray(dataValues),
+        length: dataValues.length,
+        values: dataValues,
+        firstThree: dataValues.slice(0, 3),
+        lastThree: dataValues.slice(-3),
+        sum: dataValues.reduce((a: number, b: number) => a + b, 0),
+        isUsingTelemetry: useTelemetryData.value,
+        chartDataSource: telemetryChartData.value ? 'telemetryChartData' : 'chartData (mock)'
+      });
 
       return {
         label: compteur.name,
@@ -661,6 +846,19 @@ function renderChart() {
         borderWidth: 1,
         borderRadius: 4
       }
+    })
+
+    console.log('[UnifiedChart renderChart] FINAL CHART STRUCTURE:', {
+      labels: data.labels,
+      labelCount: data.labels?.length || 0,
+      sampleLabels: data.labels?.slice(0, 3),
+      datasetsCount: datasets.length,
+      allDatasets: datasets.map((d: any) => ({
+        label: d.label,
+        pointCount: d.data.length,
+        dataValues: d.data,
+        sum: typeof d.data[0] === 'number' ? (d.data as number[]).reduce((a, b) => a + b, 0) : 'N/A'
+      }))
     })
 
     chartInstance = new Chart(ctx, {
@@ -726,45 +924,49 @@ function renderChart() {
       }
     } as any)
   } else {
+    // Temperature chart - build datasets dynamically from actual sensor data
+    const temperatureColors = [
+      '#f97316', // orange
+      '#06b6d4', // cyan
+      '#a855f7', // purple
+      '#ef4444', // red
+      '#22c55e', // green
+      '#eab308', // yellow
+      '#ec4899'  // pink
+    ]
+
+    const datasets = Object.entries(data.data).map(([sensorName, values], index) => {
+      const color = temperatureColors[index % temperatureColors.length]
+
+      console.log(`[UnifiedChart] Temperature dataset for ${sensorName}:`, {
+        color,
+        dataLength: Array.isArray(values) ? values.length : 'not-array',
+        sampleValues: Array.isArray(values) ? values.slice(0, 3) : 'N/A'
+      })
+
+      return {
+        label: sensorName,
+        data: values,
+        borderColor: color,
+        backgroundColor: color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+        borderWidth: 2,
+        fill: false,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: color
+      }
+    })
+
+    console.log('[UnifiedChart] Creating temperature chart with datasets:', {
+      datasetCount: datasets.length,
+      datasets: datasets.map(d => ({ label: d.label, color: d.borderColor }))
+    })
+
     chartInstance = new Chart(ctx, {
       type: 'line',
       data: {
         labels: data.labels,
-        datasets: [
-          {
-            label: 'Zone 6 (ZAP2 SLS)',
-            data: data.data.zone6,
-            borderColor: '#f97316',
-            backgroundColor: 'rgba(249, 115, 22, 0.1)',
-            borderWidth: 3,
-            fill: false,
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: '#f97316'
-          },
-          {
-            label: 'Zone 4 (ZAP2 EM)',
-            data: data.data.zone4,
-            borderColor: '#06b6d4',
-            backgroundColor: 'rgba(6, 182, 212, 0.1)',
-            borderWidth: 3,
-            fill: false,
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: '#06b6d4'
-          },
-          {
-            label: 'Zone 1 (ZAP 1&3)',
-            data: data.data.zone1,
-            borderColor: '#a855f7',
-            backgroundColor: 'rgba(168, 85, 247, 0.1)',
-            borderWidth: 3,
-            fill: false,
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: '#a855f7'
-          }
-        ]
+        datasets: datasets
       },
       options: {
         responsive: true,
@@ -795,7 +997,7 @@ function renderChart() {
             callbacks: {
               label: (context: any) => {
                 const y = context.parsed.y
-                return `${context.dataset.label}: ${typeof y === 'number' ? y.toFixed(1) : 0} °C`
+                return `${context.dataset.label}: ${typeof y === 'number' ? y.toFixed(1) : 0}°C`
               }
             }
           }
@@ -810,6 +1012,7 @@ function renderChart() {
             }
           },
           y: {
+            beginAtZero: false,
             ticks: {
               callback: (value: any) => `${value}°C`,
               color: isDarkMode.value ? '#cbd5e1' : '#64748b'

@@ -43,6 +43,7 @@
     "next": "Suivant",
     "page": "Page",
     "of": "de",
+    "showing": "Affichage de",
     "itemsPerPage": "Éléments par page"
   },
   "auth": {
@@ -222,7 +223,9 @@
     },
     "unifiedChart": {
       "title": "Énergie & Température",
-      "subtitle": "{count} compteur(s) sélectionné(s)"
+      "subtitle": "{count} compteur(s) sélectionné(s)",
+      "energy": "Consommation Énergétique",
+      "temperature": "Gestion Thermique"
     },
     "energy": "Énergie",
     "temperature": "Température",

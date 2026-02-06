@@ -45,6 +45,7 @@
     "next": "Next",
     "page": "Page",
     "of": "of",
+    "showing": "Showing",
     "itemsPerPage": "Items per page"
   },
   "auth": {
@@ -224,7 +225,9 @@
     },
     "unifiedChart": {
       "title": "Energy & Temperature",
-      "subtitle": "{count} meter(s) selected"
+      "subtitle": "{count} meter(s) selected",
+      "energy": "Energy Consumption",
+      "temperature": "Thermal Management"
     },
     "energy": "Energy",
     "temperature": "Temperature",

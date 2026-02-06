@@ -101,10 +101,9 @@ const chartTimestamps = computed(() => {
 const monthLabels = computed(() => {
   return chartTimestamps.value.map(ts => {
     const date = new Date(ts)
-    const day = date.getDate().toString().padStart(2, '0')
     const month = (date.getMonth() + 1).toString().padStart(2, '0')
     const year = date.getFullYear()
-    return `${day}/${month}/${year}`
+    return `${month}/${year}`
   })
 })
 

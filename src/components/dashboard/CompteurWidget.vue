@@ -394,8 +394,8 @@ const todayHourlyReadings = computed(() => {
   console.log('[CompteurWidget] todayHourlyReadings - API readings:', {
     name: props.compteur.name,
     apiReadingsLength: apiReadings.length,
-    apiReadings: apiReadings.slice(0, 5),
-    fullApiReadings: apiReadings
+    USING_API_DATA: apiReadings.length > 0,
+    firstValues: apiReadings.slice(0, 3).map(r => ({ hour: new Date(r.ts).getHours(), value: r.value }))
   })
 
   if (apiReadings.length > 0) {
@@ -549,7 +549,7 @@ const yesterdayHourlyReadings = computed(() => {
     name: props.compteur.name,
     apiReadingsLength: apiReadings.length,
     apiReadings: apiReadings.slice(0, 5),
-    fullApiReadings: apiReadings
+    USING_API_DATA: apiReadings.length > 0
   })
 
   if (apiReadings.length > 0) {
@@ -567,6 +567,12 @@ const yesterdayHourlyReadings = computed(() => {
         const existing = hourlyMap.get(hour) || 0
         hourlyMap.set(hour, existing + value)
       }
+    })
+
+    console.log(`[CompteurWidget] Yesterday - Processing ${apiReadings.length} API readings:`, {
+      name: props.compteur.name,
+      hoursWithData: Array.from(hourlyMap.entries()).sort((a, b) => a[0] - b[0]),
+      totalHours: hourlyMap.size
     })
 
     // Create array with data for each hour 0-23, showing all hours for yesterday
@@ -632,8 +638,8 @@ const instantaneousReadings = computed(() => {
   console.log('[CompteurWidget] instantaneousReadings - API readings:', {
     name: props.compteur.name,
     apiReadingsLength: apiReadings.length,
-    apiReadings: apiReadings.slice(0, 5),
-    fullApiReadings: apiReadings
+    USING_API_DATA: apiReadings.length > 0,
+    firstValues: apiReadings.slice(0, 3).map(r => ({ ts: new Date(r.ts).toLocaleTimeString(), value: r.value }))
   })
 
   if (apiReadings.length > 0) {
