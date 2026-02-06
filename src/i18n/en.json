@@ -545,10 +545,11 @@
     },
     "emptyState": {
       "noMeters": "No meters selected",
-      "noDates": "No dates selected",
+      "selectDate": "Select a date",
       "noMetrics": "No metrics enabled",
       "noData": "No data available",
-      "hint": "Select meters, dates, and enable metrics to view data"
+      "hint": "Select meters, dates, and enable metrics to view data",
+      "selectDateHint": "Select a date to view data"
     },
     "chart": {
       "title": "{resolution} Analysis by Meter",

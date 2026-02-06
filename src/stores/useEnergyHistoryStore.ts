@@ -351,43 +351,34 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         }))
       })
 
-      // ✅ AGGREGATE BY HOUR (Average): track sums and counts per hour
-      const hourlyAggregated = new Map<number, { hour: number; sums: Map<string, number>; counts: Map<string, number> }>()
-
-      visibleCompteurs.value.forEach((compteur) => {
-        const d = dateStr ? getMetricDataForDate(dateStr, metric.type, compteur.id) : null
-        if (!d || !d.hourlyData) return
-        d.hourlyData.forEach(h => {
-          const hour = h.hour
-          if (!hourlyAggregated.has(hour)) {
-            hourlyAggregated.set(hour, { hour, sums: new Map(), counts: new Map() })
-          }
-          const entry = hourlyAggregated.get(hour)!
-          const prevSum = entry.sums.get(compteur.id) || 0
-          const prevCount = entry.counts.get(compteur.id) || 0
-          entry.sums.set(compteur.id, prevSum + (h.value ?? 0))
-          entry.counts.set(compteur.id, prevCount + 1)
+      // ✅ USE ACTUAL API TIMESTAMPS (no aggregation - API already provides data at specific times)
+      // API returns data at :30 minute marks (23:30, 00:30, 01:30, etc.)
+      // Display these exact timestamps on the chart
+      console.log('sortedTimestamps', sortedTimestamps)
+      if (sortedTimestamps.length > 0) {
+        // Build labels from actual sorted timestamps
+        const labels: string[] = sortedTimestamps.map(t => {
+          const ts = t.timestamp
+          const year = ts.getFullYear()
+          const month = String(ts.getMonth() + 1).padStart(2, '0')
+          const day = String(ts.getDate()).padStart(2, '0')
+          const hours = String(ts.getHours()).padStart(2, '0')
+          const minutes = String(ts.getMinutes()).padStart(2, '0')
+          return `${year}-${month}-${day} ${hours}:${minutes}`
         })
-      })
 
-      console.log('[Chart] Aggregated by hour (stores version average):', {
-        hourCount: hourlyAggregated.size,
-        hours: Array.from(hourlyAggregated.keys()).sort((a, b) => a - b),
-      })
+        // Extract raw timestamps (milliseconds) for tooltip display
+        const rawTimestamps: number[] = sortedTimestamps.map(t => t.timestamp.getTime())
 
-      if (hourlyAggregated.size > 0) {
+        // Create datasets for each visible compteur
         visibleCompteurs.value.forEach((compteur, idx) => {
-          const hourlySeries: (number | null)[] = Array.from({ length: 24 }, (_, h) => {
-            const agg = hourlyAggregated.get(h)
-            if (!agg) return null
-            const sum = agg.sums.get(compteur.id)
-            const count = agg.counts.get(compteur.id) || 0
-            return sum !== undefined && count > 0 ? sum / count : null
+          const dataSeries: (number | null)[] = sortedTimestamps.map(t => {
+            return t.values.get(compteur.id) ?? null
           })
           const color = getMeterColor(compteur.id, idx)
           datasets.push({
             label: `${compteur.name}`,
-            data: hourlySeries,
+            data: dataSeries,
             borderColor: color,
             backgroundColor: hexToRgba(color, 0.1),
             yAxisID: metric.yAxisPosition === 'left' ? 'y' : 'y1',
@@ -397,8 +388,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         })
 
         return {
-          labels: Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`),
+          labels,
           datasets,
+          rawTimestamps, // Add raw timestamps for tooltip use
         }
       }
 
@@ -746,6 +738,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   /**
    * Process API response and store data by date and metric type
    * Aggregates raw timestamp data into daily buckets
+   * IMPORTANT: Uses ISO date string from API (which is UTC) to avoid timezone issues
    */
   function processAPIResponse(apiResponse: any) {
     if (!apiResponse || !apiResponse.data) return
@@ -765,24 +758,29 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         dataPoints.forEach((point: any) => {
           if (!point.hasData) return // Skip points without data
 
-          // Create date from UTC timestamp (milliseconds)
-          // JavaScript automatically converts to local timezone when calling getHours(), etc.
-          const date = new Date(point.timestamp)
+          // Use the ISO date string from API (it's UTC-based)
+          // This avoids timezone conversion issues
+          const isoDateString = point.date || new Date(point.timestamp).toISOString()
 
-          // Get local date string
-          const dateStr = formatDate(date)
+          // Extract date part (YYYY-MM-DD) from ISO string
+          const dateStr = isoDateString.substring(0, 10)
 
-          // Get local hour
-          const hour = date.getHours()
+          // Extract hour from ISO string (HH from HH:mm:ss format)
+          // The ISO string is like "2026-02-06T14:30:00.000Z"
+          const hourStr = isoDateString.substring(11, 13)
+          const hour = parseInt(hourStr, 10)
 
           if (!dataByDate.has(dateStr)) {
             dataByDate.set(dateStr, [])
           }
 
+          // Create Date object from timestamp for storage (timezone-aware conversion)
+          const dateObj = new Date(point.timestamp)
+
           dataByDate.get(dateStr)!.push({
             hour,
             value: point.value,
-            timestamp: date, // Store the date object (JavaScript handles timezone automatically)
+            timestamp: dateObj, // Store the date object
           })
         })
 

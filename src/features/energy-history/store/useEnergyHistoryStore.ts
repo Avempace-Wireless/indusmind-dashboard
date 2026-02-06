@@ -340,34 +340,98 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
       console.log('[Chart] Hourly per-day display for dates (sorted):', datesToUse)
 
-      // Build labels: for each date, append 24 hourly labels (e.g., "2025-01-24 00:00", "2025-01-24 01:00", ...)
-      // Display ALL selected dates, even those with no data (they show as gaps)
-      const allLabels: string[] = []
+      // Build labels using ACTUAL API TIMESTAMPS
+      // Extract timestamps from first compteur's data (all compteurs have same hours from API)
+      const firstCompteur = visibleCompteurs.value[0]
+      const timestampMap = new Map<number, string>() // Map timestamp key to label
+      const hourIndices = new Map<number, number>() // Map timestamp key to array index
 
-      datesToUse.forEach((dStr, dayIdx) => {
-        for (let hour = 0; hour < 24; hour++) {
-          allLabels.push(`${dStr} ${hour.toString().padStart(2, '0')}:00`)
+      // Collect all timestamps from API responses for all dates
+      datesToUse.forEach((dStr) => {
+        const dayData = firstCompteur ? getMetricDataForDate(dStr, metric.type, firstCompteur.id) : null
+
+        if (dayData && dayData.hourlyData) {
+          dayData.hourlyData.forEach(d => {
+            if (d.timestamp) {
+              const date = new Date(d.timestamp)
+              const hour = date.getHours()
+              const timeLabel = `${hour.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+
+              // Create composite key for day+hour to handle multi-day data
+              const dateStr = formatDate(date)
+              const compositeKey = new Date(`${dateStr}T${hour.toString().padStart(2, '0')}:00:00`).getTime()
+              timestampMap.set(compositeKey, `${dateStr} ${timeLabel}`)
+            }
+          })
+        } else {
+          // Date has no data - add empty placeholders for all 24 hours to show gaps
+          for (let hour = 0; hour < 24; hour++) {
+            const timeLabel = `${hour.toString().padStart(2, '0')}:00`
+            const compositeKey = new Date(`${dStr}T${hour.toString().padStart(2, '0')}:00:00`).getTime()
+            timestampMap.set(compositeKey, `${dStr} ${timeLabel}`)
+          }
         }
       })
 
+      // If no timestamps from API, fall back to generated labels
+      let allLabels: string[]
+      if (timestampMap.size === 0) {
+        console.warn('[Chart] No API timestamps available, using generated labels')
+        allLabels = []
+        datesToUse.forEach((dStr) => {
+          for (let hour = 0; hour < 24; hour++) {
+            allLabels.push(`${dStr} ${hour.toString().padStart(2, '0')}:00`)
+          }
+        })
+      } else {
+        // Use actual API timestamps, sorted chronologically
+        const sortedTimestamps = Array.from(timestampMap.keys()).sort((a, b) => a - b)
+        allLabels = sortedTimestamps.map(ts => timestampMap.get(ts)!)
+
+        // Build hour index map for data population
+        sortedTimestamps.forEach((ts, idx) => {
+          hourIndices.set(ts, idx)
+        })
+
+        console.log('[Chart] Using API timestamps:', {
+          count: allLabels.length,
+          sample: allLabels.slice(0, 5)
+        })
+      }
+
       // Build datasets for each compteur
       visibleCompteurs.value.forEach((compteur, idx) => {
-        // Initialize all slots as null (empty, not 0)
-        const allData: (number | null)[] = new Array(datesToUse.length * 24).fill(null)
+        // Initialize all slots as null
+        const allData: (number | null)[] = new Array(allLabels.length).fill(null)
 
-        datesToUse.forEach((dStr, dayIdx) => {
+        datesToUse.forEach((dStr) => {
           const dayData = getMetricDataForDate(dStr, metric.type, compteur.id)
 
-          // Even if dayData is null/empty, still create all 24 hour slots for this date
-          // They remain null to show as gaps, not bars with 0
           if (dayData && dayData.hourlyData) {
             dayData.hourlyData.forEach(d => {
-              const globalIdx = dayIdx * 24 + d.hour
-              // Only set value where data exists; otherwise leave as null
-              allData[globalIdx] = d.value ?? null
+              // Find position using timestamp if available
+              if (d.timestamp && hourIndices.size > 0) {
+                const date = new Date(d.timestamp)
+                const hour = date.getHours()
+                const dateStr = formatDate(date)
+                const compositeKey = new Date(`${dateStr}T${hour.toString().padStart(2, '0')}:00:00`).getTime()
+                const idx = hourIndices.get(compositeKey)
+
+                if (idx !== undefined) {
+                  allData[idx] = d.value ?? null
+                }
+              } else {
+                // Fallback to calculated index when no timestamps
+                const dayIdx = datesToUse.indexOf(dStr)
+                if (dayIdx >= 0) {
+                  const globalIdx = dayIdx * 24 + d.hour
+                  if (globalIdx < allData.length) {
+                    allData[globalIdx] = d.value ?? null
+                  }
+                }
+              }
             })
           }
-          // If no dayData, all 24 slots for this date stay null (gaps on chart)
         })
 
         const color = getMeterColor(compteur.id, idx)
@@ -386,6 +450,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         labels: allLabels,
         datasets,
       }
+
+      // Note: API now returns only completed hours, so no need to filter incomplete hours here
+
       console.log('chartData returning (hourly per-day):', {
         labelsLength: result.labels.length,
         datasetsLength: result.datasets.length,
@@ -483,28 +550,49 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   const tableData = computed(() => {
     if (effectiveResolution.value === 'hourly') {
-      // Hourly table: rows per hour in range
-      const hours = Array.from({ length: hourTo.value - hourFrom.value + 1 }, (_, i) => hourFrom.value + i)
+      // Hourly table: use hours directly from sorted API response
+      const metric = selectedMetric.value
+      const dateStr = selectedDates.value[0]
 
-      return hours.map(hour => {
+      // Get first compteur's data to determine available hours (API already sorts them)
+      const firstCompteur = visibleCompteurs.value[0]
+      const firstData = firstCompteur ? getMetricDataForDate(dateStr, metric.type, firstCompteur.id) : null
+
+      if (!firstData?.hourlyData || firstData.hourlyData.length === 0) {
+        return [] // No data available
+      }
+
+      // Use hours directly from API response (already sorted)
+      let hourlyRows = firstData.hourlyData.map(h => {
         const row: any = {
-          hour,
-          time: `${hour.toString().padStart(2, '0')}:00`,
+          hour: h.hour,
+          time: `${h.hour.toString()}`,
         }
 
-        // Add columns for each active meter for the selected metric (first selected date)
-        const metric = selectedMetric.value
-        const dateStr = selectedDates.value[0]
+        // Add columns for each active meter with values from API
         visibleCompteurs.value.forEach(compteur => {
           const data = dateStr ? getMetricDataForDate(dateStr, metric.type, compteur.id) : null
-          const hourData = data?.hourlyData.find(h => h.hour === hour)
-          row[compteur.id] = hourData?.value || 0
+          const hourData = data?.hourlyData.find(hd => hd.hour === h.hour)
+          row[compteur.id] = hourData?.value ?? null // null when no data instead of 0
         })
 
         return row
       })
+
+      // Filter out current incomplete hour (if viewing today)
+      const today = new Date()
+      const todayStr = formatDate(today)
+      if (dateStr === todayStr) {
+        const currentHour = today.getHours()
+        // Remove the current incomplete hour (don't show consumption until the hour ends)
+        hourlyRows = hourlyRows.filter(row => row.hour < currentHour)
+      }
+
+      return hourlyRows
     } else {
-      // Daily table: rows per date
+      // Daily table: rows per date with actual data
+      const metric = selectedMetric.value
+
       return selectedDates.value.map(dateStr => {
         const row: any = {
           date: dateStr,
@@ -512,10 +600,10 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         }
 
         // Add columns for each active meter (daily totals) for the selected metric
-        const metric = selectedMetric.value
         visibleCompteurs.value.forEach(compteur => {
           const data = getMetricDataForDate(dateStr, metric.type, compteur.id)
-          const total = data ? calculateFilteredTotal(data.hourlyData) : 0
+          // calculateFilteredTotal now returns null when no data exists
+          const total = data ? calculateFilteredTotal(data.hourlyData) : null
           row[compteur.id] = total
         })
 
@@ -630,6 +718,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     activePeriodPreset.value = 'last7Days'
     // Navigate calendar to current month
     currentMonth.value = new Date(today)
+    // Set loading state immediately
+    loading.value = true
   }
 
   function selectLast30Days() {
@@ -644,6 +734,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     activePeriodPreset.value = 'last30Days'
     // Navigate calendar to current month (30 days might span 2 months)
     currentMonth.value = new Date(today)
+    // Set loading state immediately
+    loading.value = true
   }
 
   function selectThisMonth() {
@@ -657,6 +749,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     activePeriodPreset.value = 'thisMonth'
     // Navigate calendar to current month
     currentMonth.value = new Date(today)
+    // Set loading state immediately
+    loading.value = true
   }
 
   function selectLastMonth() {
@@ -670,6 +764,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     activePeriodPreset.value = 'lastMonth'
     // Navigate calendar to LAST month (not current)
     currentMonth.value = new Date(year, month, 1)
+    // Set loading state immediately
+    loading.value = true
   }
 
   // ===========================
@@ -1229,14 +1325,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
           // 40..110 kWh, peaking mid-day, deterministic noise
           value = 40 + cyclePos * 70 + base * 5
           break
-        case 'co2':
-          // 8..16 kg, proportional to energy
-          value = 8 + cyclePos * 8 + base * 0.8
-          break
-        case 'cost':
-          // 4..10 EUR, proportional to energy
-          value = 4 + cyclePos * 6 + base * 0.5
-          break
+
         case 'consumption':
           // 30..95 kWh, similar to energy but slightly lower
           value = 30 + cyclePos * 65 + base * 4
