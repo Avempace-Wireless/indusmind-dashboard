@@ -24,6 +24,8 @@ export interface TelemetryFetchConfig {
   agg?: AggregationType
   limit?: number
   orderBy?: 'ASC' | 'DESC'
+  calculateDifferential?: boolean  // NEW: Server-side differential calculation
+  period?: 'today' | 'yesterday' | '7days' | '30days'  // NEW: Period context
 }
 
 export interface WidgetDataConfig {

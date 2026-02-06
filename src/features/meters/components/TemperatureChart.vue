@@ -95,8 +95,15 @@ const chartData = computed(() => {
     }
   }
 
-  // Use labels from first sensor (all should have same timestamps)
-  const labels = sensorsWithData.value[0].data.map(point => point.readableDate)
+  // Use labels from first sensor with date and time formatting
+  const labels = sensorsWithData.value[0].data.map(point => {
+    const date = new Date(point.timestamp)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${day}/${month} ${hours}:${minutes}`
+  })
 
   // Create datasets for each sensor
   const datasets = sensorsWithData.value.map((sensor, index) => {
@@ -155,6 +162,21 @@ const chartOptions = computed(() => {
         },
         padding: 12,
         callbacks: {
+          title: function(context: any) {
+            // Show full date and time in tooltip
+            const dataIndex = context[0].dataIndex
+            const sensor = sensorsWithData.value[0]
+            if (sensor && sensor.data[dataIndex]) {
+              const date = new Date(sensor.data[dataIndex].timestamp)
+              const day = date.getDate().toString().padStart(2, '0')
+              const month = (date.getMonth() + 1).toString().padStart(2, '0')
+              const year = date.getFullYear()
+              const hours = date.getHours().toString().padStart(2, '0')
+              const minutes = date.getMinutes().toString().padStart(2, '0')
+              return `${day}/${month}/${year} à ${hours}:${minutes}`
+            }
+            return context[0].label
+          },
           label: function(context: any) {
             const label = context.dataset.label || ''
             const value = context.parsed.y

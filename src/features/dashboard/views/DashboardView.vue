@@ -95,19 +95,18 @@
         <CompteurWidgetSkeleton v-if="dashboardLoading && selectedCompteurs.length > 1" />
       </div>
 
-      <!-- Unified Chart with Side Widgets -->
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <!-- Unified Chart (Energy & Temperature) - Takes 2 columns on XL -->
-        <div class="xl:col-span-2">
+      <!-- Energy and Temperature Charts Side by Side -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <!-- Energy Chart (Left) -->
+        <div>
           <Suspense>
             <template #default>
               <UnifiedChart
-                :mode="chartMode"
-                :period="chartPeriod"
-                :subtitle="unifiedChartSubtitle"
+                mode="energy"
+                :period="energyChartPeriod"
+                :subtitle="$t('dashboard.unifiedChart.energy')"
                 :selected-compteurs="enrichedCompteurs"
-                @update:mode="chartMode = $event"
-                @update:period="chartPeriod = $event"
+                @update:period="energyChartPeriod = $event"
               />
             </template>
             <template #fallback>
@@ -116,28 +115,17 @@
           </Suspense>
         </div>
 
-        <!-- Side Widgets -->
-        <div class="flex flex-col gap-6">
-          <!-- Phase Balance Widget -->
+        <!-- Temperature Chart (Right) -->
+        <div>
           <Suspense>
             <template #default>
-              <PhaseBalance
-                :title="$t('dashboard.phaseBalance.title')"
-                :phases="phaseBalanceData"
-              />
-            </template>
-            <template #fallback>
-              <ChartSkeleton />
-            </template>
-          </Suspense>
-
-          <!-- Events Widget -->
-          <Suspense>
-            <template #default>
-              <EventsWidget
-                :title="$t('dashboard.recentEvents.title')"
-                :action-label="$t('dashboard.recentEvents.viewAll')"
-                :events="recentEvents"
+              <UnifiedChart
+                mode="temperature"
+                :period="temperatureChartPeriod"
+                :subtitle="$t('dashboard.unifiedChart.temperature')"
+                :selected-compteurs="enrichedCompteurs"
+                @update:period="temperatureChartPeriod = $event"
+                is-temperature-api
               />
             </template>
             <template #fallback>
@@ -150,69 +138,185 @@
       <!-- Equipment Status Table -->
       <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-          <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.title') }}</h3>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.title') }}</h3>
+          </div>
+          <!-- Search Bar -->
+          <div class="relative">
+            <input
+              v-model="equipmentSearchQuery"
+              type="text"
+              :placeholder="$t('common.search') || 'Search equipment...'"
+              class="w-full px-4 py-2 pl-10 pr-4 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            />
+            <svg class="absolute left-3 top-2.5 h-5 w-5 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.meter') }}</th>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.type') }}</th>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.status') }}</th>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.currentValue') }}</th>
+                <th
+                  @click="toggleEquipmentSort('name')"
+                  class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <div class="flex items-center gap-2">
+                    {{ $t('dashboard.equipment.columns.meter') }}
+                    <span class="text-xs">
+                      <span v-if="equipmentSortColumn === 'name' && equipmentSortDirection === 'asc'">▲</span>
+                      <span v-else-if="equipmentSortColumn === 'name' && equipmentSortDirection === 'desc'">▼</span>
+                      <span v-else class="text-slate-400">⇅</span>
+                    </span>
+                  </div>
+                </th>
+                <th
+                  @click="toggleEquipmentSort('type')"
+                  class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <div class="flex items-center gap-2">
+                    {{ $t('dashboard.equipment.columns.type') }}
+                    <span class="text-xs">
+                      <span v-if="equipmentSortColumn === 'type' && equipmentSortDirection === 'asc'">▲</span>
+                      <span v-else-if="equipmentSortColumn === 'type' && equipmentSortDirection === 'desc'">▼</span>
+                      <span v-else class="text-slate-400">⇅</span>
+                    </span>
+                  </div>
+                </th>
+                <th
+                  @click="toggleEquipmentSort('status')"
+                  class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <div class="flex items-center gap-2">
+                    {{ $t('dashboard.equipment.columns.status') }}
+                    <span class="text-xs">
+                      <span v-if="equipmentSortColumn === 'status' && equipmentSortDirection === 'asc'">▲</span>
+                      <span v-else-if="equipmentSortColumn === 'status' && equipmentSortDirection === 'desc'">▼</span>
+                      <span v-else class="text-slate-400">⇅</span>
+                    </span>
+                  </div>
+                </th>
+                <th
+                  @click="toggleEquipmentSort('value')"
+                  class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <div class="flex items-center gap-2">
+                    {{ $t('dashboard.equipment.columns.currentValue') }}
+                    <span class="text-xs">
+                      <span v-if="equipmentSortColumn === 'value' && equipmentSortDirection === 'asc'">▲</span>
+                      <span v-else-if="equipmentSortColumn === 'value' && equipmentSortDirection === 'desc'">▼</span>
+                      <span v-else class="text-slate-400">⇅</span>
+                    </span>
+                  </div>
+                </th>
                 <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.unit') }}</th>
-                <th class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.columns.lastUpdate') }}</th>
+                <th
+                  @click="toggleEquipmentSort('lastUpdate')"
+                  class="px-6 py-3 text-left font-semibold text-slate-900 dark:text-white cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <div class="flex items-center gap-2">
+                    {{ $t('dashboard.equipment.columns.lastUpdate') }}
+                    <span class="text-xs">
+                      <span v-if="equipmentSortColumn === 'lastUpdate' && equipmentSortDirection === 'asc'">▲</span>
+                      <span v-else-if="equipmentSortColumn === 'lastUpdate' && equipmentSortDirection === 'desc'">▼</span>
+                      <span v-else class="text-slate-400">⇅</span>
+                    </span>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-              <!-- Energy Meters -->
-              <tr v-for="compteur in enrichedCompteurs" :key="compteur.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ compteur.name }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('dashboard.equipment.columns.energy') }}</td>
+              <!-- Equipment Devices (Meters & Sensors) -->
+              <tr v-for="device in displayedEquipmentDevices" :key="device.deviceUUID" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ device.name }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">
+                  {{ getEquipmentDeviceType(device) === 'meter' ? $t('dashboard.equipment.columns.energy') : $t('dashboard.equipment.columns.temperature') }}
+                </td>
                 <td class="px-6 py-3">
                   <span :class="[
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                    getCompteurStatus(compteur) === 'online'
+                    getEquipmentDeviceStatus(device).isOnline
                       ? 'bg-green-100 dark:bg-green-950 text-green-800 dark:text-green-200'
-                      : getCompteurStatus(compteur) === 'error'
-                      ? 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                   ]">
-                    {{ getCompteurStatusLabel(compteur) }}
+                    {{ getEquipmentDeviceStatus(device).label }}
                   </span>
                 </td>
-                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ (compteur.instantaneous ?? 0).toFixed(1) }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.unit.kw') }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ getCompteurLastUpdate(compteur) }}</td>
-              </tr>
-              <!-- Temperature Zones -->
-              <tr v-for="zone in temperatureZones" :key="zone.id" class="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-medium">{{ zone.name }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('dashboard.equipment.columns.temperature') }}</td>
-                <td class="px-6 py-3">
-                  <span :class="[
-                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                    getTemperatureStatus(zone) === 'normal'
-                      ? 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-200'
-                      : getTemperatureStatus(zone) === 'alert'
-                      ? 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-200'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                  ]">
-                    {{ getTemperatureStatusLabel(zone) }}
-                  </span>
-                </td>
-                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ zone.value.toFixed(1) }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ $t('common.unit.celsius') }}</td>
-                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ getTemperatureLastUpdate(zone) }}</td>
+                <td class="px-6 py-3 text-slate-900 dark:text-slate-100 font-mono">{{ getEquipmentDeviceValue(device) }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ getEquipmentDeviceUnit(device) }}</td>
+                <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ formatEquipmentLastUpdate(device) }}</td>
               </tr>
               <!-- Empty state -->
-              <tr v-if="enrichedCompteurs.length === 0 && temperatureZones.length === 0">
+              <tr v-if="displayedEquipmentDevices.length === 0">
                 <td colspan="6" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
                   {{ $t('dashboard.equipment.noData') }}
                 </td>
               </tr>
             </tbody>
           </table>
+        </div>
+        <!-- Pagination Controls -->
+        <div v-if="equipmentTotalPages > 1" class="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <div class="text-sm text-slate-600 dark:text-slate-400">
+            {{ $t('common.showing') || 'Showing' }}
+            {{ ((equipmentCurrentPage - 1) * equipmentItemsPerPage) + 1 }}-{{ Math.min(equipmentCurrentPage * equipmentItemsPerPage, sortedEquipmentDevices.length) }}
+            {{ $t('common.of') || 'of' }}
+            {{ sortedEquipmentDevices.length }}
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              @click="goToEquipmentPage(1)"
+              :disabled="equipmentCurrentPage === 1"
+              :class="[
+                'px-3 py-1 text-sm rounded border transition-colors',
+                equipmentCurrentPage === 1
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-700 cursor-not-allowed'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+              ]"
+            >
+              &lt;&lt;
+            </button>
+            <button
+              @click="goToEquipmentPage(equipmentCurrentPage - 1)"
+              :disabled="equipmentCurrentPage === 1"
+              :class="[
+                'px-3 py-1 text-sm rounded border transition-colors',
+                equipmentCurrentPage === 1
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-700 cursor-not-allowed'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+              ]"
+            >
+              &lt;
+            </button>
+            <span class="px-4 py-1 text-sm text-slate-700 dark:text-slate-300">
+              {{ equipmentCurrentPage }} / {{ equipmentTotalPages }}
+            </span>
+            <button
+              @click="goToEquipmentPage(equipmentCurrentPage + 1)"
+              :disabled="equipmentCurrentPage === equipmentTotalPages"
+              :class="[
+                'px-3 py-1 text-sm rounded border transition-colors',
+                equipmentCurrentPage === equipmentTotalPages
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-700 cursor-not-allowed'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+              ]"
+            >
+              &gt;
+            </button>
+            <button
+              @click="goToEquipmentPage(equipmentTotalPages)"
+              :disabled="equipmentCurrentPage === equipmentTotalPages"
+              :class="[
+                'px-3 py-1 text-sm rounded border transition-colors',
+                equipmentCurrentPage === equipmentTotalPages
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-700 cursor-not-allowed'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
+              ]"
+            >
+              &gt;&gt;
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -232,8 +336,6 @@ import ChartSkeleton from '@/components/skeletons/ChartSkeleton.vue'
 
 // Lazy load heavy components to improve initial load time
 const UnifiedChart = defineAsyncComponent(() => import('@/components/dashboard/UnifiedChart.vue'))
-const PhaseBalance = defineAsyncComponent(() => import('@/components/dashboard/PhaseBalance.vue'))
-const EventsWidget = defineAsyncComponent(() => import('@/components/dashboard/EventsWidget.vue'))
 
 import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
@@ -243,6 +345,13 @@ import { DEFAULT_WIDGET_CONFIG, getTimeRange } from '@/config/telemetryConfig'
 import { useApiOnly } from '@/config/dataMode'
 import { isFeatureEnabled } from '@/config/featureFlags'
 import { watch } from 'vue'
+import { getAllIndusmindCustomerDevices, type Device } from '@/services/deviceAPI'
+import {
+  fetchAllDevicesLatestTelemetry,
+  formatTelemetryValue,
+  isDeviceActive,
+  type DeviceTelemetryData
+} from '@/services/equipmentTelemetryAPI'
 
 // ============================================================================
 // FEATURE FLAGS
@@ -258,8 +367,13 @@ console.log('[DashboardView] Using new widget system:', useNewWidgetSystem.value
 const { t } = useI18n()
 
 const currentTime = ref(new Date())
-const chartMode = ref<'energy' | 'temperature'>('energy')
-const chartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('today')
+const energyChartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('today')
+const temperatureChartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('today')
+
+// Equipment table state
+const allEquipmentDevices = ref<Device[]>([])
+const equipmentTelemetry = ref<Map<string, DeviceTelemetryData>>(new Map())
+let equipmentTelemetryInterval: ReturnType<typeof setInterval> | null = null
 
 // ✅ HANDLE MODAL VISIBILITY WITH LOCAL STATE
 const showCompteurSelector = ref(false)
@@ -285,7 +399,10 @@ const {
 // Telemetry composable for real API data
 const {
   fetchBatchTelemetry,
+  fetchBatchTelemetryOptimized, // ⚡ use optimized single backend call
   fetchCurrentValue,
+  fetchTelemetry,
+  fetchHourlyDifferential,
   loading: telemetryLoading,
   error: telemetryError,
 } = useTelemetryDynamic()
@@ -309,6 +426,13 @@ const isApiOnlyMode = computed(() => useApiOnly())
 
 // Track telemetry fetch status
 const telemetryFetchStatus = ref<'idle' | 'loading' | 'success' | 'failed' | 'no-devices' | 'no-data'>('idle')
+
+// Equipment table state - search, pagination, and sorting
+const equipmentSearchQuery = ref('')
+const equipmentCurrentPage = ref(1)
+const equipmentItemsPerPage = ref(5)
+const equipmentSortColumn = ref<'name' | 'type' | 'status' | 'value' | 'lastUpdate'>('name')
+const equipmentSortDirection = ref<'asc' | 'desc'>('asc')
 
 // ============================================================================
 // COMPUTED PROPERTIES
@@ -391,49 +515,9 @@ const unifiedChartSubtitle = computed(() => {
 
 /**
  * Temperature zones data for equipment table
- * Dynamically fetched from API or uses fallback data
+ * Note: This has been replaced by the displayedEquipmentDevices computed property
+ * which uses real API data from ThingsBoard. Keeping as comment for reference.
  */
-const temperatureZones = computed(() => {
-  // If in API-only mode and no cached data, return empty or show no-data state
-  if (isApiOnlyMode.value && temperatureTelemetryCache.value.size === 0) {
-    return []
-  }
-
-  // Use cached temperature data if available
-  const zones = []
-
-  // Zone 6 (ZAP2 SLS)
-  const zone6Data = temperatureTelemetryCache.value.get('zone-6')
-  zones.push({
-    id: 'zone-6',
-    name: t('temperature.zones.zone6'),
-    value: zone6Data?.value ?? (isApiOnlyMode.value ? 0 : 48.6),
-    status: zone6Data?.status ?? 'Normal',
-    lastUpdate: zone6Data?.lastUpdate ?? t('common.justNow')
-  })
-
-  // Zone 4 (ZAP2 EM)
-  const zone4Data = temperatureTelemetryCache.value.get('zone-4')
-  zones.push({
-    id: 'zone-4',
-    name: t('temperature.zones.zone4'),
-    value: zone4Data?.value ?? (isApiOnlyMode.value ? 0 : -17.2),
-    status: zone4Data?.status ?? (isApiOnlyMode.value ? t('common.noData') : t('dashboard.equipment.status.alert')),
-    lastUpdate: zone4Data?.lastUpdate ?? (isApiOnlyMode.value ? t('common.noData') : '1 min ago')
-  })
-
-  // Zone 1 (ZAP 1&3)
-  const zone1Data = temperatureTelemetryCache.value.get('zone-1')
-  zones.push({
-    id: 'zone-1',
-    name: t('temperature.zones.zone1'),
-    value: zone1Data?.value ?? (isApiOnlyMode.value ? 0 : 56.3),
-    status: zone1Data?.status ?? 'Normal',
-    lastUpdate: zone1Data?.lastUpdate ?? t('common.justNow')
-  })
-
-  return zones
-})
 
 const recentEvents = computed(() => {
   return alertsStore.alerts.slice(0, 3).map((alert) => {
@@ -568,7 +652,6 @@ async function fetchTelemetryData() {
   try {
     // Get instantaneous config from telemetryConfig
     const instantConfig = DEFAULT_WIDGET_CONFIG.instantaneousReadings
-    const dailyConfig = DEFAULT_WIDGET_CONFIG.dailyReadings
 
     // Calculate time ranges
     const now = Date.now()
@@ -602,17 +685,6 @@ async function fetchTelemetryData() {
           orderBy: 'DESC' as const
         }
       },
-      // Yesterday's hourly readings (yesterday's breakdown)
-      {
-        deviceUUID: compteur.deviceUUID!,
-        config: {
-          keys: [DEFAULT_WIDGET_CONFIG.dailyReadings.keys[0]], // Use deltaHourEnergyConsumtion for hourly
-          startTs: yesterdayStart,
-          endTs: yesterdayEnd,
-          interval: 60 * 60 * 1000, // 1 hour
-          agg: 'SUM' as const
-        }
-      },
       // Instantaneous readings (time-series chart data)
       {
         deviceUUID: compteur.deviceUUID!,
@@ -623,29 +695,67 @@ async function fetchTelemetryData() {
           interval: instantConfig.interval,
           agg: instantConfig.agg
         }
-      },
-      // Daily hourly readings (today's hourly breakdown)
-      {
-        deviceUUID: compteur.deviceUUID!,
-        config: {
-          keys: dailyConfig.keys,
-          startTs: todayStart,
-          endTs: todayEnd,
-          interval: dailyConfig.interval,
-          agg: dailyConfig.agg
-        }
       }
     ])
 
-    console.log(`[DashboardView] Batch fetching ${batchRequests.length} requests for ${compteursWithUUID.length} devices`)
+    // ========================================================================
+    // DIFFERENTIAL METHOD: Fetch today's AND yesterday's hourly readings
+    // using accumulated energy with interval-based aggregation
+    // Instead of 25 separate boundary requests, use 1 request with interval
+    // IMPORTANT: Start 1 interval BEFORE the period to capture the boundary point
+    // ========================================================================
 
-    // Execute batch fetch (parallel, with caching & deduplication)
-    const results = await fetchBatchTelemetry(batchRequests)
+    const HOUR_INTERVAL = 60 * 60 * 1000 // 1 hour interval
 
-    console.log('[DashboardView] Raw batch results from fetchBatchTelemetry:', results)
+    // Add today's accumulated energy request with hourly interval
+    // NOTE: Start from 1 hour before todayStart to ensure we capture the 00h boundary
+    batchRequests.push(
+      ...compteursWithUUID.map(compteur => ({
+        deviceUUID: compteur.deviceUUID!,
+        config: {
+          keys: ['AccumulatedActiveEnergyDelivered'],
+          startTs: todayStart - HOUR_INTERVAL,  // ← Include data BEFORE 00h to capture 00h point
+          endTs: todayEnd,
+          interval: HOUR_INTERVAL,
+          agg: 'MAX' as const,
+          calculateDifferential: true,
+          period: 'today' as const
+        }
+      }))
+    )
+
+    // Add yesterday's accumulated energy request with hourly interval
+    // NOTE: Start from 1 hour before yesterdayStart to ensure we capture the boundary
+    batchRequests.push(
+      ...compteursWithUUID.map(compteur => ({
+        deviceUUID: compteur.deviceUUID!,
+        config: {
+          keys: ['AccumulatedActiveEnergyDelivered'],
+          startTs: yesterdayStart - HOUR_INTERVAL,  // ← Include data BEFORE boundary
+          endTs: yesterdayEnd,
+          interval: HOUR_INTERVAL,
+          agg: 'MAX' as const,
+          calculateDifferential: true,
+          period: 'yesterday' as const
+        }
+      }))
+    )
+
+    console.log(`[DashboardView] 🎯 Batch requests breakdown:`)
+    console.log(`  - Static requests: 3 per meter (current, today energy, instantaneous)`)
+    console.log(`  - Today hourly: 1 request per meter (interval=1h)`)
+    console.log(`  - Yesterday hourly: 1 request per meter (interval=1h)`)
+    console.log(`  - Total: ${batchRequests.length} requests for ${compteursWithUUID.length} meters`)
+
+    console.log(`[DashboardView] ⚡ Fetching ${batchRequests.length} requests for ${compteursWithUUID.length} devices in 1 batch API call`)
+
+    // Execute optimized batch fetch (SINGLE backend call for everything)
+    const results = await fetchBatchTelemetryOptimized(batchRequests)
+
+    console.log('[DashboardView] ✓ Batch results received:', results)
     console.log('[DashboardView] Results type:', typeof results, 'isMap:', results instanceof Map)
 
-    // Process results and update cache
+    // Process results and update cache (yesterday data is already in the results!)
     let hasAnyData = false
     compteursWithUUID.forEach(compteur => {
       const deviceData = results.get(compteur.deviceUUID!) || []
@@ -660,34 +770,107 @@ async function fetchTelemetryData() {
         hasAnyData = true
       }
 
-      // Extract values by key - separate by purpose
-      // Latest instantaneous power (single value from last 24h, most recent)
-      const currentPowerData = deviceData
-        .filter(d => d.key === DEFAULT_WIDGET_CONFIG.instantaneous.key)
-        .sort((a, b) => b.ts - a.ts)
-        .slice(0, 1)
+      // Today's hourly readings - CALCULATE DIFFERENTIAL from interval-aggregated values
+      // API returns accumulated values at each hour, we need to calculate consumption deltas
+      // NOTE: Filter to todayStart onwards to exclude the pre-boundary data point
+      const todayAccumulatedRaw = deviceData
+        .filter(d => d.key === 'AccumulatedActiveEnergyDelivered' && d.ts >= todayStart - HOUR_INTERVAL && d.ts < todayEnd)
+        .sort((a, b) => a.ts - b.ts)
 
-      // Today's cumulative energy (single latest value from today)
-      // Request had limit=1, so take the first/only result
-      const todayEnergyData = deviceData
-        .filter(d => d.key === DEFAULT_WIDGET_CONFIG.daily.key && d.ts >= todayStart && d.ts < todayEnd)
-        .sort((a, b) => b.ts - a.ts)
-        .slice(0, 1)
+      console.log(`[DashboardView] Today accumulated values for ${compteur.name}:`, {
+        count: todayAccumulatedRaw.length,
+        data: todayAccumulatedRaw.map(v => ({
+          ts: new Date(v.ts).toLocaleTimeString(),
+          value: v.value
+        }))
+      })
 
-      // Yesterday's hourly readings (from yesterday with hourly intervals)
-      const yesterdayReadings = deviceData
-        .filter(d => d.key === DEFAULT_WIDGET_CONFIG.dailyReadings.keys[0] && d.ts >= yesterdayStart && d.ts < todayStart)
-        .sort((a, b) => a.ts - b.ts) // oldest first for charts
+      // Calculate hourly consumption from consecutive accumulated values
+      // Include all points starting from the pre-boundary point, then filter results to todayStart
+      const todayReadings: typeof deviceData = []
+      for (let i = 0; i < todayAccumulatedRaw.length - 1; i++) {
+        const current = todayAccumulatedRaw[i + 1]
+        const previous = todayAccumulatedRaw[i]
+        const currentValue = parseFloat(String(current.value))
+        const previousValue = parseFloat(String(previous.value))
+        const consumption = Math.max(0, currentValue - previousValue)
+
+        // Only include reading if the current point is within today's range
+        if (current.ts >= todayStart && current.ts < todayEnd) {
+          todayReadings.push({
+            ts: current.ts,
+            value: consumption,
+            key: 'AccumulatedActiveEnergyDelivered'
+          })
+        }
+      }
+
+      console.log(`[DashboardView] Today hourly readings (calculated differential) for ${compteur.name}:`, {
+        hoursProcessed: todayReadings.length,
+        data: todayReadings.map(d => ({
+          time: new Date(d.ts).toLocaleTimeString(),
+          value: d.value
+        }))
+      })
+
+      // Yesterday's hourly readings - CALCULATE DIFFERENTIAL from interval-aggregated values
+      // NOTE: Filter to include pre-boundary data for differential calculation
+      const yesterdayAccumulatedRaw = deviceData
+        .filter(d => d.key === 'AccumulatedActiveEnergyDelivered' && d.ts >= yesterdayStart - HOUR_INTERVAL && d.ts < todayStart)
+        .sort((a, b) => a.ts - b.ts)
+
+      console.log(`[DashboardView] Yesterday accumulated values for ${compteur.name}:`, {
+        count: yesterdayAccumulatedRaw.length,
+        data: yesterdayAccumulatedRaw.map(v => ({
+          ts: new Date(v.ts).toLocaleTimeString(),
+          value: v.value
+        }))
+      })
+
+      // Calculate hourly consumption from consecutive accumulated values
+      // Include all points starting from the pre-boundary point, then filter results to yesterdayStart-yesterdayEnd
+      const yesterdayReadings: typeof deviceData = []
+      for (let i = 0; i < yesterdayAccumulatedRaw.length - 1; i++) {
+        const current = yesterdayAccumulatedRaw[i + 1]
+        const previous = yesterdayAccumulatedRaw[i]
+        const currentValue = parseFloat(String(current.value))
+        const previousValue = parseFloat(String(previous.value))
+        const consumption = Math.max(0, currentValue - previousValue)
+
+        // Only include reading if the current point is within yesterday's range
+        if (current.ts >= yesterdayStart && current.ts < yesterdayEnd) {
+          yesterdayReadings.push({
+            ts: current.ts,
+            value: consumption,
+            key: 'AccumulatedActiveEnergyDelivered'
+          })
+        }
+      }
+
+      console.log(`[DashboardView] Yesterday hourly readings (calculated differential) for ${compteur.name}:`, {
+        hoursProcessed: yesterdayReadings.length,
+        data: yesterdayReadings.map(d => ({
+          time: new Date(d.ts).toLocaleTimeString(),
+          value: d.value
+        }))
+      })
 
       // Instantaneous readings (last hour, 5-min intervals, ActivePowerTotal)
       const instantReadings = deviceData
         .filter(d => instantConfig.keys.includes(d.key) && d.ts > now - instantConfig.timeRange)
         .sort((a, b) => a.ts - b.ts)
 
-      // Today's hourly readings (today, hourly intervals, SUM aggregation)
-      const todayReadings = deviceData
-        .filter(d => dailyConfig.keys.includes(d.key) && d.ts >= todayStart && d.ts < todayEnd)
-        .sort((a, b) => a.ts - b.ts)
+      // Extract current power (latest ActivePowerTotal)
+      const currentPowerData = deviceData
+        .filter(d => d.key === 'ActivePowerTotal')
+        .sort((a, b) => b.ts - a.ts)
+        .slice(0, 1)
+
+      // Extract today's energy (latest AccumulatedActiveEnergyDelivered for today)
+      const todayEnergyData = deviceData
+        .filter(d => d.key === 'AccumulatedActiveEnergyDelivered' && d.ts >= todayStart && d.ts < todayEnd)
+        .sort((a, b) => b.ts - a.ts)
+        .slice(0, 1)
 
       // Calculate total yesterday energy consumption
       const yesterdayEnergyTotal = yesterdayReadings.length > 0
@@ -751,7 +934,7 @@ async function fetchTelemetryData() {
       telemetryFetchStatus.value = 'no-data'
 
       // Clear cache when in API-only mode and API fails
-      telemetryCache.value.clear()
+      telemetryCache.value = {}
 
       // Don't use mock data - show "no data available"
       selectedCompteurs.value.forEach(compteur => {
@@ -895,10 +1078,267 @@ onMounted(async () => {
   // Fetch initial temperature data
   await fetchTemperatureData()
 
+  // Fetch equipment devices and telemetry for table
+  await fetchEquipmentDevices()
+
   // Update time display every second (no API calls)
   timeInterval = window.setInterval(() => {
     currentTime.value = new Date()
   }, 1000)
+})
+
+// ============================================================================
+// EQUIPMENT TABLE FUNCTIONS (API-based like EquipmentView)
+// ============================================================================
+
+/**
+ * Fetch all equipment devices and their telemetry
+ */
+async function fetchEquipmentDevices() {
+  try {
+    allEquipmentDevices.value = await getAllIndusmindCustomerDevices()
+    await fetchEquipmentTelemetry()
+
+    // Set up auto-refresh every 10 seconds
+    equipmentTelemetryInterval = setInterval(fetchEquipmentTelemetry, 10000)
+  } catch (err) {
+    console.error('[DashboardView] Error fetching equipment devices:', err)
+  }
+}
+
+/**
+ * Fetch telemetry for all equipment devices
+ */
+async function fetchEquipmentTelemetry() {
+  try {
+    const telemetryList = await fetchAllDevicesLatestTelemetry()
+    const telemetryMap = new Map<string, DeviceTelemetryData>()
+    telemetryList.forEach(data => {
+      telemetryMap.set(data.deviceUUID, data)
+    })
+    equipmentTelemetry.value = telemetryMap
+  } catch (err) {
+    console.error('[DashboardView] Error fetching equipment telemetry:', err)
+  }
+}
+
+/**
+ * Get device type enum (meter, sensor, controller)
+ */
+function getEquipmentDeviceType(device: Device): string {
+  if (device.name.includes('PM2200')) return 'meter'
+  if (device.name.includes('t_sensor') || device.name.includes('Sensor')) return 'sensor'
+  if (device.name.includes('_controller') || device.name.includes('Controller')) return 'controller'
+  return 'meter'
+}
+
+/**
+ * Get device value for display
+ */
+function getEquipmentDeviceValue(device: Device): string {
+  const telemetry = equipmentTelemetry.value.get(device.deviceUUID)
+  if (!telemetry || !telemetry.telemetry) return '--'
+
+  const type = getEquipmentDeviceType(device)
+  let primaryKey = 'ActivePowerTotal'
+
+  if (type === 'meter') {
+    primaryKey = 'ActivePowerTotal'
+  } else if (type === 'sensor') {
+    primaryKey = 'Temperature'
+  } else if (type === 'controller') {
+    primaryKey = 'active'
+  }
+
+  const value = telemetry.telemetry[primaryKey]?.value
+  return formatTelemetryValue(value, primaryKey)
+}
+
+/**
+ * Get device status
+ */
+function getEquipmentDeviceStatus(device: Device): { label: string; isOnline: boolean } {
+  const telemetry = equipmentTelemetry.value.get(device.deviceUUID)
+  if (!telemetry) {
+    return { label: t('dashboard.equipment.status.offline'), isOnline: false }
+  }
+
+  const active = isDeviceActive(telemetry.lastActivityTime)
+  return {
+    label: active ? t('dashboard.equipment.status.online') : t('dashboard.equipment.status.offline'),
+    isOnline: active
+  }
+}
+
+/**
+ * Get device unit
+ */
+function getEquipmentDeviceUnit(device: Device): string {
+  const type = getEquipmentDeviceType(device)
+  if (type === 'meter') return t('common.unit.kw')
+  if (type === 'sensor') return t('common.unit.celsius')
+  return '--'
+}
+
+/**
+ * Get device last update timestamp
+ */
+function getEquipmentLastUpdate(device: Device): number | null {
+  const telemetry = equipmentTelemetry.value.get(device.deviceUUID)
+  if (!telemetry) return null
+
+  const type = getEquipmentDeviceType(device)
+  let primaryKey = 'ActivePowerTotal'
+
+  if (type === 'meter') {
+    primaryKey = 'ActivePowerTotal'
+  } else if (type === 'sensor') {
+    primaryKey = 'Temperature'
+  } else if (type === 'controller') {
+    primaryKey = 'active'
+  }
+
+  return telemetry.telemetry[primaryKey]?.ts || telemetry.lastActivityTime || null
+}
+
+/**
+ * Format last update for display
+ */
+function formatEquipmentLastUpdate(device: Device): string {
+  const lastUpdate = getEquipmentLastUpdate(device)
+  if (!lastUpdate) return '--'
+
+  try {
+    const date = new Date(lastUpdate)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMins / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffMins < 1) return t('equipment.table.justNow')
+    if (diffMins < 60) return t('equipment.table.minutesAgo', { n: diffMins })
+    if (diffHours < 24) return t('equipment.table.hoursAgo', { n: diffHours })
+    if (diffDays < 7) return t('equipment.table.daysAgo', { n: diffDays })
+
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  } catch {
+    return '--'
+  }
+}
+
+/**
+ * Filter equipment devices to show only relevant ones in dashboard
+ */
+const filteredEquipmentDevices = computed(() => {
+  // Show meters and sensors only (not controllers)
+  return allEquipmentDevices.value.filter(device => {
+    const type = getEquipmentDeviceType(device)
+    return type === 'meter' || type === 'sensor'
+  })
+})
+
+/**
+ * Search filtered equipment devices
+ */
+const searchedEquipmentDevices = computed(() => {
+  if (!equipmentSearchQuery.value.trim()) {
+    return filteredEquipmentDevices.value
+  }
+
+  const query = equipmentSearchQuery.value.toLowerCase().trim()
+  return filteredEquipmentDevices.value.filter(device => {
+    return (
+      device.name.toLowerCase().includes(query) ||
+      getEquipmentDeviceType(device).toLowerCase().includes(query) ||
+      getEquipmentDeviceStatus(device).label.toLowerCase().includes(query)
+    )
+  })
+})
+
+/**
+ * Sort searched equipment devices
+ */
+const sortedEquipmentDevices = computed(() => {
+  const devices = [...searchedEquipmentDevices.value]
+
+  devices.sort((a, b) => {
+    let aValue: any
+    let bValue: any
+
+    switch (equipmentSortColumn.value) {
+      case 'name':
+        aValue = a.name.toLowerCase()
+        bValue = b.name.toLowerCase()
+        break
+      case 'type':
+        aValue = getEquipmentDeviceType(a)
+        bValue = getEquipmentDeviceType(b)
+        break
+      case 'status':
+        aValue = getEquipmentDeviceStatus(a).isOnline ? 1 : 0
+        bValue = getEquipmentDeviceStatus(b).isOnline ? 1 : 0
+        break
+      case 'value':
+        aValue = parseFloat(getEquipmentDeviceValue(a)) || 0
+        bValue = parseFloat(getEquipmentDeviceValue(b)) || 0
+        break
+      case 'lastUpdate':
+        aValue = getEquipmentLastUpdate(a) || 0
+        bValue = getEquipmentLastUpdate(b) || 0
+        break
+      default:
+        return 0
+    }
+
+    if (aValue < bValue) return equipmentSortDirection.value === 'asc' ? -1 : 1
+    if (aValue > bValue) return equipmentSortDirection.value === 'asc' ? 1 : -1
+    return 0
+  })
+
+  return devices
+})
+
+/**
+ * Paginated equipment devices for display
+ */
+const displayedEquipmentDevices = computed(() => {
+  const start = (equipmentCurrentPage.value - 1) * equipmentItemsPerPage.value
+  const end = start + equipmentItemsPerPage.value
+  return sortedEquipmentDevices.value.slice(start, end)
+})
+
+/**
+ * Total pages for pagination
+ */
+const equipmentTotalPages = computed(() => {
+  return Math.ceil(sortedEquipmentDevices.value.length / equipmentItemsPerPage.value)
+})
+
+/**
+ * Helper to toggle sort column and direction
+ */
+function toggleEquipmentSort(column: 'name' | 'type' | 'status' | 'value' | 'lastUpdate') {
+  if (equipmentSortColumn.value === column) {
+    equipmentSortDirection.value = equipmentSortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    equipmentSortColumn.value = column
+    equipmentSortDirection.value = 'asc'
+  }
+}
+
+/**
+ * Helper to change page
+ */
+function goToEquipmentPage(page: number) {
+  if (page >= 1 && page <= equipmentTotalPages.value) {
+    equipmentCurrentPage.value = page
+  }
+}
+
+// Reset to page 1 when search changes
+watch(equipmentSearchQuery, () => {
+  equipmentCurrentPage.value = 1
 })
 
 // Watch for compteur selection changes and fetch telemetry
@@ -908,6 +1348,17 @@ watch(selectedCompteurs, async (newCompteurs) => {
   }
 }, { deep: true })
 
+// Watch for chart period changes and refetch data
+watch([energyChartPeriod, temperatureChartPeriod], async ([newEnergyPeriod, newTempPeriod]) => {
+  console.log('[DashboardView] Chart periods changed:', {
+    energy: newEnergyPeriod,
+    temperature: newTempPeriod
+  })
+  // Chart period changes will be handled by UnifiedChart components
+  // which will request data for the new period
+  // This is just for logging/debugging
+}, { deep: true })
+
 onUnmounted(() => {
   // Stop real-time data updates
   stopRealtimeData()
@@ -915,6 +1366,11 @@ onUnmounted(() => {
   // Clear time interval
   if (timeInterval) {
     clearInterval(timeInterval)
+  }
+
+  // Clear equipment telemetry interval
+  if (equipmentTelemetryInterval) {
+    clearInterval(equipmentTelemetryInterval)
   }
 })
 
@@ -983,51 +1439,9 @@ function getCompteurLastUpdate(compteur: any): string {
 }
 
 /**
- * Get dynamic status for a temperature zone
- * Uses the status from zone data (from API or computed)
+ * Legacy temperature zone helper functions
+ * Note: These have been replaced by equipment helper functions (getEquipmentDeviceStatus, etc.)
+ * Kept as comment for reference
  */
-function getTemperatureStatus(zone: any): 'normal' | 'alert' | 'offline' {
-  // Check if we have valid data
-  if (!zone.value || zone.value === 0) return 'offline'
 
-  // Use the status from the zone data
-  // The status can be 'Normal', a translation key, or 'Alert'
-  const zoneStatus = zone.status
-  if (typeof zoneStatus === 'string') {
-    const statusLower = zoneStatus.toLowerCase()
-    if (statusLower.includes('alert') || statusLower.includes('alerte')) {
-      return 'alert'
-    }
-  }
-
-  return 'normal'
-}
-
-/**
- * Get localized status label for a temperature zone
- */
-function getTemperatureStatusLabel(zone: any): string {
-  const status = getTemperatureStatus(zone)
-  switch (status) {
-    case 'normal':
-      return 'Normal'
-    case 'alert':
-      return zone.status // Return the original status (already translated)
-    case 'offline':
-      return isApiOnlyMode.value ? t('common.noData') : t('dashboard.equipment.status.offline')
-  }
-}
-
-/**
- * Get last update time for a temperature zone
- */
-function getTemperatureLastUpdate(zone: any): string {
-  // For temperature zones, use the lastUpdate from zone data
-  // In API-only mode, check if data is available
-  if (isApiOnlyMode.value && (!zone.value || zone.value === 0)) {
-    return t('common.noData')
-  }
-
-  return zone.lastUpdate || t('common.justNow')
-}
 </script>

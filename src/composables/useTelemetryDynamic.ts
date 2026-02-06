@@ -60,14 +60,678 @@ function isCacheValid(cache: TelemetryCache): boolean {
   return Date.now() - cache.fetchedAt < CACHE_TTL
 }
 
+
+/**
+ * Helper: Calculate hourly consumption using differential method
+ * DEPRECATED: Use calculateDifferentialConsumptionOptimized instead (moved inside useTelemetryDynamic)
+ *
+ * @param deviceUUID - Device to fetch from
+ * @param startTs - Start of period (e.g., midnight)
+ * @param endTs - End of period (e.g., now)
+ * @param fetchFn - Fetch function to use
+ * @returns Array of hourly consumption values
+ */
+async function calculateDifferentialConsumption(
+  deviceUUID: string,
+  startTs: number,
+  endTs: number,
+  fetchFn: (deviceUUID: string, config: TelemetryFetchConfig) => Promise<TelemetryDataPoint[]>,
+  key: string = 'AccumulatedActiveEnergyDelivered'
+): Promise<TelemetryDataPoint[]> {
+  const now = Date.now()
+
+  // Calculate hour boundaries
+  const hoursInPeriod = Math.ceil((endTs - startTs) / (60 * 60 * 1000))
+  const boundaryTimestamps: number[] = [startTs]
+
+  for (let i = 1; i <= hoursInPeriod; i++) {
+    boundaryTimestamps.push(startTs + i * 60 * 60 * 1000)
+  }
+
+  // Fetch all accumulated values in parallel with ±1 minute tolerance
+  const fetchPromises = boundaryTimestamps.map((timestamp) =>
+    fetchFn(deviceUUID, {
+      keys: [key],
+      startTs: timestamp - 60 * 1000, // 1 minute before
+      endTs: timestamp + 60 * 1000, // 1 minute after
+      agg: 'MAX',
+      limit: 1,
+      orderBy: 'DESC'
+    }).catch(() => []) // Handle timeouts gracefully
+  )
+
+  const responses = await Promise.all(fetchPromises)
+
+  // Extract accumulated values at each boundary
+  const boundaryValues = responses.map((data) => {
+    if (data.length === 0) return null
+    return data[0].value
+  })
+
+  // Compute consumption for each hour
+  const consumptionData: TelemetryDataPoint[] = []
+
+  for (let i = 0; i < hoursInPeriod; i++) {
+    const currentValue = boundaryValues[i + 1] // Value at end of hour
+    const previousValue = boundaryValues[i] // Value at start of hour
+    const hourEndTimestamp = boundaryTimestamps[i + 1]
+
+    // Skip if we don't have current value
+    if (currentValue === null) continue
+
+    // If we don't have previous value, return 0 (can't compute difference)
+    const consumption = previousValue === null ? 0 : currentValue - previousValue
+
+    consumptionData.push({
+      ts: hourEndTimestamp,
+      value: Math.max(0, consumption), // Ensure non-negative
+      key
+    })
+  }
+
+  return consumptionData
+}
+
 export function useTelemetryDynamic() {
   const loading = ref(false)
   const error = ref<Error | null>(null)
 
   /**
+   * UNIFIED BATCH API: Make a SINGLE consolidated API call
+   *
+   * This is the ONE AND ONLY batch fetch function.
+   * All other batch functions should call this internally.
+   *
+   * @param requests - Array of requests with different time ranges, keys, aggregations
+   * @returns Map of deviceUUID -> array of TelemetryDataPoint[]
+   */
+  async function fetchBatchTelemetryOptimized(
+    requests: Array<{ deviceUUID: string; config: TelemetryFetchConfig }>
+  ): Promise<Map<string, TelemetryDataPoint[]>> {
+    if (requests.length === 0) return new Map()
+
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+
+    // Consolidate all requests into single batch payload
+    const batchPayload = {
+      requests: requests.map(r => ({
+        deviceUUID: r.deviceUUID,
+        keys: r.config.keys,
+        startTs: r.config.startTs,
+        endTs: r.config.endTs,
+        interval: r.config.interval,
+        agg: r.config.agg ? String(r.config.agg).toUpperCase() : undefined,
+        limit: r.config.limit,
+        orderBy: r.config.orderBy ? String(r.config.orderBy).toUpperCase() : undefined,
+        useStrictDataTypes: (r.config as any).useStrictDataTypes,
+        calculateDifferential: r.config.calculateDifferential,  // NEW: Pass to backend
+        period: r.config.period  // NEW: Pass period context to backend
+      }))
+    }
+
+    console.log(`[useTelemetryDynamic] 🚀 BATCH API with ${requests.length} requests (${requests.reduce((sum, r) => sum + r.config.keys.length, 0)} keys total)`)
+
+    try {
+      console.log('[BATCH CALL] fetchBatchTelemetryOptimized')
+      const start = performance.now()
+      const response = await fetch(`${backendUrl}/telemetry/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(batchPayload)
+      })
+
+      if (!response.ok) {
+        throw new Error(`Batch API Error: ${response.status} ${response.statusText}`)
+      }
+
+      const responseData = await response.json()
+      const ms = Math.round(performance.now() - start)
+      console.log(`[useTelemetryDynamic] ✓ Batch succeeded in ${ms}ms for ${Object.keys(responseData).length} devices`)
+
+      const results = new Map<string, TelemetryDataPoint[]>()
+
+      // Parse response and return as map for easy consumption
+      for (const [deviceUUID, deviceData] of Object.entries(responseData)) {
+        const dataPoints: TelemetryDataPoint[] = []
+
+        if (deviceData && typeof deviceData === 'object') {
+          for (const [key, values] of Object.entries(deviceData)) {
+            if (Array.isArray(values)) {
+              for (const point of values) {
+                if (point && typeof point === 'object' && 'ts' in point && 'value' in point) {
+                  dataPoints.push({
+                    ts: point.ts as number,
+                    value: typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number),
+                    key
+                  })
+                }
+              }
+            }
+          }
+        }
+        results.set(deviceUUID, dataPoints)
+      }
+
+      return results
+    } catch (err) {
+      console.error('[useTelemetryDynamic] Batch failed:', err)
+      throw err
+    }
+  }
+
+  /**
+   * @deprecated Use fetchBatchTelemetryOptimized directly
+   * This is now just an alias to avoid breaking existing code
+   */
+  async function fetchConsolidatedBatch(
+    requests: Array<{ deviceUUID: string; config: TelemetryFetchConfig }>
+  ): Promise<Map<string, TelemetryDataPoint[]>> {
+    return fetchBatchTelemetryOptimized(requests)
+  }
+
+  /**
+   * MASTER CONSOLIDATION: Fetch all device data in ONE API call
+   *
+   * This makes ONLY ONE /batch API call with ALL requests consolidated
+   * For differential calculations, it builds ALL hour boundary requests upfront
+   *
+   * BEST WAY TO USE: Instead of making multiple separate calls:
+   * ```ts
+   * // ❌ BAD - Makes 5 API calls
+   * const today = await fetchTodayHourly(deviceUUID)
+   * const yesterday = await fetchYesterdayHourly(deviceUUID)
+   * const current = await fetchCurrentValue(deviceUUID)
+   * const instantaneous = await fetchInstantaneous(deviceUUID)
+   * const chart = await fetchChartData(...)
+   *
+   * // ✅ GOOD - Makes 1 API call (ONLY ONE!)
+   * const allData = await fetchAllDeviceDataUnified(deviceUUID, {
+   *   currentValue: true,
+   *   todayHourly: true,
+   *   yesterdayHourly: true
+   * })
+   * const { currentValue, todayHourly, yesterdayHourly } = allData
+   * ```
+   *
+   * @param deviceUUID - Device to fetch data for
+   * @param requirements - Which data types are needed
+   * @returns Organized response with data keyed by type
+   */
+  async function fetchAllDeviceDataUnified(
+    deviceUUID: string,
+    requirements: {
+      currentValue?: boolean
+      instantaneous?: boolean
+      todayHourly?: boolean
+      yesterdayHourly?: boolean
+      chartData?: boolean
+      todayOnly?: boolean
+      lastDays?: number
+    } = {}
+  ): Promise<{
+    currentValue?: number
+    instantaneous?: TelemetryDataPoint[]
+    todayHourly?: TelemetryDataPoint[]
+    yesterdayHourly?: TelemetryDataPoint[]
+    chartData?: TelemetryDataPoint[]
+    allData?: TelemetryDataPoint[]
+  }> {
+    const now = Date.now()
+    const allRequests: Array<{ deviceUUID: string; config: TelemetryFetchConfig }> = []
+
+    console.log(`[useTelemetryDynamic] 🎯 UNIFIED CONSOLIDATION: Building ALL requests for 1 API call`)
+    console.log(`[useTelemetryDynamic] Requirements:`, requirements)
+
+    // 1. Current instantaneous value (latest)
+    if (requirements.currentValue) {
+      allRequests.push({
+        deviceUUID,
+        config: {
+          keys: ['ActivePowerTotal'],
+          startTs: now - 1000,
+          endTs: now,
+          limit: 1,
+          orderBy: 'DESC' as const
+        }
+      })
+    }
+
+    // 2. Instantaneous readings (last 30 min, 5 min intervals)
+    if (requirements.instantaneous) {
+      allRequests.push({
+        deviceUUID,
+        config: {
+          keys: ['ActivePowerTotal'],
+          startTs: now - 30 * 60 * 1000,
+          endTs: now,
+          interval: 5 * 60 * 1000,
+          agg: 'AVG' as const
+        }
+      })
+    }
+
+    // 3. Today's hourly - fetch ALL hour boundaries upfront (don't do differential calc later!)
+    if (requirements.todayHourly) {
+      const midnight = new Date()
+      midnight.setHours(0, 0, 0, 0)
+      const midnightMs = midnight.getTime()
+
+      // Build requests for each hour boundary TODAY
+      const hoursInPeriod = Math.ceil((now - midnightMs) / (60 * 60 * 1000))
+      for (let i = 0; i <= hoursInPeriod; i++) {
+        const timestamp = midnightMs + i * 60 * 60 * 1000
+        allRequests.push({
+          deviceUUID,
+          config: {
+            keys: ['AccumulatedActiveEnergyDelivered'],
+            startTs: timestamp - 60 * 1000,
+            endTs: timestamp + 60 * 1000,
+            agg: 'MAX' as const,
+            limit: 1,
+            orderBy: 'DESC' as const
+          }
+        })
+      }
+    }
+
+    // 4. Yesterday's hourly - fetch ALL hour boundaries upfront (don't do differential calc later!)
+    if (requirements.yesterdayHourly) {
+      const midnight = new Date()
+      midnight.setHours(0, 0, 0, 0)
+      const yesterdayMidnight = new Date(midnight)
+      yesterdayMidnight.setDate(yesterdayMidnight.getDate() - 1)
+      const yesterdayMidnightMs = yesterdayMidnight.getTime()
+
+      // Build requests for each hour boundary YESTERDAY (24 hours)
+      for (let i = 0; i <= 24; i++) {
+        const timestamp = yesterdayMidnightMs + i * 60 * 60 * 1000
+        allRequests.push({
+          deviceUUID,
+          config: {
+            keys: ['AccumulatedActiveEnergyDelivered'],
+            startTs: timestamp - 60 * 1000,
+            endTs: timestamp + 60 * 1000,
+            agg: 'MAX' as const,
+            limit: 1,
+            orderBy: 'DESC' as const
+          }
+        })
+      }
+    }
+
+    // 5. Chart data (depends on todayOnly or lastDays)
+    if (requirements.chartData) {
+      let startTs = now - 7 * 24 * 60 * 60 * 1000 // Default: 7 days
+      if (requirements.todayOnly) {
+        const midnight = new Date()
+        midnight.setHours(0, 0, 0, 0)
+        startTs = midnight.getTime()
+      } else if (requirements.lastDays) {
+        startTs = now - requirements.lastDays * 24 * 60 * 60 * 1000
+      }
+
+      allRequests.push({
+        deviceUUID,
+        config: {
+          keys: ['ActivePowerTotal'],
+          startTs,
+          endTs: now,
+          interval: 15 * 60 * 1000,
+          agg: 'AVG' as const
+        }
+      })
+    }
+
+    if (allRequests.length === 0) {
+      console.warn(`[useTelemetryDynamic] ⚠️  No requirements specified - returning empty`)
+      return {}
+    }
+
+    console.log(`[useTelemetryDynamic] 🎯 UNIFIED: Built ${allRequests.length} total requests → Making 1 SINGLE API call`)
+
+    // ============================================================================
+    // MAKE SINGLE API CALL WITH ALL REQUESTS
+    // This is consolidated in the backend to minimize ThingsBoard calls too!
+    // ============================================================================
+    const allResults = await fetchBatchTelemetryOptimized(allRequests)
+    const allData = allResults.get(deviceUUID) || []
+
+    console.log(`[useTelemetryDynamic] ✓ Single API call returned ${allData.length} total data points`)
+
+    // Process and organize response by type
+    const result: any = {
+      allData
+    }
+
+    // Extract current value
+    if (requirements.currentValue) {
+      const currentData = allData.filter((dp: TelemetryDataPoint) => dp.key === 'ActivePowerTotal' && dp.ts > now - 2000)
+      result.currentValue = currentData.length > 0 ? currentData[0].value : 0
+    }
+
+    // Extract instantaneous readings
+    if (requirements.instantaneous) {
+      result.instantaneous = allData.filter((dp: TelemetryDataPoint) => dp.key === 'ActivePowerTotal' && dp.ts > now - 30 * 60 * 1000)
+    }
+
+    // Compute today's hourly from boundary data
+    if (requirements.todayHourly) {
+      const midnight = new Date()
+      midnight.setHours(0, 0, 0, 0)
+      const midnightMs = midnight.getTime()
+
+      // Extract boundary values for today
+      const todayBoundaryData = allData.filter((dp: TelemetryDataPoint) =>
+        dp.key === 'AccumulatedActiveEnergyDelivered' &&
+        dp.ts >= midnightMs &&
+        dp.ts < now + 2000
+      )
+
+      // Compute consumption from boundaries
+      const consumptionData: TelemetryDataPoint[] = []
+      const hoursInPeriod = Math.ceil((now - midnightMs) / (60 * 60 * 1000))
+
+      for (let i = 0; i < hoursInPeriod; i++) {
+        const currentBoundary = midnightMs + (i + 1) * 60 * 60 * 1000
+        const previousBoundary = midnightMs + i * 60 * 60 * 1000
+
+        const currentValue = todayBoundaryData.find((dp) => Math.abs(dp.ts - currentBoundary) <= 60 * 1000)?.value
+        const previousValue = todayBoundaryData.find((dp) => Math.abs(dp.ts - previousBoundary) <= 60 * 1000)?.value
+
+        if (currentValue !== undefined) {
+          const consumption = previousValue !== undefined ? currentValue - previousValue : 0
+          consumptionData.push({
+            ts: currentBoundary,
+            value: Math.max(0, consumption),
+            key: 'AccumulatedActiveEnergyDelivered'
+          })
+        }
+      }
+
+      result.todayHourly = consumptionData
+    }
+
+    // Compute yesterday's hourly from boundary data
+    if (requirements.yesterdayHourly) {
+      const midnight = new Date()
+      midnight.setHours(0, 0, 0, 0)
+      const yesterdayMidnight = new Date(midnight)
+      yesterdayMidnight.setDate(yesterdayMidnight.getDate() - 1)
+      const yesterdayMidnightMs = yesterdayMidnight.getTime()
+
+      // Extract boundary values for yesterday
+      const yesterdayBoundaryData = allData.filter((dp: TelemetryDataPoint) =>
+        dp.key === 'AccumulatedActiveEnergyDelivered' &&
+        dp.ts >= yesterdayMidnightMs &&
+        dp.ts < midnight.getTime() + 2000
+      )
+
+      // Compute consumption from boundaries
+      const consumptionData: TelemetryDataPoint[] = []
+
+      for (let i = 0; i < 24; i++) {
+        const currentBoundary = yesterdayMidnightMs + (i + 1) * 60 * 60 * 1000
+        const previousBoundary = yesterdayMidnightMs + i * 60 * 60 * 1000
+
+        const currentValue = yesterdayBoundaryData.find((dp) => Math.abs(dp.ts - currentBoundary) <= 60 * 1000)?.value
+        const previousValue = yesterdayBoundaryData.find((dp) => Math.abs(dp.ts - previousBoundary) <= 60 * 1000)?.value
+
+        if (currentValue !== undefined) {
+          const consumption = previousValue !== undefined ? currentValue - previousValue : 0
+          consumptionData.push({
+            ts: currentBoundary,
+            value: Math.max(0, consumption),
+            key: 'AccumulatedActiveEnergyDelivered'
+          })
+        }
+      }
+
+      result.yesterdayHourly = consumptionData
+    }
+
+    // Extract chart data
+    if (requirements.chartData) {
+      result.chartData = allData.filter((dp: TelemetryDataPoint) => dp.key === 'ActivePowerTotal')
+    }
+
+    console.log(`[useTelemetryDynamic] ✓ UNIFIED response ready:`, {
+      has_currentValue: result.currentValue !== undefined,
+      has_instantaneous: result.instantaneous !== undefined,
+      has_todayHourly: result.todayHourly !== undefined,
+      has_yesterdayHourly: result.yesterdayHourly !== undefined,
+      has_chartData: result.chartData !== undefined,
+      totalDataPoints: result.allData?.length || 0
+    })
+
+    return result
+  }
+
+  /**
+   * MASTER CONSOLIDATION: Fetch all device data in ONE API call (Legacy name)
+   *
+   * This is the ultimate consolidation function. Instead of:
+   *   await fetchCurrentValue(...)    // API Call 1
+   *   await fetchTodayHourly(...)     // API Call 2
+   *   await fetchChartData(...)       // API Call 3
+   *
+   * Use this to make ALL requests in ONE API call:
+   *   const allData = await fetchAllDeviceData(deviceUUID, {
+   *     needsCurrent: true,
+   *     needsTodayHourly: true,
+   *     needsChartData: true,
+   *     ...
+   *   })
+   *
+   * Benefits:
+   * - Single API call instead of N calls
+   * - Backend consolidates identical requests
+   * - 80-90% fewer API calls to ThingsBoard
+   * - Parallel processing
+   *
+   * @param deviceUUID - Device to fetch data for
+   * @param requirements - Which data types are needed
+   * @returns Single unified response with all requested data
+   */
+  async function fetchAllDeviceData(
+    deviceUUID: string,
+    requirements: {
+      currentValue?: boolean
+      instantaneous?: boolean
+      todayHourly?: boolean
+      yesterdayHourly?: boolean
+      chartData?: boolean
+      todayOnly?: boolean
+      lastDays?: number
+    } = {}
+  ): Promise<Map<string, TelemetryDataPoint[]>> {
+    const now = Date.now()
+    const requests: Array<{ deviceUUID: string; config: TelemetryFetchConfig }> = []
+
+    console.log(`[useTelemetryDynamic] 🎯 MASTER CONSOLIDATION: Fetching all data for ${deviceUUID.substring(0, 20)}...`)
+    console.log(`[useTelemetryDynamic] Requirements:`, requirements)
+
+    // 1. Current instantaneous value (latest)
+    if (requirements.currentValue) {
+      requests.push({
+        deviceUUID,
+        config: {
+          keys: ['ActivePowerTotal'],
+          startTs: now - 1000,
+          endTs: now,
+          limit: 1,
+          orderBy: 'DESC' as const
+        }
+      })
+    }
+
+    // 2. Instantaneous readings (last 30 min, 5 min intervals)
+    if (requirements.instantaneous) {
+      requests.push({
+        deviceUUID,
+        config: {
+          keys: ['ActivePowerTotal'],
+          startTs: now - 30 * 60 * 1000,
+          endTs: now,
+          interval: 5 * 60 * 1000,
+          agg: 'AVG' as const
+        }
+      })
+    }
+
+    // 3. Today's hourly breakdown
+    if (requirements.todayHourly) {
+      const midnight = new Date()
+      midnight.setHours(0, 0, 0, 0)
+      requests.push({
+        deviceUUID,
+        config: {
+          keys: ['AccumulatedActiveEnergyDelivered'],
+          startTs: midnight.getTime(),
+          endTs: now,
+          interval: 60 * 60 * 1000,
+          agg: 'MAX' as const
+        }
+      })
+    }
+
+    // 4. Yesterday's hourly breakdown
+    if (requirements.yesterdayHourly) {
+      const midnight = new Date()
+      midnight.setHours(0, 0, 0, 0)
+      const yesterdayMidnight = new Date(midnight)
+      yesterdayMidnight.setDate(yesterdayMidnight.getDate() - 1)
+
+      requests.push({
+        deviceUUID,
+        config: {
+          keys: ['AccumulatedActiveEnergyDelivered'],
+          startTs: yesterdayMidnight.getTime(),
+          endTs: midnight.getTime(),
+          interval: 60 * 60 * 1000,
+          agg: 'MAX' as const
+        }
+      })
+    }
+
+    // 5. Chart data (depends on todayOnly or lastDays)
+    if (requirements.chartData) {
+      let startTs = now - 7 * 24 * 60 * 60 * 1000 // Default: 7 days
+      if (requirements.todayOnly) {
+        const midnight = new Date()
+        midnight.setHours(0, 0, 0, 0)
+        startTs = midnight.getTime()
+      } else if (requirements.lastDays) {
+        startTs = now - requirements.lastDays * 24 * 60 * 60 * 1000
+      }
+
+      requests.push({
+        deviceUUID,
+        config: {
+          keys: ['ActivePowerTotal'],
+          startTs,
+          endTs: now,
+          interval: 15 * 60 * 1000,
+          agg: 'AVG' as const
+        }
+      })
+    }
+
+    if (requests.length === 0) {
+      console.warn(`[useTelemetryDynamic] ⚠️  No requirements specified - returning empty`)
+      return new Map()
+    }
+
+    console.log(`[useTelemetryDynamic] 🎯 Consolidated to ${requests.length} requests (${requests.reduce((sum, r) => sum + r.config.keys.length, 0)} keys)`)
+
+    // Make SINGLE API call with ALL requirements
+    return await fetchBatchTelemetryOptimized(requests)
+  }
+
+  /**
+   * OPTIMIZED: Calculate hourly consumption using differential method
+   * Collects ALL requests first, then makes ONE batch API call
+   * (instead of N calls for N hour boundaries)
+   *
+   * @param deviceUUID - Device to fetch from
+   * @param startTs - Start of period (e.g., midnight)
+   * @param endTs - End of period (e.g., now)
+   * @param key - Accumulated energy key
+   * @returns Array of hourly consumption values
+   */
+  async function calculateDifferentialConsumptionOptimized(
+    deviceUUID: string,
+    startTs: number,
+    endTs: number,
+    key: string = 'AccumulatedActiveEnergyDelivered'
+  ): Promise<TelemetryDataPoint[]> {
+    // Calculate hour boundaries
+    const hoursInPeriod = Math.ceil((endTs - startTs) / (60 * 60 * 1000))
+    const boundaryTimestamps: number[] = [startTs]
+
+    for (let i = 1; i <= hoursInPeriod; i++) {
+      boundaryTimestamps.push(startTs + i * 60 * 60 * 1000)
+    }
+
+    console.log(`[useTelemetryDynamic] 📊 DIFFERENTIAL: ${boundaryTimestamps.length} boundaries, collecting into single batch call`)
+
+    // BUILD ALL REQUESTS FIRST (don't fetch yet!)
+    const batchRequests: Array<{ deviceUUID: string; config: TelemetryFetchConfig }> = boundaryTimestamps.map((timestamp) => ({
+      deviceUUID,
+      config: {
+        keys: [key],
+        startTs: timestamp - 60 * 1000, // 1 minute before
+        endTs: timestamp + 60 * 1000, // 1 minute after
+        agg: 'MAX' as const,
+        limit: 1,
+        orderBy: 'DESC' as const
+      }
+    }))
+
+    console.log(`[useTelemetryDynamic] 📊 DIFFERENTIAL: Built ${batchRequests.length} requests, making 1 batch API call...`)
+
+    // MAKE SINGLE BATCH API CALL with all requests
+    const results = await fetchBatchTelemetryOptimized(batchRequests)
+    const allData = results.get(deviceUUID) || []
+
+    console.log(`[useTelemetryDynamic] 📊 DIFFERENTIAL: Received ${allData.length} total data points from 1 batch call`)
+
+    // Extract accumulated values at each boundary (from the single response)
+    const boundaryValues = boundaryTimestamps.map((timestamp) => {
+      // Find the closest data point to this timestamp (within ±1 minute)
+      const closest = allData.find((dp: TelemetryDataPoint) => Math.abs(dp.ts - timestamp) <= 60 * 1000)
+      return closest?.value || null
+    })
+
+    // Compute consumption for each hour
+    const consumptionData: TelemetryDataPoint[] = []
+
+    for (let i = 0; i < hoursInPeriod; i++) {
+      const currentValue = boundaryValues[i + 1] // Value at end of hour
+      const previousValue = boundaryValues[i] // Value at start of hour
+      const hourEndTimestamp = boundaryTimestamps[i + 1]
+
+      // Skip if we don't have current value
+      if (currentValue === null) continue
+
+      // If we don't have previous value, return 0 (can't compute difference)
+      const consumption = previousValue === null ? 0 : currentValue - previousValue
+
+      consumptionData.push({
+        ts: hourEndTimestamp,
+        value: Math.max(0, consumption), // Ensure non-negative
+        key
+      })
+    }
+
+    return consumptionData
+  }
+
+  /**
    * CORE: Generic Telemetry Fetch Function
    *
-   * Exposes all ThingsBoard API parameters:
+   * Now uses the batch API internally for single requests.
+   *
+   * Parameters:
    * - keys: Array of telemetry key names
    * - startTs: Start timestamp (ms)
    * - endTs: End timestamp (ms)
@@ -99,109 +763,76 @@ export function useTelemetryDynamic() {
     error.value = null
 
     try {
-      // Call backend proxy instead of ThingsBoard directly (avoids CORS issues)
+      // Use batch API endpoint
       const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-      const params = new URLSearchParams()
 
-      // Build query parameters - keys is ALWAYS required
+      // Validate required config
       if (!config.keys || config.keys.length === 0) {
         throw new Error('No keys provided in telemetry config')
       }
-      params.append('keys', config.keys.join(','))
-
-      // startTs and endTs are ALWAYS required by backend
       if (config.startTs === undefined || config.endTs === undefined) {
         throw new Error(`Missing time range: startTs=${config.startTs}, endTs=${config.endTs}`)
       }
-      params.append('startTs', config.startTs.toString())
-      params.append('endTs', config.endTs.toString())
 
-      // Optional parameters
-      if (config.interval !== undefined) params.append('interval', config.interval.toString())
-      if (config.agg) params.append('agg', config.agg)
-      if (config.limit !== undefined) params.append('limit', config.limit.toString())
-      params.append('orderBy', config.orderBy || 'ASC')
-
-      const url = `${backendUrl}/telemetry/${deviceUUID}/timeseries?${params.toString()}`
-
-      console.log(`[useTelemetryDynamic] → Fetching:`, {
+      console.log(`[useTelemetryDynamic] → Fetching (via batch API):`, {
         device: deviceUUID.substring(0, 20) + '...',
         keys: config.keys,
-        startTs: config.startTs ? new Date(config.startTs).toISOString() : 'MISSING',
-        endTs: config.endTs ? new Date(config.endTs).toISOString() : 'MISSING',
-        timeRange: config.startTs && config.endTs
-          ? `${new Date(config.startTs).toLocaleString()} to ${new Date(config.endTs).toLocaleString()}`
-          : 'INVALID',
+        startTs: new Date(config.startTs).toISOString(),
+        endTs: new Date(config.endTs).toISOString(),
         interval: config.interval ? `${config.interval / 1000}s` : 'none',
         agg: config.agg || 'NONE',
-        limit: config.limit || 'none',
-        url: url
+        limit: config.limit || 'none'
       })
 
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          // Add authentication if needed:
-          // 'Authorization': `Bearer ${getAuthToken()}`
-        },
+      // Build batch request
+      const batchPayload = {
+        requests: [{
+          deviceUUID,
+          keys: config.keys,
+          startTs: config.startTs,
+          endTs: config.endTs,
+          ...(config.interval && { interval: config.interval }),
+          ...(config.agg && { agg: config.agg }),
+          ...(config.limit && { limit: config.limit }),
+          ...(config.orderBy && { orderBy: config.orderBy })
+        }]
+      }
+
+      const response = await fetch(`${backendUrl}/telemetry/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(batchPayload)
       })
 
       if (!response.ok) {
-        throw new Error(`ThingsBoard API Error: ${response.status} ${response.statusText}`)
+        throw new Error(`API Error: ${response.status} ${response.statusText}`)
       }
 
-      const apiData = await response.json()
+      const batchResponse = await response.json()
+      const deviceData = batchResponse[deviceUUID] || {}
 
-      console.log(`[useTelemetryDynamic] Raw API response:`, {
-        status: response.ok,
-        statusCode: response.status,
-        hasData: !!apiData.data,
-        apiDataKeys: Object.keys(apiData),
-        dataObject: apiData.data,
-        fullResponse: JSON.stringify(apiData, null, 2)
-      })
-
-      // Transform ThingsBoard response to normalized format
+      // Transform batch response to normalized format
       const dataPoints: TelemetryDataPoint[] = []
 
-      // Handle wrapped response from backend (data key) vs direct ThingsBoard response
-      const responseData = apiData.data || apiData
-
-      console.log(`[useTelemetryDynamic] Processing response data:`, {
-        isWrapped: !!apiData.data,
-        responseDataType: typeof responseData,
-        responseDataKeys: typeof responseData === 'object' ? Object.keys(responseData) : 'not-object',
-        requestedKeys: config.keys,
-        responseDataStructure: JSON.stringify(Object.keys(responseData))
-      })
-
       for (const key of config.keys) {
-        const keyData = responseData[key] || []
-        console.log(`[useTelemetryDynamic] ✓ KEY VERIFICATION "${key}":`, {
-          keyExists: key in responseData,
-          keyDataType: typeof keyData,
-          keyDataLength: keyData.length,
-          keyDataSample: keyData.length > 0 ? keyData.slice(0, 3) : 'EMPTY - NO DATA FOR THIS KEY',
-          fullKeyData: keyData,
-          allAvailableKeys: Object.keys(responseData)
-        })
-
-        for (const point of keyData) {
-          dataPoints.push({
-            ts: point.ts,
-            value: typeof point.value === 'string' ? parseFloat(point.value) : point.value,
-            key
-          })
+        const keyData = deviceData[key] || []
+        if (Array.isArray(keyData)) {
+          for (const point of keyData) {
+            if (point && typeof point === 'object' && 'ts' in point && 'value' in point) {
+              dataPoints.push({
+                ts: point.ts as number,
+                value: typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number),
+                key
+              })
+            }
+          }
         }
       }
 
       // Sort by timestamp ascending
       dataPoints.sort((a, b) => a.ts - b.ts)
 
-      console.log(`[useTelemetryDynamic] ✓ Transformed to ${dataPoints.length} data points:`, {
-        dataPoints: dataPoints.slice(0, 5),
-        allDataPoints: dataPoints
-      })
+      console.log(`[useTelemetryDynamic] ✓ Fetched ${dataPoints.length} data points for ${config.keys.join(', ')}`)
 
       // Update cache
       telemetryCache.set(cacheKey, {
@@ -211,9 +842,7 @@ export function useTelemetryDynamic() {
         fetchedAt: Date.now()
       })
 
-      console.log(`[useTelemetryDynamic] ✓ Fetched ${dataPoints.length} data points for ${config.keys.join(', ')}`)
       return dataPoints
-
     } catch (err) {
       error.value = err as Error
       console.error('[useTelemetryDynamic] ✗ Fetch error:', err)
@@ -224,7 +853,6 @@ export function useTelemetryDynamic() {
         throw err
       }
       return []
-
     } finally {
       loading.value = false
     }
@@ -269,22 +897,113 @@ export function useTelemetryDynamic() {
   }
 
   /**
-   * Fetch hourly data for today (midnight to now)
+   * Fetch hourly data for today using differential method
+   * Computes hourly consumption as: currentHourValue - previousHourValue
+   * Uses AccumulatedActiveEnergyDelivered instead of delta keys
    */
   async function fetchTodayHourly(
     deviceUUID: string,
-    keys: string[]
+    keys: string[] = ['AccumulatedActiveEnergyDelivered']
   ): Promise<TelemetryDataPoint[]> {
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const now = Date.now()
+    const midnightToday = new Date()
+    midnightToday.setHours(0, 0, 0, 0)
+    const midnightTodayMs = midnightToday.getTime()
 
-    return fetchTelemetry(deviceUUID, {
-      keys,
-      startTs: today.getTime(),
-      endTs: now.getTime(),
-      interval: TIME_INTERVALS.ONE_HOUR,
-      agg: 'SUM'
+    console.log(`[useTelemetryDynamic] Fetching today hourly (differential) for ${deviceUUID.substring(0, 20)}...`)
+
+    const result = await calculateDifferentialConsumptionOptimized(
+      deviceUUID,
+      midnightTodayMs,
+      now,
+      keys[0]
+    )
+
+    console.log(`[useTelemetryDynamic] Today hourly result:`, {
+      consumptionPoints: result.length,
+      data: result.map(dp => ({
+        time: new Date(dp.ts).toLocaleTimeString(),
+        value: dp.value
+      }))
     })
+
+    return result
+  }
+
+  /**
+   * Fetch hourly data for yesterday using differential method
+   * Computes hourly consumption as: currentHourValue - previousHourValue
+   * Uses AccumulatedActiveEnergyDelivered instead of delta keys
+   */
+  async function fetchYesterdayHourly(
+    deviceUUID: string,
+    keys: string[] = ['AccumulatedActiveEnergyDelivered']
+  ): Promise<TelemetryDataPoint[]> {
+    const now = Date.now()
+    const midnightToday = new Date()
+    midnightToday.setHours(0, 0, 0, 0)
+    const midnightTodayMs = midnightToday.getTime()
+
+    // Yesterday: from midnight yesterday to midnight today
+    const yesterdayStart = midnightTodayMs - 24 * 60 * 60 * 1000
+    const yesterdayEnd = midnightTodayMs
+
+    console.log(`[useTelemetryDynamic] Fetching yesterday hourly (differential) for ${deviceUUID.substring(0, 20)}...`)
+
+    const result = await calculateDifferentialConsumptionOptimized(
+      deviceUUID,
+      yesterdayStart,
+      yesterdayEnd,
+      keys[0]
+    )
+
+    console.log(`[useTelemetryDynamic] Yesterday hourly result:`, {
+      consumptionPoints: result.length,
+      data: result.map(dp => ({
+        time: new Date(dp.ts).toLocaleTimeString(),
+        value: dp.value
+      }))
+    })
+
+    return result
+  }
+
+  /**
+   * Fetch hourly data for any custom period using differential method
+   * Computes hourly consumption as: currentHourValue - previousHourValue
+   * Uses AccumulatedActiveEnergyDelivered
+   *
+   * @param deviceUUID - Device to fetch from
+   * @param startTs - Start of period (timestamp ms)
+   * @param endTs - End of period (timestamp ms)
+   * @param keys - Optional, defaults to ['AccumulatedActiveEnergyDelivered']
+   * @returns Array of hourly consumption values
+   */
+  async function fetchHourlyDifferential(
+    deviceUUID: string,
+    startTs: number,
+    endTs: number,
+    keys: string[] = ['AccumulatedActiveEnergyDelivered']
+  ): Promise<TelemetryDataPoint[]> {
+    console.log(`[useTelemetryDynamic] Fetching hourly differential for ${deviceUUID.substring(0, 20)}... from ${new Date(startTs).toLocaleString()} to ${new Date(endTs).toLocaleString()}`)
+
+    const result = await calculateDifferentialConsumptionOptimized(
+      deviceUUID,
+      startTs,
+      endTs,
+      keys[0]
+    )
+
+    console.log(`[useTelemetryDynamic] Hourly differential result:`, {
+      period: `${new Date(startTs).toLocaleDateString()} - ${new Date(endTs).toLocaleDateString()}`,
+      consumptionPoints: result.length,
+      data: result.slice(0, 3).map(dp => ({
+        time: new Date(dp.ts).toLocaleTimeString(),
+        value: dp.value
+      }))
+    })
+
+    return result
   }
 
   /**
@@ -325,70 +1044,74 @@ export function useTelemetryDynamic() {
    * @param requests - Array of fetch requests with deviceUUID and config
    * @returns Map of deviceUUID to data points
    */
+  /**
+   * DEPRECATED: Use fetchBatchTelemetryOptimized instead
+   * This function now internally uses the batch API.
+   *
+   * @deprecated Use fetchBatchTelemetryOptimized for better performance
+   */
   async function fetchBatchTelemetry(
     requests: Array<{ deviceUUID: string; config: TelemetryFetchConfig }>
   ): Promise<Map<string, TelemetryDataPoint[]>> {
-    console.log(`[useTelemetryDynamic] Batch fetching for ${requests.length} requests`, {
+    console.warn('[useTelemetryDynamic] ⚠️  fetchBatchTelemetry is deprecated - use fetchBatchTelemetryOptimized instead')
+
+    if (requests.length === 0) return new Map()
+
+    // Convert to batch API format
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+    const batchPayload = {
       requests: requests.map(r => ({
-        deviceUUID: r.deviceUUID.substring(0, 20) + '...',
-        keys: r.config.keys
+        deviceUUID: r.deviceUUID,
+        keys: r.config.keys,
+        startTs: r.config.startTs,
+        endTs: r.config.endTs,
+        interval: r.config.interval,
+        agg: r.config.agg ? String(r.config.agg).toUpperCase() : undefined,
+        limit: r.config.limit,
+        orderBy: r.config.orderBy ? String(r.config.orderBy).toUpperCase() : undefined,
+        useStrictDataTypes: (r.config as any).useStrictDataTypes
       }))
-    })
-
-    const results = new Map<string, TelemetryDataPoint[]>()
-
-    // Deduplicate requests
-    const uniqueRequests = new Map<string, { deviceUUID: string; config: TelemetryFetchConfig }>()
-    for (const req of requests) {
-      const key = getCacheKey(req.deviceUUID, req.config)
-      if (!uniqueRequests.has(key)) {
-        uniqueRequests.set(key, req)
-      }
     }
 
-    console.log(`[useTelemetryDynamic] Deduplicated to ${uniqueRequests.size} unique requests`)
+    try {
+      const response = await fetch(`${backendUrl}/telemetry/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(batchPayload)
+      })
 
-    // Fetch all in parallel
-    const promises = Array.from(uniqueRequests.values()).map(async ({ deviceUUID, config }) => {
-      try {
-        const data = await fetchTelemetry(deviceUUID, config)
-        console.log(`[useTelemetryDynamic] ✓ Batch result for ${deviceUUID.substring(0, 20)}...: ${data.length} points`, {
-          data: data.slice(0, 3),
-          fullData: data
-        })
-        return { deviceUUID, data, error: null }
-      } catch (err) {
-        console.error(`[useTelemetryDynamic] ✗ Batch fetch error for ${deviceUUID.substring(0, 20)}...`, err)
-        return { deviceUUID, data: [], error: err as Error }
+      if (!response.ok) {
+        throw new Error(`Batch API Error: ${response.status} ${response.statusText}`)
       }
-    })
 
-    const settled = await Promise.all(promises)
+      const responseData = await response.json()
+      const results = new Map<string, TelemetryDataPoint[]>()
 
-    for (const result of settled) {
-      // Merge results for same deviceUUID
-      const existing = results.get(result.deviceUUID) || []
-      const merged = [...existing, ...result.data]
-      results.set(result.deviceUUID, merged)
+      for (const [deviceUUID, deviceData] of Object.entries(responseData)) {
+        const dataPoints: TelemetryDataPoint[] = []
 
-      console.log(`[useTelemetryDynamic] Merged results for ${result.deviceUUID.substring(0, 20)}...: ${merged.length} total points`)
-
-      if (result.error) {
-        console.warn(`[useTelemetryDynamic] Failed for ${result.deviceUUID}:`, result.error.message)
+        if (deviceData && typeof deviceData === 'object') {
+          for (const [key, values] of Object.entries(deviceData)) {
+            if (Array.isArray(values)) {
+              for (const point of values) {
+                if (point && typeof point === 'object' && 'ts' in point && 'value' in point) {
+                  dataPoints.push({ ts: point.ts as number, value: typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number), key })
+                }
+              }
+            }
+          }
+        }
+        results.set(deviceUUID, dataPoints)
       }
+
+      return results
+    } catch (err) {
+      console.error('[useTelemetryDynamic] Deprecated fetchBatchTelemetry failed:', err)
+      throw err
     }
-
-    console.log(`[useTelemetryDynamic] ✓ Batch complete. Final results:`, {
-      deviceCount: results.size,
-      resultsPerDevice: Array.from(results.entries()).map(([uuid, data]) => ({
-        device: uuid.substring(0, 20) + '...',
-        pointCount: data.length
-      })),
-      fullResults: results
-    })
-
-    return results
   }
+
+
 
   /**
    * Clear entire cache
@@ -424,6 +1147,7 @@ export function useTelemetryDynamic() {
   function getCacheStats() {
     const now = Date.now()
     let validEntries = 0
+
     let expiredEntries = 0
 
     for (const cache of telemetryCache.values()) {
@@ -443,19 +1167,118 @@ export function useTelemetryDynamic() {
     }
   }
 
+  /**
+   * Fetch chart data for multiple devices with period-specific aggregation
+   *
+   * Uses the optimized /chartBatch endpoint which:
+   * - Today/Yesterday: Hourly aggregation with differential calculation
+   * - 7days/30days: Daily aggregation with differential calculation
+   * - Consolidates requests to minimize API calls
+   * - Returns data ready for chart visualization
+   *
+   * @param requests - Array of chart data requests
+   * @returns Map of deviceUUID -> array of data points
+   */
+  async function fetchChartBatch(
+    requests: Array<{
+      deviceUUID: string
+      keys: string[]
+      startTs: number
+      endTs: number
+      period: 'today' | 'yesterday' | '7days' | '30days'
+    }>
+  ): Promise<Map<string, any[]>> {
+    if (!requests || requests.length === 0) {
+      return new Map()
+    }
+
+    try {
+      loading.value = true
+      error.value = null
+
+      console.log('[useTelemetryDynamic] Fetching chart batch with periods:', {
+        periods: [...new Set(requests.map(r => r.period))],
+        devices: [...new Set(requests.map(r => r.deviceUUID))].length
+      })
+
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+      const response = await fetch(`${apiBaseUrl}/api/telemetry/chartBatch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requests })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      // Convert response to Map format
+      const results = new Map<string, any[]>()
+
+      for (const [deviceUUID, deviceDataValue] of Object.entries(data as Record<string, any>)) {
+        const dataPoints: any[] = []
+
+        // Flatten device data (all keys combined)
+        for (const [key, values] of Object.entries(deviceDataValue as Record<string, any>)) {
+          if (Array.isArray(values)) {
+            for (const point of values) {
+              if (point && typeof point === 'object' && 'ts' in point && 'value' in point) {
+                dataPoints.push({
+                  ts: point.ts as number,
+                  value: typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number),
+                  key,
+                  date: point.date,
+                  currentValue: point.currentValue,
+                  previousValue: point.previousValue
+                })
+              }
+            }
+          }
+        }
+
+        results.set(deviceUUID, dataPoints)
+      }
+
+      console.log('[useTelemetryDynamic] ✓ Chart batch fetched successfully:', {
+        devices: results.size,
+        totalPoints: Array.from(results.values()).reduce((sum, arr) => sum + arr.length, 0)
+      })
+
+      return results
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      console.error('[useTelemetryDynamic] Chart batch failed:', err)
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // State
     loading,
     error,
 
+    // MASTER CONSOLIDATION: Fetch all data in ONE API call
+    fetchAllDeviceDataUnified,
+    fetchAllDeviceData,
+
+    // OPTIMIZED: Single consolidated batch call for multiple diverse requests
+    fetchConsolidatedBatch,
+    fetchChartBatch,  // NEW: Chart-specific batch endpoint
+
     // Core generic fetch (use this for full control)
     fetchTelemetry,
     fetchBatchTelemetry,
-
+    fetchBatchTelemetryOptimized,
     // Convenience methods (configurable wrappers)
     fetchCurrentValue,
     fetchInstantaneous,
     fetchTodayHourly,
+    fetchYesterdayHourly,
+    fetchHourlyDifferential,
     fetchChartData,
 
     // Cache management

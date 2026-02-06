@@ -42,6 +42,7 @@ export interface Sensor {
   label: string
   deviceUUID: string
   type: 'sensor' // Temperature sensor
+  mode?: 'manuel' | 'auto' // Operating mode
 }
 
 /**

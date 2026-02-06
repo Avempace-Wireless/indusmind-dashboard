@@ -45,6 +45,7 @@ export interface TelemetryQueryParams {
 
 /**
  * Fetch telemetry timeseries data for a specific device
+ * Uses the optimized batch API for better performance
  *
  * @param deviceUUID - Device UUID from selected compteur
  * @param params - Query parameters for telemetry
@@ -54,25 +55,28 @@ export async function fetchDeviceTelemetry(
   deviceUUID: string,
   params: TelemetryQueryParams
 ): Promise<TelemetryResponse> {
-  const queryParams = new URLSearchParams()
-  queryParams.set('keys', params.keys.join(','))
-  queryParams.set('startTs', params.startTs.toString())
-  queryParams.set('endTs', params.endTs.toString())
-
-  if (params.interval) queryParams.set('interval', params.interval.toString())
-  if (params.agg) queryParams.set('agg', params.agg)
-  if (params.orderBy) queryParams.set('orderBy', params.orderBy)
-  if (params.limit) queryParams.set('limit', params.limit.toString())
-  if (params.useStrictDataTypes) queryParams.set('useStrictDataTypes', 'true')
-
-  const url = `${API_BASE_URL}/api/telemetry/${deviceUUID}/timeseries?${queryParams.toString()}`
-
   try {
-    const response = await fetch(url, {
-      method: 'GET',
+    // Use batch API endpoint instead of single device endpoint
+    const batchPayload = {
+      requests: [{
+        deviceUUID,
+        keys: params.keys,
+        startTs: params.startTs,
+        endTs: params.endTs,
+        ...(params.interval && { interval: params.interval }),
+        ...(params.agg && { agg: params.agg }),
+        ...(params.orderBy && { orderBy: params.orderBy }),
+        ...(params.limit && { limit: params.limit }),
+        ...(params.useStrictDataTypes && { useStrictDataTypes: params.useStrictDataTypes })
+      }]
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/telemetry/batch`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      body: JSON.stringify(batchPayload)
     })
 
     if (!response.ok) {
@@ -80,10 +84,16 @@ export async function fetchDeviceTelemetry(
       throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
     }
 
-    const data: TelemetryResponse = await response.json()
+    const batchResponse = await response.json()
 
-    if (!data.success) {
-      throw new Error(data.error || 'Failed to fetch telemetry data')
+    // Convert batch response to legacy TelemetryResponse format
+    const data: TelemetryResponse = {
+      success: true,
+      data: batchResponse[deviceUUID] || {},
+    }
+
+    if (!data.data || Object.keys(data.data).length === 0) {
+      throw new Error('No telemetry data found for device')
     }
 
     return data

@@ -140,3 +140,50 @@ export async function fetchThermalDashboardData(
   }
 }
 
+/**
+ * Update sensor operating mode (manuel or auto)
+ * Calls POST /api/telemetry/thermal/mode
+ * @param deviceUUID - UUID of the sensor device
+ * @param mode - Operating mode ('manuel' or 'auto')
+ * @returns Success response or error
+ */
+export async function updateSensorMode(
+  deviceUUID: string,
+  mode: 'manuel' | 'auto'
+): Promise<{
+  success: boolean
+  message: string
+}> {
+  try {
+    if (!['manuel', 'auto'].includes(mode)) {
+      throw new Error(`Invalid mode: ${mode}. Must be 'manuel' or 'auto'`)
+    }
+
+    const url = `${API_BASE_URL}/api/telemetry/thermal/mode`
+    const response = await axios.post(url, {
+      deviceUUID,
+      mode,
+    })
+
+    if (response.data.success) {
+      console.log(`[ThermalAPI] Mode updated to '${mode}' for device ${deviceUUID}`)
+      return {
+        success: true,
+        message: response.data.message || `Mode updated to '${mode}' successfully`,
+      }
+    } else {
+      console.error(`[ThermalAPI] Failed to update mode:`, response.data.message)
+      return {
+        success: false,
+        message: response.data.message || 'Failed to update mode',
+      }
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error(`[ThermalAPI] Error updating sensor mode:`, errorMessage)
+    return {
+      success: false,
+      message: errorMessage,
+    }
+  }
+}

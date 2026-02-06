@@ -269,32 +269,32 @@
 
           <!-- Charts Content -->
           <template v-else>
-          <!-- Monthly Chart -->
+          <!-- Hourly Chart (full width) -->
           <div>
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3">
-                  <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-                  <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.overview.yearly') }}</h2>
-                </div>
+                <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.hourly') }}</h2>
+              </div>
               <button
-                @click="showChartModal('monthly')"
-                :class="['px-3 py-2 rounded-lg text-sm font-medium hover:transition border', getDetailButtonClasses(currentMeterData.color)]"
+                @click="showChartModal('hourly')"
+                :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
               >
-                <span class="material-symbols-outlined inline text-lg align-text-bottom mr-1">zoom_in</span>
-                {{ $t('common.viewDetails') }}
+                <span class="material-symbols-outlined text-lg">zoom_in</span>
               </button>
             </div>
             <BarChart
-              :title="$t('puissance.charts.monthlyPower')"
-              :subtitle="$t('puissance.charts.monthlyAverage')"
-              :labels="currentMeterData.monthlyData.labels"
-              :data="currentMeterData.monthlyData.values"
+              :title="$t('puissance.charts.hourlyPower')"
+              :subtitle="$t('puissance.charts.hourlyAverage')"
+              :labels="currentMeterData.hourlyData.labels"
+              :data="currentMeterData.hourlyData.values"
               :bar-color="currentMeterData.color"
             />
           </div>
 
-          <!-- Daily and Hourly Charts -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Daily and Monthly Charts (two columns) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <!-- Daily Chart -->
             <div>
               <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-3">
@@ -310,31 +310,32 @@
               </div>
               <BarChart
                 :title="$t('puissance.charts.dailyPower')"
-                :subtitle="$t('puissance.charts.monthlyAverage')"
+                :subtitle="$t('puissance.charts.dailyAverage')"
                 :labels="currentMeterData.dailyData.labels"
                 :data="currentMeterData.dailyData.values"
                 :bar-color="currentMeterData.color"
               />
             </div>
 
+            <!-- Monthly Chart -->
             <div>
               <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-3">
                   <div class="h-1 w-8 rounded-full" :style="{ backgroundColor: currentMeterData.color }"></div>
-                  <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $t('puissance.labels.hourly') }}</h3>
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $t('puissance.overview.yearly') }}</h3>
                 </div>
                 <button
-                  @click="showChartModal('hourly')"
+                  @click="showChartModal('monthly')"
                   :class="['px-3 py-2 rounded-lg text-sm font-medium transition border', getDetailButtonClasses(currentMeterData.color)]"
                 >
                   <span class="material-symbols-outlined text-lg">zoom_in</span>
                 </button>
               </div>
               <BarChart
-                :title="$t('puissance.charts.hourlyPower')"
+                :title="$t('puissance.charts.monthlyPower')"
                 :subtitle="$t('puissance.charts.monthlyAverage')"
-                :labels="currentMeterData.hourlyData.labels"
-                :data="currentMeterData.hourlyData.values"
+                :labels="currentMeterData.monthlyData.labels"
+                :data="currentMeterData.monthlyData.values"
                 :bar-color="currentMeterData.color"
               />
             </div>
@@ -387,7 +388,7 @@
           </div>
           <BarChart
             :title="$t('puissance.charts.dailyPower')"
-            :subtitle="$t('puissance.charts.monthlyAverage')"
+            :subtitle="$t('puissance.charts.dailyAverage')"
             :labels="currentMeterData.dailyData.labels"
             :data="currentMeterData.dailyData.values"
             :bar-color="currentMeterData.color"
@@ -409,7 +410,7 @@
           </div>
           <BarChart
             :title="$t('puissance.charts.hourlyPower')"
-            :subtitle="$t('puissance.charts.monthlyAverage')"
+            :subtitle="$t('puissance.charts.hourlyAverage')"
             :labels="currentMeterData.hourlyData.labels"
             :data="currentMeterData.hourlyData.values"
             :bar-color="currentMeterData.color"
@@ -720,6 +721,8 @@ async function loadCurrentMeterData() {
     const response = await fetchPuissanceKPIs(meter.deviceUUID, { debug: false, useCache: true })
 
     // Map the new API response format to the legacy cache structure
+    // Note: The new API returns differential energy consumption (kWh) calculated from
+    // AccumulatedActiveEnergyDelivered differences, not instantaneous power (kW)
     const cachedData = {
       meterId: meter.id,
       // Direct KPI values (used by kpiValues object)
@@ -731,12 +734,13 @@ async function loadCurrentMeterData() {
       consumedLastMonth: response.data.consumedLastMonth,
       // Convert instantaneous power number to array format with key (for chart filtering)
       instantaneousPower: response.data.instantaneousPower !== null
-        ? [{ key: 'ActivePowerTotal', ts: Date.now(), value: response.data.instantaneousPower }]
+        ? [{ts: Date.now(), value: response.data.instantaneousPower }]
         : [],
-      // Add key property to chart data arrays (view filters by key === 'ActivePowerTotal')
-      hourlyData: response.data.hourlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
-      dailyData: response.data.dailyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value })),
-      monthlyData: response.data.monthlyData.map(d => ({ key: 'ActivePowerTotal', ts: d.ts, value: d.value }))
+      // Preserve all fields including key property for filtering
+      // Values are already differential (consumption per interval in kWh)
+      hourlyData: response.data.hourlyData,
+      dailyData: response.data.dailyData,
+      monthlyData: response.data.monthlyData
     }
 
     telemetryCache.value.set(meter.id, cachedData)
@@ -745,7 +749,7 @@ async function loadCurrentMeterData() {
     // This ensures computed properties that depend on telemetryCache are re-evaluated
     telemetryCache.value = new Map(telemetryCache.value)
 
-    console.log(`[Puissance] ✓ Cached data for ${meter.name}:`, {
+    console.log(`[Puissance] ✓ Cached DIFFERENTIAL data for ${meter.name}:`, {
       meterId: meter.id,
       kpis: {
         instantaneous: response.data.instantaneousPower,
@@ -756,7 +760,12 @@ async function loadCurrentMeterData() {
         hourly: response.data.hourlyData.length,
         daily: response.data.dailyData.length,
         monthly: response.data.monthlyData.length
-      }
+      },
+      dataFormat: 'Differential (AccumulatedActiveEnergyDelivered differences)',
+      sampleHourlyData: response.data.hourlyData.slice(0, 3).map(d => ({
+        timestamp: d.tsReadable,
+        consumption_kWh: d.value
+      }))
     })
 
     telemetryFetchStatus.value = 'success'
@@ -907,6 +916,30 @@ const currentMeterData = computed<TransformedMeterData | null>(() => {
       consumedThisMonth: (data.kpiValues as any).consumedThisMonth,
       consumedLastMonth: (data.kpiValues as any).consumedLastMonth
     })
+
+    console.log(`[Puissance Chart] ✅ CHART DATA being passed to BarChart components:`, {
+      meterId: currentMeterId.value,
+      name: data.name,
+      hourly: {
+        labels: data.hourlyData.labels,
+        values: data.hourlyData.values,
+        count: data.hourlyData.values.length
+      },
+      daily: {
+        labels: data.dailyData.labels,
+        values: data.dailyData.values,
+        count: data.dailyData.values.length,
+        detailed: data.dailyData.values.map((v, i) => ({
+          label: data.dailyData.labels[i],
+          value: v
+        }))
+      },
+      monthly: {
+        labels: data.monthlyData.labels,
+        values: data.monthlyData.values,
+        count: data.monthlyData.values.length
+      }
+    })
   }
 
   return data
@@ -987,7 +1020,7 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
       })
 
       // Get the most recent value
-      const sortedByTime = [...telemetryData.instantaneousPower].sort((a, b) => b.ts - a.ts)
+      const sortedByTime = [...telemetryData.instantaneousPower].sort((a: any, b: any) => b.ts - a.ts)
       const latest = sortedByTime[0]
       instantaneousPowerValue = latest.value
       console.log(`[Puissance KPI] instantaneousPower:`, {
@@ -1007,24 +1040,48 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
       })
     }
 
-    // Transform hourly data (already filtered to ActivePowerTotal)
+    // Transform hourly data (differential energy consumption from new API)
     if (telemetryData.hourlyData && telemetryData.hourlyData.length > 0) {
-      console.log(`[Puissance] Raw hourly data (before filtering):`, {
+      console.log(`[Puissance] Raw DIFFERENTIAL hourly data:`, {
         totalPoints: telemetryData.hourlyData.length,
         uniqueKeys: [...new Set(telemetryData.hourlyData.map((d: any) => d.key))],
         firstFewPoints: telemetryData.hourlyData.slice(0, 3),
-        allPoints: telemetryData.hourlyData
+        dataFormat: 'Differential consumption (kWh per interval)',
+        note: 'Values are already differential from AccumulatedActiveEnergyDelivered'
       })
 
-      // Filter for ActivePowerTotal key only
-      const powerData = telemetryData.hourlyData
-        .filter((d: any) => d.key === 'ActivePowerTotal')
+      // Filter for AccumulatedActiveEnergyDelivered key only (differential consumption data)
+      let powerData = telemetryData.hourlyData
+        .filter((d: any) => d.key === 'AccumulatedActiveEnergyDelivered')
         .sort((a: any, b: any) => a.ts - b.ts)  // Ensure chronological order
 
-      console.log(`[Puissance] Hourly data AFTER filtering for ActivePowerTotal:`, {
+      // Filter out zero values (future hours) and detect outliers
+      const nonZeroData = powerData.filter((d: any) => d.value > 0)
+
+      // Detect and remove outliers (values > 10x the median)
+      if (nonZeroData.length > 2) {
+        const values = nonZeroData.map((d: any) => d.value).sort((a: number, b: number) => a - b)
+        const median = values[Math.floor(values.length / 2)]
+        const threshold = median * 10  // Outlier if > 10x median
+
+        const beforeFilter = nonZeroData.length
+        powerData = nonZeroData.filter((d: any) => d.value <= threshold)
+
+        if (beforeFilter > powerData.length) {
+          console.log(`[Puissance] Removed ${beforeFilter - powerData.length} outlier(s) from hourly data (threshold: ${threshold.toFixed(2)} kWh)`)
+        }
+      } else {
+        powerData = nonZeroData
+      }
+
+      console.log(`[Puissance] DIFFERENTIAL hourly data after filtering:`, {
         pointsAfterFilter: powerData.length,
         pointsRemoved: telemetryData.hourlyData.length - powerData.length,
-        filteredData: powerData
+        sampleData: powerData.slice(0, 3).map((d: any) => ({
+          timestamp: d.tsReadable || new Date(d.ts).toISOString(),
+          consumption_kWh: d.value,
+          note: 'Differential value (not cumulative)'
+        }))
       })
 
       hourlyValues = powerData.map((d: any) => d.value)
@@ -1036,9 +1093,12 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
         return `${hours}:${minutes}`
       })
 
-      console.log(`[Puissance] Hourly timestamps:`, powerData.map((d: any) => new Date(d.ts).toLocaleString()))
-      console.log(`[Puissance] Hourly labels:`, hourlyLabels)
-      console.log(`[Puissance] Hourly values:`, hourlyValues)
+      console.log(`[Puissance] Formatted differential hourly data:`, {
+        timestamps: powerData.slice(0, 3).map((d: any) => new Date(d.ts).toLocaleString()),
+        labels: hourlyLabels.slice(0, 3),
+        values: hourlyValues.slice(0, 3),
+        unit: 'kWh (consumption per interval)'
+      })
 
       // Calculate today's average from hourly data
       if (hourlyValues.length > 0) {
@@ -1076,83 +1136,50 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
       }
     }
 
-    // Transform daily data (already filtered to ActivePowerTotal)
+    // Transform daily data (differential energy consumption from new API)
     if (telemetryData.dailyData && telemetryData.dailyData.length > 0) {
-      console.log(`[Puissance] Raw daily data (before filtering):`, {
+      console.log(`[Puissance] Raw DIFFERENTIAL daily data:`, {
         totalPoints: telemetryData.dailyData.length,
         uniqueKeys: [...new Set(telemetryData.dailyData.map((d: any) => d.key))],
         firstFewPoints: telemetryData.dailyData.slice(0, 3),
-        allPoints: telemetryData.dailyData
+        dataFormat: 'Differential consumption (kWh per day)'
       })
 
-      // Filter for ActivePowerTotal key only
+      // Filter for AccumulatedActiveEnergyDelivered key only (differential consumption data)
       const powerData = telemetryData.dailyData
-        .filter((d: any) => d.key === 'ActivePowerTotal')
+        .filter((d: any) => d.key === 'AccumulatedActiveEnergyDelivered')
         .sort((a: any, b: any) => a.ts - b.ts)  // Ensure chronological order
 
-      console.log(`[Puissance] Daily data AFTER filtering for ActivePowerTotal:`, {
+      console.log(`[Puissance] DIFFERENTIAL daily data after filtering:`, {
         pointsAfterFilter: powerData.length,
         pointsRemoved: telemetryData.dailyData.length - powerData.length,
-        filteredData: powerData
+        sampleData: powerData.slice(0, 3).map((d: any) => ({
+          timestamp: d.tsReadable || new Date(d.ts).toISOString(),
+          consumption_kWh: d.value
+        }))
       })
 
-      // Fill in missing days to show all days on x-axis
-      if (powerData.length > 1) {
-        const firstDate = new Date(powerData[0].ts)
-        const lastDate = new Date(powerData[powerData.length - 1].ts)
-        const filledData = []
+      // Don't fill gaps for daily data - just use the data as-is from the API
+      // The differential values are already correct per day
+      dailyValues = powerData.map((d: any) => d.value)
+      dailyTimestamps = powerData.map((d: any) => d.ts)  // Keep raw timestamps
+      dailyLabels = powerData.map((d: any) => {
+        const date = new Date(d.ts)
+        const day = date.getUTCDate().toString().padStart(2, '0')
+        const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+        return `${day}/${month}`
+      })
 
-        // Start from first day
-        const current = new Date(firstDate.getUTCFullYear(), firstDate.getUTCMonth(), firstDate.getUTCDate())
-
-        while (current <= lastDate) {
-          const dayKey = `${current.getUTCFullYear()}-${String(current.getUTCMonth() + 1).padStart(2, '0')}-${String(current.getUTCDate()).padStart(2, '0')}`
-          const existingPoint = powerData.find((p: any) => {
-            const pDate = new Date(p.ts)
-            return pDate.getUTCFullYear() === current.getUTCFullYear() &&
-                   pDate.getUTCMonth() === current.getUTCMonth() &&
-                   pDate.getUTCDate() === current.getUTCDate()
-          })
-
-          if (existingPoint) {
-            filledData.push(existingPoint)
-          } else {
-            // Add empty point for missing day
-            filledData.push({
-              ts: current.getTime(),
-              value: 0,  // Show as zero/empty bar
-              key: 'ActivePowerTotal'
-            })
-          }
-
-          // Move to next day
-          current.setUTCDate(current.getUTCDate() + 1)
-        }
-
-        console.log(`[Puissance] Filled daily data (with empty days):`, {
-          originalCount: powerData.length,
-          filledCount: filledData.length,
-          filledData: filledData
-        })
-
-        dailyValues = filledData.map((d: any) => d.value)
-        dailyTimestamps = filledData.map((d: any) => d.ts)  // Keep raw timestamps
-        dailyLabels = filledData.map((d: any) => {
-          const date = new Date(d.ts)
-          const day = date.getUTCDate().toString().padStart(2, '0')
-          const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
-          return `${day}/${month}`
-        })
-      } else {
-        dailyValues = powerData.map((d: any) => d.value)
-        dailyTimestamps = powerData.map((d: any) => d.ts)  // Keep raw timestamps
-        dailyLabels = powerData.map((d: any) => {
-          const date = new Date(d.ts)
-          const day = date.getUTCDate().toString().padStart(2, '0')
-          const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
-          return `${day}/${month}`
-        })
-      }
+      console.log(`[Puissance] ✅ FINAL daily data for chart:`, {
+        labels: dailyLabels,
+        values: dailyValues,
+        rawData: powerData.map((d: any) => ({
+          label: new Date(d.ts).toLocaleDateString(),
+          value: d.value,
+          timestamp: d.ts,
+          tsReadable: d.tsReadable || new Date(d.ts).toISOString()
+        }))
+      })
 
       console.log(`[Puissance] Daily timestamps:`, dailyLabels)
       console.log(`[Puissance] Daily labels:`, dailyLabels)
@@ -1186,86 +1213,51 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
       }
     }
 
-    // Transform monthly data (already filtered to ActivePowerTotal)
+    // Transform monthly data (differential energy consumption from new API)
     if (telemetryData.monthlyData && telemetryData.monthlyData.length > 0) {
-      console.log(`[Puissance] Raw monthly data (before filtering):`, {
+      console.log(`[Puissance] Raw DIFFERENTIAL monthly data:`, {
         totalPoints: telemetryData.monthlyData.length,
         uniqueKeys: [...new Set(telemetryData.monthlyData.map((d: any) => d.key))],
         firstFewPoints: telemetryData.monthlyData.slice(0, 3),
-        allPoints: telemetryData.monthlyData
+        dataFormat: 'Differential consumption (kWh per month)'
       })
 
-      // Filter for ActivePowerTotal key only
+      // Filter for AccumulatedActiveEnergyDelivered key only (differential consumption data)
       const powerData = telemetryData.monthlyData
-        .filter((d: any) => d.key === 'ActivePowerTotal')
+        .filter((d: any) => d.key === 'AccumulatedActiveEnergyDelivered')
         .sort((a: any, b: any) => a.ts - b.ts)  // Ensure chronological order
 
-      console.log(`[Puissance] Monthly data AFTER filtering for ActivePowerTotal:`, {
+      console.log(`[Puissance] DIFFERENTIAL monthly data after filtering:`, {
         pointsAfterFilter: powerData.length,
         pointsRemoved: telemetryData.monthlyData.length - powerData.length,
-        filteredData: powerData
+        sampleData: powerData.slice(0, 3).map((d: any) => ({
+          timestamp: d.tsReadable || new Date(d.ts).toISOString(),
+          consumption_kWh: d.value
+        }))
       })
 
-      // Fill in missing months to show all months on x-axis
-      if (powerData.length > 1) {
-        const firstDate = new Date(powerData[0].ts)
-        const lastDate = new Date(powerData[powerData.length - 1].ts)
-        const filledData = []
+      // Don't fill gaps for monthly data - just use the data as-is from the API
+      // The differential values are already correct per month
+      monthlyValues = powerData.map((d: any) => d.value)
+      monthlyTimestamps = powerData.map((d: any) => d.ts)  // Keep raw timestamps
+      monthlyLabels = powerData.map((d: any) => {
+        const date = new Date(d.ts)
+        const day = date.getUTCDate().toString().padStart(2, '0')
+        const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+        const year = date.getUTCFullYear().toString().slice(-2)
+        return `${day}/${month}/${year}`
+      })
 
-        // Get year and month from first and last dates (using UTC)
-        let year = firstDate.getUTCFullYear()
-        let month = firstDate.getUTCMonth()
-        const lastYear = lastDate.getUTCFullYear()
-        const lastMonth = lastDate.getUTCMonth()
-
-        // Iterate through months until we reach or pass the last date
-        while (year < lastYear || (year === lastYear && month <= lastMonth)) {
-          const existingPoint = powerData.find((p: any) => {
-            const pDate = new Date(p.ts)
-            return pDate.getUTCFullYear() === year &&
-                   pDate.getUTCMonth() === month
-          })
-
-          if (existingPoint) {
-            filledData.push(existingPoint)
-          } else {
-            // Add empty point for missing month using UTC date
-            const pointDate = new Date(Date.UTC(year, month, 1))
-            filledData.push({
-              ts: pointDate.getTime(),
-              value: 0,  // Show as zero/empty bar
-              key: 'ActivePowerTotal'
-            })
-          }
-
-          // Move to next month
-          month++
-          if (month > 11) {
-            month = 0
-            year++
-          }
-        }
-
-        console.log(`[Puissance] Filled monthly data (with empty months):`, {
-          originalCount: powerData.length,
-          filledCount: filledData.length,
-          filledData: filledData
-        })
-
-        monthlyValues = filledData.map((d: any) => d.value)
-        monthlyTimestamps = filledData.map((d: any) => d.ts)  // Keep raw timestamps
-        monthlyLabels = filledData.map((d: any) => {
-          const date = new Date(d.ts)
-          return date.toLocaleString('default', { month: 'short', year: '2-digit' })
-        })
-      } else {
-        monthlyValues = powerData.map((d: any) => d.value)
-        monthlyTimestamps = powerData.map((d: any) => d.ts)  // Keep raw timestamps
-        monthlyLabels = powerData.map((d: any) => {
-          const date = new Date(d.ts)
-          return date.toLocaleString('default', { month: 'short', year: '2-digit' })
-        })
-      }
+      console.log(`[Puissance] ✅ FINAL monthly data for chart:`, {
+        labels: monthlyLabels,
+        values: monthlyValues,
+        rawData: powerData.map((d: any) => ({
+          label: new Date(d.ts).toLocaleDateString(),
+          value: d.value,
+          timestamp: d.ts,
+          tsReadable: d.tsReadable || new Date(d.ts).toISOString()
+        }))
+      })
 
       console.log(`[Puissance] Monthly timestamps:`, monthlyLabels.map((_, i) => new Date(monthlyLabels[i] || '').toLocaleString()))
       console.log(`[Puissance] Monthly labels:`, monthlyLabels)
@@ -1553,11 +1545,11 @@ const isMeterDataReady = computed(() => {
 // KPI keys in order - Energy consumption metrics (kWh)
 const kpiKeys = [
   'instantaneousConsumption', // Current instantaneous power consumption (kW)
-  'consumedThisHour',        // Energy consumed this hour (deltaHourEnergyConsumtion)
-  'consumedToday',           // Energy consumed today (deltaDayEnergyConsumtion)
-  'consumedYesterday',       // Energy consumed yesterday (historical calculation)
-  'consumedThisMonth',       // Energy consumed this month (AccumulatedActiveEnergyDelivered calculation)
-  'consumedLastMonth',       // Energy consumed last month (historical calculation)
+  'consumedThisHour',        // Energy consumed this hour (AccumulatedActiveEnergyDelivered differential)
+  'consumedToday',           // Energy consumed today (AccumulatedActiveEnergyDelivered differential)
+  'consumedYesterday',       // Energy consumed yesterday (AccumulatedActiveEnergyDelivered differential)
+  'consumedThisMonth',       // Energy consumed this month (AccumulatedActiveEnergyDelivered differential)
+  'consumedLastMonth',       // Energy consumed last month (AccumulatedActiveEnergyDelivered differential)
 ]
 
 /**
