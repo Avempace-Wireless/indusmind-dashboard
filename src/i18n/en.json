@@ -880,6 +880,8 @@
     "chartDailyDescription": "Average daily current data for the current month",
     "chartWeekly": "Weekly Current",
     "chartWeeklyDescription": "Average daily current data for the last 7 days",
+    "chartMonthly": "Monthly Current",
+    "chartMonthlyDescription": "Monthly trend of current consumption",
     "chartYearly": "Yearly Current",
     "chartYearlyDescription": "Average monthly current data for the year",
     "chartPhases": "Current values for all three phases over the last 24 hours",

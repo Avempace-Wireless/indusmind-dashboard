@@ -35,6 +35,20 @@ export interface CurrentKPIData {
   dailyYearData: Array<{ ts: number; date: string; month: number; value: number }>
 }
 
+export interface CurrentOverviewData {
+  instantaneousCurrent: number | null
+  lastHourAverage: number | null
+  todayAverage: number | null
+  hourlyData: Array<{ ts: number; date: string; value: number }>
+}
+
+export interface CurrentChartDataResponse {
+  hourly24h: Array<{ ts: number; date: string; value: number }>
+  dailyMonth: Array<{ ts: number; date: string; value: number | null }>
+  weeklyData: Array<{ ts: number; date: string; value: number }>
+  monthlyYear: Array<{ ts: number; date: string; month: number; monthYear: string; value: number | null }>
+}
+
 export interface CurrentKPIResponse {
   success: boolean
   data: CurrentKPIData
@@ -56,6 +70,8 @@ export function useCurrent() {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const currentDataCache = ref<Map<string, CurrentKPIData>>(new Map())
+  const overviewDataCache = ref<Map<string, CurrentOverviewData>>(new Map())
+  const chartDataCache = ref<Map<string, CurrentChartDataResponse>>(new Map())
 
   /**
    * Generate mock current data
@@ -77,7 +93,124 @@ export function useCurrent() {
   }
 
   /**
-   * Fetch current KPI data from API
+   * Fetch current overview data from optimized API endpoint
+   * Use this for initial dashboard load - much faster than full /current endpoint
+   */
+  async function fetchCurrentOverview(deviceUUID: string, options?: { useCache?: boolean }): Promise<CurrentOverviewData | null> {
+    try {
+      // Check cache first if enabled
+      if (options?.useCache !== false && overviewDataCache.value.has(deviceUUID)) {
+        const cachedData = overviewDataCache.value.get(deviceUUID)
+        if (cachedData) {
+          console.log('[useCurrent] Using cached overview data for device:', deviceUUID)
+          return cachedData
+        }
+      }
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+      const url = `${baseUrl}/api/telemetry/${deviceUUID}/current/overview`
+
+      console.log('[useCurrent] Fetching current overview from:', url)
+
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch current overview: ${response.statusText}`)
+      }
+
+      const json = await response.json()
+      if (!json.success || !json.data) {
+        throw new Error('Invalid API response structure')
+      }
+
+      const data = json.data as CurrentOverviewData
+      overviewDataCache.value.set(deviceUUID, data)
+      console.log('[useCurrent] Current overview data fetched:', data)
+
+      return data
+    } catch (err) {
+      console.error('[useCurrent] Error fetching current overview:', err)
+      return null
+    }
+  }
+
+  /**
+   * Fetch current chart data from optimized API endpoint
+   * Use this for chart displays - loads in parallel with overview
+   */
+  async function fetchCurrentChartData(deviceUUID: string, options?: { useCache?: boolean }): Promise<CurrentChartDataResponse | null> {
+    try {
+      // Check cache first if enabled
+      if (options?.useCache !== false && chartDataCache.value.has(deviceUUID)) {
+        const cachedData = chartDataCache.value.get(deviceUUID)
+        if (cachedData) {
+          console.log('[useCurrent] Using cached chart data for device:', deviceUUID)
+          return cachedData
+        }
+      }
+
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+      const url = `${baseUrl}/api/telemetry/${deviceUUID}/current/chart`
+
+      console.log('[useCurrent] Fetching current chart data from:', url)
+
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch current chart data: ${response.statusText}`)
+      }
+
+      const json = await response.json()
+      if (!json.success || !json.data) {
+        throw new Error('Invalid API response structure')
+      }
+
+      const data = json.data as CurrentChartDataResponse
+      chartDataCache.value.set(deviceUUID, data)
+      console.log('[useCurrent] Current chart data fetched:', data)
+
+      return data
+    } catch (err) {
+      console.error('[useCurrent] Error fetching current chart data:', err)
+      return null
+    }
+  }
+
+  /**
+   * Fetch both overview and chart data in parallel (recommended for component mount)
+   * This loads all data upfront so charts and tables are instantly available
+   */
+  async function fetchCurrentDataOptimized(deviceUUID: string, options?: { useCache?: boolean }): Promise<{
+    overview: CurrentOverviewData | null
+    chartData: CurrentChartDataResponse | null
+  }> {
+    try {
+      isLoading.value = true
+      error.value = null
+
+      console.log('[useCurrent] Fetching optimized current data (overview + chart) for:', deviceUUID)
+
+      // Fetch both endpoints in parallel
+      const [overview, chartData] = await Promise.all([
+        fetchCurrentOverview(deviceUUID, options),
+        fetchCurrentChartData(deviceUUID, options),
+      ])
+
+      console.log('[useCurrent] Optimized data fetched:', {
+        hasOverview: !!overview,
+        hasChartData: !!chartData,
+      })
+
+      return { overview, chartData }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch current data'
+      console.error('[useCurrent] Error fetching optimized current data:', err)
+      return { overview: null, chartData: null }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Fetch current KPI data from API (legacy endpoint - use fetchCurrentDataOptimized instead)
    */
   async function fetchCurrentKPIs(deviceUUID: string, options?: { useCache?: boolean }): Promise<CurrentKPIData | null> {
     try {
@@ -152,6 +285,7 @@ export function useCurrent() {
 
   /**
    * Fetch current chart data for historical display
+   * Now uses the optimized chart data cache
    */
   async function getChartData(deviceUUID: string, period: 'day' | 'week' | 'month' | 'year' = 'day'): Promise<CurrentChartData | null> {
     try {
@@ -183,31 +317,37 @@ export function useCurrent() {
         }
       }
 
-      // API mode: fetch from current KPI data
-      const kpiData = await fetchCurrentKPIs(deviceUUID)
-      if (!kpiData) return null
+      // API mode: use cached chart data if available, otherwise fetch
+      let chartDataResponse = chartDataCache.value.get(deviceUUID)
 
-      let dataPoints: Array<{ ts: number; value: number }> = []
+      if (!chartDataResponse) {
+        // Fetch chart data if not cached
+        const fetchedData = await fetchCurrentChartData(deviceUUID)
+        if (!fetchedData) return null
+        chartDataResponse = fetchedData
+      }
+
+      let dataPoints: Array<{ ts: number; value: number | null }> = []
 
       switch (period) {
         case 'day':
-          dataPoints = kpiData.hourlyData
-          console.log('[useCurrent] Day period - dataPoints:', dataPoints?.length)
+          dataPoints = chartDataResponse.hourly24h
+          console.log('[useCurrent] Day period - using hourly24h:', dataPoints?.length)
           break
         case 'week':
-          dataPoints = kpiData.dailyWeekData
-          console.log('[useCurrent] Week period - dataPoints:', dataPoints?.length)
+          dataPoints = chartDataResponse.weeklyData
+          console.log('[useCurrent] Week period - using weeklyData:', dataPoints?.length)
           break
         case 'month':
-          dataPoints = kpiData.dailyMonthData
-          console.log('[useCurrent] Month period - dataPoints:', dataPoints?.length)
+          dataPoints = chartDataResponse.dailyMonth
+          console.log('[useCurrent] Month period - using dailyMonth:', dataPoints?.length)
           break
         case 'year':
-          dataPoints = kpiData.dailyYearData
-          console.log('[useCurrent] Year period - dataPoints:', dataPoints?.length)
+          dataPoints = chartDataResponse.monthlyYear
+          console.log('[useCurrent] Year period - using monthlyYear:', dataPoints?.length)
           break
         default:
-          dataPoints = kpiData.hourlyData
+          dataPoints = chartDataResponse.hourly24h
       }
 
       const labels = dataPoints.map(p => {
@@ -224,11 +364,7 @@ export function useCurrent() {
           const year = date.getFullYear()
           return `${dayIndex}:${day}/${month}/${year}` // Format: dayIndex:DD/MM/YYYY
         } else if (period === 'month') {
-          // Return DD/MM/YYYY format for month (backend already returns date property in this format)
-          // Use the date property from backend if available, otherwise format from timestamp
-          if ('date' in p && typeof p.date === 'string') {
-            return p.date // Backend returns "DD/MM/YYYY"
-          }
+          // Return DD/MM/YYYY format for month
           const day = String(date.getDate()).padStart(2, '0')
           const month = String(date.getMonth() + 1).padStart(2, '0')
           const year = date.getFullYear()
@@ -246,7 +382,7 @@ export function useCurrent() {
 
       console.log('[useCurrent] Generated labels:', labels?.length, 'first few:', labels?.slice(0, 3))
 
-      const currentDataValues = dataPoints.map(p => p.value)
+      const currentDataValues = dataPoints.map(p => p.value ?? 0)
 
       const result = {
         labels,
@@ -295,6 +431,8 @@ export function useCurrent() {
    */
   function clearCache() {
     currentDataCache.value.clear()
+    overviewDataCache.value.clear()
+    chartDataCache.value.clear()
   }
 
   return {
@@ -303,6 +441,9 @@ export function useCurrent() {
     getCurrentData,
     getChartData,
     fetchCurrentKPIs,
+    fetchCurrentOverview,
+    fetchCurrentChartData,
+    fetchCurrentDataOptimized,
     fetchCurrentData,
     clearCache,
   }
