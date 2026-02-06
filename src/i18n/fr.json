@@ -884,6 +884,8 @@
     "chartDailyDescription": "Données quotidiennes moyennes du courant pour le mois en cours",
     "chartWeekly": "Courant Hebdomadaire",
     "chartWeeklyDescription": "Données quotidiennes moyennes du courant des 7 derniers jours",
+    "chartMonthly": "Courant Mensuel",
+    "chartMonthlyDescription": "Tendance mensuelle de la consommation de courant",
     "chartYearly": "Courant Annuel",
     "chartYearlyDescription": "Données mensuelles moyennes du courant sur l'année",
     "chartPhases": "Valeurs de courant pour les trois phases au cours des 24 dernières heures",

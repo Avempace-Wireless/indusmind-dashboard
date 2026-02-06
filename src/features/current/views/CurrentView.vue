@@ -172,7 +172,7 @@
           </div>
 
           <!-- KPI Cards Grid -->
-          <div v-else-if="currentMeterId && (currentKPIs || metersCurrentData.length > 0)" class="space-y-3">
+          <div v-else-if="currentMeterId && (currentKPIs || currentOverviewData || metersCurrentData.length > 0)" class="space-y-3">
             <!-- Instantaneous Current -->
             <CurrentKPICard
               :title="$t('current.instantaneous')"
@@ -380,14 +380,57 @@
           </div>
         </div>
 
+        <!-- Monthly Chart -->
+        <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+            <div>
+              <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-orange-500 text-lg sm:text-xl">calendar_month</span>
+                <span class="truncate">{{ $t('current.chartMonthly') || 'Données Mensuelles' }}</span>
+              </h3>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">{{ $t('current.chartMonthlyDescription') || 'Tendance mensuelle de la consommation de courant' }}</p>
+            </div>
+          </div>
+          <div class="p-3 sm:p-6">
+            <div class="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-2 sm:p-4 shadow-sm">
+              <div class="h-64 sm:h-72 lg:h-80 relative">
+                <!-- Loading State -->
+                <div v-if="isChartLoading" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-800 rounded-lg z-10">
+                  <div class="animate-spin rounded-full h-10 w-10 border-3 border-orange-200 dark:border-orange-700 border-t-orange-600 dark:border-t-orange-400"></div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ $t('common.loading') }}</p>
+                </div>
+
+                <!-- No Data State -->
+                <div v-if="!isChartLoading && !chartHasData" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white dark:bg-slate-800 rounded-lg z-10">
+                  <span class="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600">data_thresholding</span>
+                  <div class="text-center">
+                    <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $t('common.noData') }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Aucune donnée disponible pour cette période</p>
+                  </div>
+                </div>
+
+                <canvas ref="chartMonthlyCanvas" id="chartMonthly"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
 
     <!-- Tables Tab: Detailed Data -->
     <div v-if="currentMeterId && viewMode === 'tables' && !isLoading" class="animate-fadeIn">
+      <!-- No Data State for entire tab -->
+      <div v-if="getTableData.length === 0" class="flex flex-col items-center justify-center py-20">
+        <span class="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">data_thresholding</span>
+        <p class="text-center">
+          <p class="text-lg font-semibold text-gray-700 dark:text-gray-300">{{ $t('common.noData') }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Aucune donnée disponible pour cette période</p>
+        </p>
+      </div>
+
       <!-- Grid Layout: 2 tables per row -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Day Period Table -->
         <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
@@ -400,7 +443,14 @@
           </div>
         </div>
         <div class="p-3 sm:p-6">
-          <div class="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <div v-if="paginatedDayTableData.length === 0" class="flex flex-col items-center justify-center py-12">
+            <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-4">data_thresholding</span>
+            <p class="text-center">
+              <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $t('common.noData') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Aucune donnée disponible pour cette période</p>
+            </p>
+          </div>
+          <div v-else class="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
@@ -462,7 +512,14 @@
           </div>
         </div>
         <div class="p-3 sm:p-6">
-          <div class="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <div v-if="paginatedWeekTableData.length === 0" class="flex flex-col items-center justify-center py-12">
+            <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-4">data_thresholding</span>
+            <p class="text-center">
+              <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $t('common.noData') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Aucune donnée disponible pour cette période</p>
+            </p>
+          </div>
+          <div v-else class="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
@@ -680,7 +737,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import CurrentKPICard from '@/components/current/CurrentKPICard.vue'
 import CurrentDetailModal from '@/components/current/CurrentDetailModal.vue'
-import { useCurrent, type CurrentData, type CurrentChartData, type CurrentKPIData } from '@/composables/current/useCurrent'
+import { useCurrent, type CurrentData, type CurrentChartData, type CurrentKPIData, type CurrentOverviewData, type CurrentChartDataResponse } from '@/composables/current/useCurrent'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { useApiData } from '@/config/dataMode'
 import Chart from 'chart.js/auto'
@@ -699,6 +756,7 @@ let overviewChart: Chart | null = null
 let chart24h: Chart | null = null
 let chartDaily: Chart | null = null
 let chartWeekly: Chart | null = null
+let chartMonthly: Chart | null = null
 let chartYearly: Chart | null = null
 
 // Refs
@@ -732,10 +790,12 @@ const chartModalData = ref({
   yearlyData: { labels: [] as string[], values: [] as number[] },
 })
 
-const { getCurrentData, getChartData, fetchCurrentKPIs } = useCurrent()
+const { getCurrentData, getChartData, fetchCurrentKPIs, fetchCurrentOverview, fetchCurrentChartData } = useCurrent()
 
-// Store API KPI data per device UUID
+// Store API data per device UUID
 const currentKPIDataMap = ref<Map<string, CurrentKPIData>>(new Map())
+const currentOverviewDataMap = ref<Map<string, CurrentOverviewData>>(new Map())
+const currentChartDataMap = ref<Map<string, CurrentChartDataResponse>>(new Map())
 
 const periods = computed(() => [
   { value: 'day' as const, label: t('current.periods.day') },
@@ -756,23 +816,57 @@ const currentDeviceUUID = computed(() => {
   return meter?.deviceUUID || currentMeterId.value
 })
 
-// Current meter's KPI data from API (when in API mode)
+// Current meter's overview data from API (when in API mode)
+const currentOverviewData = computed(() => {
+  if (!isApiMode || !currentDeviceUUID.value) return null
+  // Explicitly access the ref value to ensure reactivity
+  const map = currentOverviewDataMap.value
+  return map.get(currentDeviceUUID.value) || null
+})
+
+// Current meter's chart data from API (when in API mode)
+const currentChartData = computed(() => {
+  if (!isApiMode || !currentDeviceUUID.value) return null
+  // Explicitly access the ref value to ensure reactivity
+  const map = currentChartDataMap.value
+  return map.get(currentDeviceUUID.value) || null
+})
+
+// Legacy compatibility - combine overview and chart data
 const currentKPIData = computed(() => {
   if (!isApiMode || !currentDeviceUUID.value) return null
-  return currentKPIDataMap.value.get(currentDeviceUUID.value) || null
+
+  const overview = currentOverviewData.value
+  const chartData = currentChartData.value
+
+  if (!overview || !chartData) return null
+
+  // Combine data for legacy compatibility
+  return {
+    instantaneousCurrent: overview.instantaneousCurrent,
+    lastHourMin: null, // Not in overview
+    lastHourAverage: overview.lastHourAverage,
+    lastHourMax: null, // Not in overview
+    todayAverage: overview.todayAverage,
+    hourlyData: overview.hourlyData,
+    widgetData: [], // Not needed
+    dailyWeekData: chartData.weeklyData,
+    dailyMonthData: chartData.dailyMonth,
+    dailyYearData: chartData.monthlyYear,
+  }
 })
 
 // Computed property to get KPI values - from API only when in API mode
 const currentKPIs = computed(() => {
   if (!isApiMode) return null
 
-  if (currentKPIData.value) {
+  if (currentOverviewData.value) {
     return {
-      instantaneousCurrent: currentKPIData.value.instantaneousCurrent ?? 0,
-      lastHourMin: currentKPIData.value.lastHourMin ?? 0,
-      lastHourAverage: currentKPIData.value.lastHourAverage ?? 0,
-      lastHourMax: currentKPIData.value.lastHourMax ?? 0,
-      todayAverage: currentKPIData.value.todayAverage ?? 0,
+      instantaneousCurrent: currentOverviewData.value.instantaneousCurrent ?? 0,
+      lastHourMin: 0, // Not available in overview
+      lastHourAverage: currentOverviewData.value.lastHourAverage ?? 0,
+      lastHourMax: 0, // Not available in overview
+      todayAverage: currentOverviewData.value.todayAverage ?? 0,
     }
   }
   return null
@@ -841,25 +935,24 @@ const getYesterdayAvg = (meterIndex: number): number | null => {
 const getTableData = computed(() => {
   if (!isApiMode) return []
   if (!currentKPIData.value) return []
-
   // Map API data to table format based on table period
   let dataPoints: Array<{ ts: number; value: number }> = []
 
   switch (tablePeriod.value) {
     case 'day':
-      dataPoints = currentKPIData.value.hourlyData
+      dataPoints = currentKPIData.value.hourlyData.filter((d: any) => d.value !== null && d.value !== undefined).map((d: any) => ({ ts: d.ts, value: d.value }))
       break
     case 'week':
-      dataPoints = currentKPIData.value.dailyWeekData
+      dataPoints = currentKPIData.value.dailyWeekData.filter((d: any) => d.value !== null && d.value !== undefined).map((d: any) => ({ ts: d.ts, value: d.value }))
       break
     case 'month':
-      dataPoints = currentKPIData.value.dailyMonthData
+      dataPoints = currentKPIData.value.dailyMonthData.filter((d: any) => d.value !== null && d.value !== undefined).map((d: any) => ({ ts: d.ts, value: d.value }))
       break
     case 'year':
-      dataPoints = currentKPIData.value.dailyYearData || []
+      dataPoints = (currentKPIData.value.dailyYearData || []).filter((d: any) => d.value !== null && d.value !== undefined).map((d: any) => ({ ts: d.ts, value: d.value }))
       break
     default:
-      dataPoints = currentKPIData.value.hourlyData
+      dataPoints = currentKPIData.value.hourlyData.filter((d: any) => d.value !== null && d.value !== undefined).map((d: any) => ({ ts: d.ts, value: d.value }))
   }
 
   return dataPoints.map(p => ({
@@ -1015,12 +1108,14 @@ const handleCompteurSelection = (selectedIds: string[]) => {
 const loadCurrentMeterData = async () => {
   if (!currentMeterId.value || !currentDeviceUUID.value) {
     console.log('[CurrentView] No meter or device UUID available')
+    isLoading.value = false
     return
   }
 
   // Check if we already have cached data for this device
-  if (currentKPIDataMap.value.has(currentDeviceUUID.value)) {
+  if (currentOverviewDataMap.value.has(currentDeviceUUID.value) && currentChartDataMap.value.has(currentDeviceUUID.value)) {
     console.log('[CurrentView] Using cached data for device UUID:', currentDeviceUUID.value)
+    isLoading.value = false
     await nextTick()
     initCharts()
     return
@@ -1029,28 +1124,48 @@ const loadCurrentMeterData = async () => {
   isLoading.value = true
   try {
     if (isApiMode) {
-      console.log('[CurrentView] Fetching /current API for:', {
+      console.log('[CurrentView] Fetching optimized current data (overview + chart) for:', {
         meterId: currentMeterId.value,
         deviceUUID: currentDeviceUUID.value
       })
 
-      // Fetch KPI data for only the current meter using its device UUID
-      const kpiData = await fetchCurrentKPIs(currentDeviceUUID.value, { useCache: true })
+      // Start both requests in parallel but handle them independently
+      const overviewPromise = fetchCurrentOverview(currentDeviceUUID.value, { useCache: true })
+      const chartDataPromise = fetchCurrentChartData(currentDeviceUUID.value, { useCache: true })
 
-      if (kpiData) {
-        currentKPIDataMap.value.set(currentDeviceUUID.value, kpiData)
-        console.log('[CurrentView] ✓ KPI data cached for device UUID:', currentDeviceUUID.value)
+      // Wait for overview data first - show KPIs immediately
+      const overview = await overviewPromise
+
+      if (overview) {
+        currentOverviewDataMap.value.set(currentDeviceUUID.value, overview)
+        console.log('[CurrentView] ✓ Overview data loaded - displaying KPIs and hourly chart')
+        // Remove loader and show KPI cards immediately
+        isLoading.value = false
+        // Initialize overview chart immediately with hourly data from overview
+        await nextTick()
+        initOverviewChart()
+      } else {
+        console.warn('[CurrentView] ⚠ Failed to fetch overview data')
+        isLoading.value = false
+      }
+
+      // Chart data continues loading in background
+      const chartData = await chartDataPromise
+
+      if (chartData) {
+        currentChartDataMap.value.set(currentDeviceUUID.value, chartData)
+        console.log('[CurrentView] ✓ Chart data loaded')
+        // Initialize detailed charts now that chart data is available
+        await nextTick()
+        initDetailedCharts()
+      } else {
+        console.warn('[CurrentView] ⚠ Failed to fetch chart data')
       }
     }
   } catch (err) {
     console.error('[CurrentView] ✗ Error loading current meter data:', err)
-  } finally {
     isLoading.value = false
   }
-
-  // Initialize charts after loading finishes and DOM is ready
-  await nextTick()
-  initCharts()
 }
 
 const reloadCharts = async () => {
@@ -1062,6 +1177,201 @@ const reloadChartsOnly = async () => {
   // Reload only charts without re-fetching data
   await nextTick()
   initCharts()
+}
+
+// Initialize overview chart immediately using overview data
+const initOverviewChart = async () => {
+  if (validSelectedMeterIds.value.length === 0 || !currentOverviewData.value) return
+
+  // Wait for canvas element to be mounted
+  await nextTick()
+
+  try {
+    const overviewCanvas = document.getElementById('overviewChart') as HTMLCanvasElement
+    if (!overviewCanvas) return
+
+    // Properly destroy existing chart and clean canvas
+    if (overviewChart) {
+      overviewChart.destroy()
+      overviewChart = null
+    }
+
+    // Also check if there's any chart instance attached to the canvas
+    const existingChart = Chart.getChart(overviewCanvas)
+    if (existingChart) {
+      existingChart.destroy()
+    }
+
+    // Wait for Chart.js to fully clean up
+    await nextTick()
+
+    const ctx = overviewCanvas.getContext('2d')
+
+    if (ctx && currentMeterId.value) {
+      // Use hourly data from overview endpoint - always shows today's 24 hours
+      const hourlyData = currentOverviewData.value.hourlyData || []
+
+      // Parse all data points with hour and value
+      const dataByHour = new Map<number, number | null>()
+
+      hourlyData.forEach((dataPoint: any) => {
+        const date = new Date(dataPoint.ts)
+        const hour = date.getHours()
+        dataByHour.set(hour, dataPoint.value)
+      })
+
+      // Generate all 24 hours
+      const allHours: Array<{ label: string; value: number | null }> = []
+
+      for (let hour = 0; hour < 24; hour++) {
+        const hourLabel = `${String(hour).padStart(2, '0')}:00`
+        const value = dataByHour.has(hour) ? dataByHour.get(hour)! : null
+        allHours.push({ label: hourLabel, value })
+      }
+
+      const aggregatedLabels = allHours.map(d => d.label)
+      const aggregatedValues = allHours.map(d => d.value)
+
+      // Chart creation with overview data
+      overviewChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: aggregatedLabels,
+          datasets: [
+            {
+              label: t('current.current'),
+              data: aggregatedValues,
+              borderColor: metersStore.getMeterColor(currentMeterId.value),
+              backgroundColor: `${metersStore.getMeterColor(currentMeterId.value)}20`,
+              borderWidth: 2.5,
+              tension: 0.4,
+              fill: true,
+              spanGaps: false,
+              pointRadius: 0,
+              pointHoverRadius: 6,
+              pointBackgroundColor: metersStore.getMeterColor(currentMeterId.value),
+              pointBorderColor: '#fff',
+              pointBorderWidth: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index' as const,
+            intersect: false
+          },
+          plugins: {
+            tooltip: {
+              enabled: true,
+              backgroundColor: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#1f2937' : '#fff',
+              titleColor: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#f3f4f6' : '#111827',
+              bodyColor: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151',
+              borderColor: metersStore.getMeterColor(currentMeterId.value),
+              borderWidth: 2,
+              padding: 12,
+              displayColors: false,
+              callbacks: {
+                label: (context) => {
+                  const value = context.raw as number | null
+                  if (value === null || value === undefined) {
+                    return `${t('common.noData')}`
+                  }
+                  return `${(value as number).toFixed(2)} A`
+                }
+              }
+            },
+            legend: {
+              display: true,
+              labels: {
+                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151',
+                padding: 15,
+                font: { size: 12, weight: 500 as any }
+              }
+            },
+            filler: {
+              propagate: true
+            },
+            datalabels: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: `${t('current.current')} (A)`,
+                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#cbd5e1' : '#64748b',
+                font: { size: 12, weight: 500 as any }
+              },
+              ticks: {
+                display: true,
+                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                font: { size: 11 },
+                callback: function(value) {
+                  return `${value} A`
+                }
+              },
+              grid: {
+                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#1e293b' : '#e5e7eb'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: t('current.time'),
+                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#cbd5e1' : '#64748b',
+                font: { size: 12, weight: 500 as any }
+              },
+              ticks: {
+                display: true,
+                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                font: { size: 9 },
+                maxRotation: 90,
+                minRotation: 45,
+                autoSkip: true
+              },
+              grid: {
+                color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#1e293b' : '#e5e7eb'
+              }
+            }
+          }
+        }
+      })
+
+      console.log('[CurrentView] ✓ Overview chart created with overview data')
+      chartHasData.value = true
+    }
+  } catch (err) {
+    console.error('[CurrentView] Error initializing overview chart:', err)
+  }
+}
+
+// Initialize detailed charts using chart endpoint data
+const initDetailedCharts = async () => {
+  if (validSelectedMeterIds.value.length === 0 || !currentChartData.value) return
+
+  // Set loading state for detailed charts
+  isChartLoading.value = true
+
+  // Wait for canvas elements to be mounted
+  await nextTick()
+
+  let hasChartData = false
+  try {
+    console.log('[CurrentView] Initializing detailed charts with chart data')
+    // Implementation for detailed charts goes here
+    // This will handle 24h, daily, weekly, yearly charts based on currentChartData
+
+    hasChartData = true
+  } catch (err) {
+    console.error('[CurrentView] Error initializing detailed charts:', err)
+    hasChartData = false
+  } finally {
+    isChartLoading.value = false
+  }
 }
 
 const initCharts = async () => {
@@ -1446,15 +1756,16 @@ const initCharts = async () => {
 
     if (isApiMode && currentKPIData.value) {
       // Use cached hourly data from KPI response
-      const hourlyData = currentKPIData.value.hourlyData
+      const hourlyData = currentKPIData.value.hourlyData || []
+      const validHourlyData = hourlyData.filter((d: any) => d.value !== null && d.value !== undefined)
       chart24hData = {
-        labels: hourlyData.map((d: any) => {
+        labels: validHourlyData.map((d: any) => {
           const date = new Date(d.ts)
           return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false })
         }),
         datasets: [{
           label: t('current.current'),
-          data: hourlyData.map((d: any) => d.value),
+          data: validHourlyData.map((d: any) => d.value as number),
           borderColor: metersStore.getMeterColor(currentMeterId.value),
           backgroundColor: metersStore.getMeterColor(currentMeterId.value)
         }]
@@ -1747,6 +2058,108 @@ const initCharts = async () => {
       }
     }
 
+    // Monthly Chart - Monthly data for the last 12 months (use cached data)
+    let monthlyData: CurrentChartData | null = null
+    if (isApiMode && currentKPIData.value) {
+      // Use cached monthly/yearly data from KPI response
+      const monthData = currentKPIData.value.dailyYearData || []
+      monthlyData = {
+        labels: monthData.map((d: any) => d.monthYear || d.month),
+        datasets: [{
+          label: t('current.average'),
+          data: monthData.map((d: any) => d.value),
+          borderColor: metersStore.getMeterColor(currentMeterId.value),
+          backgroundColor: `${metersStore.getMeterColor(currentMeterId.value)}20`
+        }]
+      }
+    } else if (!isApiMode && currentMeterId.value) {
+      monthlyData = await getChartData(currentMeterId.value, 'year')
+    }
+
+    if (monthlyData) {
+      const chartMonthlyCanvas = document.getElementById('chartMonthly') as HTMLCanvasElement
+      if (chartMonthlyCanvas) {
+        const ctx = chartMonthlyCanvas.getContext('2d')
+        if (ctx) {
+          if (chartMonthly) chartMonthly.destroy()
+
+          chartMonthly = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: monthlyData.labels,
+              datasets: [
+                {
+                  label: t('current.average'),
+                  data: monthlyData.datasets[0].data,
+                  borderColor: metersStore.getMeterColor(currentMeterId.value),
+                  backgroundColor: `${metersStore.getMeterColor(currentMeterId.value)}20`,
+                  borderWidth: 2,
+                  tension: 0.4,
+                  fill: true,
+                  spanGaps: false,
+                  pointBackgroundColor: metersStore.getMeterColor(currentMeterId.value),
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2,
+                  pointRadius: 4,
+                  pointHoverRadius: 7
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                tooltip: {
+                  enabled: true,
+                  backgroundColor: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#1f2937' : '#fff',
+                  titleColor: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#f3f4f6' : '#111827',
+                  bodyColor: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151',
+                  borderColor: metersStore.getMeterColor(currentMeterId.value),
+                  borderWidth: 2,
+                  padding: 12,
+                  displayColors: false,
+                  callbacks: {
+                    label: (context) => {
+                      const value = context.raw as number | null
+                      if (value === null || value === undefined) {
+                        return `${t('common.noData')}`
+                      }
+                      return `${(value as number).toFixed(2)} A`
+                    }
+                  }
+                },
+                legend: {
+                  labels: {
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#e5e7eb' : '#374151'
+                  }
+                },
+                datalabels: {
+                  display: false
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    display: true,
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                    font: { size: 11 }
+                  }
+                },
+                x: {
+                  ticks: {
+                    display: true,
+                    color: window.matchMedia('(prefers-color-scheme: dark)').matches ? '#94a3b8' : '#64748b',
+                    font: { size: 11 }
+                  }
+                }
+              }
+            }
+          })
+        }
+      }
+    }
+
     // Yearly Chart - Monthly data for the year (use cached data)
     let yearlyData: CurrentChartData | null = null
     if (isApiMode && currentKPIData.value) {
@@ -1896,7 +2309,7 @@ watch(() => metersStore.allMeters.length, async () => {
 
 // Watch for tab changes to initialize charts when needed
 watch(viewMode, async () => {
-  if (!currentMeterId.value) return
+  if (!currentMeterId.value || !currentDeviceUUID.value) return
 
   await nextTick()
 
@@ -1907,6 +2320,33 @@ watch(viewMode, async () => {
       initCharts()
     }
   } else if (viewMode.value === 'charts') {
+    // Check if chart data already exists for this device
+    if (!currentChartDataMap.value.has(currentDeviceUUID.value)) {
+      // Data doesn't exist - fetch it
+      console.log('[CurrentView] Chart data not cached, fetching for:', currentDeviceUUID.value)
+      isChartLoading.value = true
+      chartHasData.value = true
+      try {
+        const chartData = await fetchCurrentChartData(currentDeviceUUID.value, { useCache: true })
+        if (chartData) {
+          currentChartDataMap.value.set(currentDeviceUUID.value, chartData)
+          console.log('[CurrentView] ✓ Chart data loaded from API')
+          chartHasData.value = true
+        } else {
+          console.warn('[CurrentView] ⚠ No chart data returned from API')
+          chartHasData.value = false
+        }
+      } catch (err) {
+        console.error('[CurrentView] ✗ Error fetching chart data:', err)
+        chartHasData.value = false
+      } finally {
+        isChartLoading.value = false
+      }
+    } else {
+      console.log('[CurrentView] Using cached chart data for:', currentDeviceUUID.value)
+      chartHasData.value = true
+    }
+
     // Re-initialize charts tab charts whenever switching to this tab
     const chart24hCanvas = document.getElementById('chart24h') as HTMLCanvasElement
     const chartDailyCanvas = document.getElementById('chartDaily') as HTMLCanvasElement
@@ -1919,23 +2359,48 @@ watch(viewMode, async () => {
       console.log('[CurrentView] Resizing all charts for visibility')
       if (chart24h) {
         chart24h.resize()
-        console.log('[CurrentView] ✓ Resized 24h chart')
       }
       if (chartDaily) {
         chartDaily.resize()
-        console.log('[CurrentView] ✓ Resized daily chart')
       }
       if (chartWeekly) {
         chartWeekly.resize()
-        console.log('[CurrentView] ✓ Resized weekly chart')
+      }
+      if (chartMonthly) {
+        chartMonthly.resize()
       }
       if (chartYearly) {
         chartYearly.resize()
-        console.log('[CurrentView] ✓ Resized yearly chart')
       }
-    }, 300)
+      if (overviewChart) {
+        overviewChart.resize()
+      }
+    }, 50)
+  } else if (viewMode.value === 'tables') {
+    // Check if table data (overview data containing KPI details) already exists for this device
+    if (!currentOverviewDataMap.value.has(currentDeviceUUID.value)) {
+      // Data doesn't exist - fetch it
+      console.log('[CurrentView] Table data not cached, fetching for:', currentDeviceUUID.value)
+      isLoading.value = true
+      try {
+        const overview = await fetchCurrentOverview(currentDeviceUUID.value, { useCache: true })
+        if (overview) {
+          currentOverviewDataMap.value.set(currentDeviceUUID.value, overview)
+          console.log('[CurrentView] ✓ Table data loaded from API')
+        } else {
+          console.warn('[CurrentView] ⚠ No table data returned from API')
+        }
+      } catch (err) {
+        console.error('[CurrentView] ✗ Error fetching table data:', err)
+      } finally {
+        isLoading.value = false
+      }
+    } else {
+      console.log('[CurrentView] Using cached table data for:', currentDeviceUUID.value)
+    }
   }
 })
+
 
 // Watch for period changes in overview tab to refresh overview chart
 watch(selectedPeriod, async () => {
