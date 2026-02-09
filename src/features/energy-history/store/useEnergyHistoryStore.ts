@@ -129,14 +129,31 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Auto Resolution
   // ===========================
   const effectiveResolution = computed(() => {
-    // ✅ Requirement: show hourly when selected days < 8, else daily
-    if (selectedDates.value.length < 8 && selectedDates.value.length > 0) {
-      return 'hourly' as const
+    // Check the actual data structure to determine resolution
+    // If we have data with single hour=12 entries for all dates, that's daily resolution
+    if (historicalData.value.size > 0) {
+      // Sample first device's first date
+      for (const [_, deviceDates] of historicalData.value.entries()) {
+        if (deviceDates.length > 0) {
+          const firstDate = deviceDates[0]
+          // If all hourly data points have the same hour (12), it's daily mode
+          const allHour12 = firstDate.hourlyData.length === 1 && firstDate.hourlyData[0].hour === 12
+          if (allHour12) {
+            return 'daily' as const
+          }
+          // If we have multiple hours, it's hourly mode
+          if (firstDate.hourlyData.length > 1) {
+            return 'hourly' as const
+          }
+        }
+      }
     }
-    if (selectedDates.value.length >= 8) {
+    // Auto-switch: 3 days or less = hourly, 4+ days = daily
+    if (selectedDates.value.length <= 3) {
+      return 'hourly' as const
+    } else {
       return 'daily' as const
     }
-    return resolution.value
   })
 
   const resolutionLabel = computed(() =>
@@ -937,6 +954,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     // Clear previous data
     historicalData.value.clear()
 
+    // Detect resolution from API response
+    const apiResolution = response.meta?.resolution || 'hourly'
+
     // Iterate through each device
     for (const deviceUUID of Object.keys(response.data)) {
       const deviceData = response.data[deviceUUID]
@@ -952,8 +972,19 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         const dateToPoints = new Map<string, HourlyDataPoint[]>()
         dataPoints.forEach(dp => {
           const dateObj = new Date(dp.timestamp)
-          const dateStr = formatDate(dateObj)
-          const hour = dateObj.getHours()
+          let dateStr: string
+          let hour: number
+
+          if (apiResolution === 'daily') {
+            // Daily data: use the date string from API and set hour to 12 (noon)
+            dateStr = dp.date || formatDate(dateObj)
+            hour = 12
+          } else {
+            // Hourly data: extract hour from timestamp
+            dateStr = formatDate(dateObj)
+            hour = dateObj.getHours()
+          }
+
           if (!dateToPoints.has(dateStr)) {
             dateToPoints.set(dateStr, [])
           }

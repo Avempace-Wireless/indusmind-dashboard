@@ -1252,20 +1252,10 @@ async function fetchEnergyHistoryData() {
 
   try {
     isFetchingData.value = true
-    console.log('[EnergyHistorical] Starting API fetch...')
+    console.log('[EnergyHistorical] Starting single API call for all selected days...')
 
     // Sort dates to ensure correct order
     const sortedDates = [...selectedDates.value].sort()
-
-    // Convert first date to start of day in milliseconds
-    const firstDate = new Date(sortedDates[0])
-    firstDate.setHours(0, 0, 0, 0)
-    const startDate = firstDate.getTime()
-
-    // Convert last date to end of day in milliseconds
-    const lastDate = new Date(sortedDates[sortedDates.length - 1])
-    lastDate.setHours(23, 59, 59, 999)
-    const endDate = lastDate.getTime()
 
     // Get enabled metric types
     const metricTypes = enabledMetrics.value
@@ -1285,37 +1275,55 @@ async function fetchEnergyHistoryData() {
     }
 
     // Determine resolution based on number of selected dates
-    const resolution = selectedDates.value.length < 8 ? 'hourly' : 'daily'
+    // Use hourly only for 3 days or less
+    const resolution = selectedDates.value.length <= 3 ? 'hourly' : 'daily'
 
-    console.log('[EnergyHistorical] Fetching data:', {
+    // Convert date strings to timestamps for the date range
+    const firstDate = new Date(sortedDates[0])
+    firstDate.setHours(0, 0, 0, 0)
+    const startDate = firstDate.getTime()
+
+    const lastDate = new Date(sortedDates[sortedDates.length - 1])
+    lastDate.setHours(23, 59, 59, 999)
+    const endDate = lastDate.getTime()
+
+    console.log('[EnergyHistorical] Sending single API request with all selected dates:', {
       selectedDateStrings: sortedDates,
-      startDate: new Date(startDate).toISOString(),
-      endDate: new Date(endDate).toISOString(),
-      startTimestamp: startDate,
-      endTimestamp: endDate,
-      compteurs: visibleCompteurs.value.map(c => ({ id: c.id, deviceUUID: c.deviceUUID })),
+      totalDays: sortedDates.length,
+      deviceCount: visibleCompteurs.value.length,
       metricTypes,
       resolution,
-      timeRange: `${hourFrom.value}:00 - ${hourTo.value}:59`
+      timeRange: `${hourFrom.value}:00 - ${hourTo.value}:59`,
+      dateRange: `${new Date(startDate).toISOString()} to ${new Date(endDate).toISOString()}`
     })
 
-    // Fetch from new API
+    // Make single API call to backend
+    // Backend will handle fetching data for each day using Promise.all
     const result = await fetchEnergyHistory({
       deviceUUIDs: visibleCompteurs.value.map(c => c.deviceUUID || c.id),
       startDate,
       endDate,
       metricTypes,
       resolution,
-      hourFrom: hourFrom.value > 0 ? hourFrom.value : undefined,
-      hourTo: hourTo.value < 23 ? hourTo.value : undefined
+      // Pass selected dates to backend so it can fetch each day individually
+      selectedDates: sortedDates,
+      hourFrom: hourFrom.value,
+      hourTo: hourTo.value
     }, false) // Don't use cache to ensure fresh data
+
+    console.log('[EnergyHistorical] Backend API call completed:', {
+      success: result.success,
+      deviceCount: Object.keys(result.data).length,
+      metricTypes,
+      resolution
+    })
 
     // Process API response into store so chartData can render
     if (result.success) {
       processAPIResponse(result)
     }
 
-    // Debug: compute present hours from raw API to check gaps (e.g., 13–15)
+    // Debug: compute present hours from API data to check gaps
     const hoursPresent = new Set<number>()
     Object.values(result.data).forEach(deviceData => {
       Object.values(deviceData).forEach(metricArray => {
@@ -1326,13 +1334,18 @@ async function fetchEnergyHistoryData() {
       })
     })
 
-    console.log('[EnergyHistorical] Successfully fetched energy history data:', {
+    console.log('[EnergyHistorical] Successfully fetched aggregated energy history data:', {
       success: result.success,
-      deviceCount: result.meta.deviceUUIDs.length,
-      metrics: result.meta.metricTypes,
-      resolution: result.meta.resolution,
-      dataStructure: Object.keys(result.data),
-      hoursPresent: Array.from(hoursPresent).sort((a,b)=>a-b),
+      deviceCount: Object.keys(result.data).length,
+      metrics: metricTypes,
+      resolution,
+      fetchedDays: sortedDates.length,
+      totalDataPoints: Object.values(result.data).reduce((total, deviceData) => {
+        return total + Object.values(deviceData).reduce((deviceTotal, metricArray) => {
+          return deviceTotal + (Array.isArray(metricArray) ? metricArray.length : 0)
+        }, 0)
+      }, 0),
+      hoursPresent: Array.from(hoursPresent).sort((a, b) => a - b),
     })
 
     return result
@@ -1594,19 +1607,6 @@ watch([selectedDates, enabledMetrics, activePeriodPreset], async () => {
     debouncedRefreshData()
   }
 }, { deep: true })
-
-// Fetch API data when visible compteurs change
-watch(visibleCompteurs, async () => {
-  console.log('[EnergyHistorical] Visible compteurs changed, refreshing data')
-  await fetchEnergyHistoryData()
-  await refreshData()
-}, { deep: true })
-
-// Fetch API data when hour range changes
-watch([hourFrom, hourTo], async () => {
-  console.log('[EnergyHistorical] Hour range changed, refreshing data')
-  await refreshData()
-})
 </script>
 
 <style scoped>

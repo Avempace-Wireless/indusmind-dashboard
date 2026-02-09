@@ -88,6 +88,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // State - Resolution/Period
   // ===========================
   const resolution = ref<'hourly' | 'daily'>('hourly') // Hourly for 1 day, daily for multiple
+  const lastApiResolution = ref<'hourly' | 'daily'>('hourly') // Track what resolution API actually returned
 
   // ===========================
   // Computed - Enabled Metrics
@@ -109,8 +110,27 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Auto Resolution
   // ===========================
   const effectiveResolution = computed(() => {
-    // Auto-switch: less than 8 days = hourly, 8+ days = daily
-    if (selectedDates.value.length < 8) {
+    // Check the actual data structure to determine resolution
+    // If we have data with single hour=12 entries for all dates, that's daily resolution
+    if (historicalData.value.size > 0) {
+      // Sample first device's first date
+      for (const [_, deviceDates] of historicalData.value.entries()) {
+        if (deviceDates.length > 0) {
+          const firstDate = deviceDates[0]
+          // If all hourly data points have the same hour (12), it's daily mode
+          const allHour12 = firstDate.hourlyData.length === 1 && firstDate.hourlyData[0].hour === 12
+          if (allHour12) {
+            return 'daily' as const
+          }
+          // If we have multiple hours, it's hourly mode
+          if (firstDate.hourlyData.length > 1) {
+            return 'hourly' as const
+          }
+        }
+      }
+    }
+    // Auto-switch: 3 days or less = hourly, 4+ days = daily
+    if (selectedDates.value.length <= 3) {
       return 'hourly' as const
     } else {
       return 'daily' as const
@@ -744,6 +764,10 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     if (!apiResponse || !apiResponse.data) return
 
     const deviceData = apiResponse.data || {}
+    const resolution = apiResponse.meta?.resolution || 'hourly'
+
+    // Store the actual API resolution for display logic
+    lastApiResolution.value = resolution as 'hourly' | 'daily'
 
     // Clear historical data to avoid stale data from previous fetches
     historicalData.value.clear()
@@ -758,17 +782,21 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         dataPoints.forEach((point: any) => {
           if (!point.hasData) return // Skip points without data
 
-          // Use the ISO date string from API (it's UTC-based)
-          // This avoids timezone conversion issues
-          const isoDateString = point.date || new Date(point.timestamp).toISOString()
+          // Use the date from API response
+          let dateStr: string
+          let hour: number = 0
 
-          // Extract date part (YYYY-MM-DD) from ISO string
-          const dateStr = isoDateString.substring(0, 10)
-
-          // Extract hour from ISO string (HH from HH:mm:ss format)
-          // The ISO string is like "2026-02-06T14:30:00.000Z"
-          const hourStr = isoDateString.substring(11, 13)
-          const hour = parseInt(hourStr, 10)
+          if (resolution === 'daily') {
+            // Daily data: point.date is just "2026-02-05"
+            dateStr = point.date || new Date(point.timestamp).toISOString().split('T')[0]
+            hour = 12 // Use noon (12:00) as representative hour for daily data
+          } else {
+            // Hourly data: point.date is ISO like "2026-02-06T14:30:00.000Z"
+            const isoDateString = point.date || new Date(point.timestamp).toISOString()
+            dateStr = isoDateString.substring(0, 10)
+            const hourStr = isoDateString.substring(11, 13)
+            hour = parseInt(hourStr, 10) || 0
+          }
 
           if (!dataByDate.has(dateStr)) {
             dataByDate.set(dateStr, [])
@@ -821,6 +849,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     })
 
     console.log('[Store] Processed API response:', {
+      resolution,
       deviceCount: Object.keys(deviceData).length,
       historicalDataSize: historicalData.value.size,
       timezone: {
