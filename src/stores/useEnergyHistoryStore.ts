@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import type {
   MetricType,
@@ -186,6 +186,34 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Primary & Secondary Dates
   // ===========================
   const primaryDate = computed(() => selectedDates.value[0] || null)
+
+  function normalizeSelectedDates(dates: string[]): string[] {
+    if (dates.length <= 1) return dates
+
+    const sorted = [...dates].sort()
+    const minDate = sorted[0]
+    const maxDate = sorted[sorted.length - 1]
+    const continuous = getDatesBetween(minDate, maxDate)
+
+    if (continuous.length > 32) {
+      return continuous.slice(0, 32)
+    }
+
+    return continuous
+  }
+
+  watch(
+    () => selectedDates.value,
+    dates => {
+      if (dates.length <= 1) return
+
+      const normalized = normalizeSelectedDates(dates)
+      if (normalized.length !== dates.length || normalized.some((d, i) => d !== dates[i])) {
+        selectedDates.value = normalized
+      }
+    },
+    { deep: true }
+  )
 
   // ===========================
   // Computed - Calendar Days
@@ -589,9 +617,40 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   function toggleDate(dateStr: string) {
     const index = selectedDates.value.indexOf(dateStr)
     if (index > -1) {
+      // Prevent removing interior dates to avoid gaps
+      if (selectedDates.value.length > 1) {
+        const sorted = [...selectedDates.value].sort()
+        const first = sorted[0]
+        const last = sorted[sorted.length - 1]
+        if (dateStr !== first && dateStr !== last) {
+          return
+        }
+      }
+
       selectedDates.value.splice(index, 1)
     } else {
-      selectedDates.value.push(dateStr)
+      // Add date and fill gaps to create continuous range
+      const newDates = [...selectedDates.value, dateStr]
+
+      if (newDates.length === 1) {
+        selectedDates.value = newDates
+      } else {
+        const sortedDates = newDates.map(d => new Date(d)).sort((a, b) => a.getTime() - b.getTime())
+        const minDate = sortedDates[0]
+        const maxDate = sortedDates[sortedDates.length - 1]
+
+        const continuousRange = getDatesBetween(
+          formatDate(minDate),
+          formatDate(maxDate)
+        )
+
+        if (continuousRange.length > 32) {
+          console.warn(`[toggleDate] Selection would exceed 32 days (${continuousRange.length} days). Limiting to 32 days from earliest date.`)
+          selectedDates.value = continuousRange.slice(0, 32)
+        } else {
+          selectedDates.value = continuousRange
+        }
+      }
     }
     // Clear preset when manually selecting dates
     activePeriodPreset.value = null

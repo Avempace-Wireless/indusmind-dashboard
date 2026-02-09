@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import type {
   MetricType,
@@ -130,30 +130,62 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   const effectiveResolution = computed(() => {
     // Check the actual data structure to determine resolution
-    // If we have data with single hour=12 entries for all dates, that's daily resolution
+    // Preference: If we have 4+ selected dates AND detect daily pattern, use DAILY
+    // Otherwise: Check if ANY device has daily pattern (hour=12, length=1)
+
+    console.log('[effectiveResolution] Computing... historicalDataSize:', historicalData.value.size, 'selectedDatesLength:', selectedDates.value.length)
+
+    // Track what we find across all devices
+    let foundDailyPattern = false
+    let foundHourlyPattern = false
+
     if (historicalData.value.size > 0) {
-      // Sample first device's first date
-      for (const [_, deviceDates] of historicalData.value.entries()) {
+      // Check ALL devices, not just the first one
+      for (const [deviceUUID, deviceDates] of historicalData.value.entries()) {
+        console.log(`[effectiveResolution] Checking device ${deviceUUID}: ${deviceDates.length} dates`)
+
         if (deviceDates.length > 0) {
           const firstDate = deviceDates[0]
-          // If all hourly data points have the same hour (12), it's daily mode
           const allHour12 = firstDate.hourlyData.length === 1 && firstDate.hourlyData[0].hour === 12
+
+          console.log('[effectiveResolution] First date details:', {
+            date: firstDate.date,
+            hourlyDataLength: firstDate.hourlyData.length,
+            hour: firstDate.hourlyData[0]?.hour,
+            allHour12,
+          })
+
           if (allHour12) {
-            return 'daily' as const
-          }
-          // If we have multiple hours, it's hourly mode
-          if (firstDate.hourlyData.length > 1) {
-            return 'hourly' as const
+            foundDailyPattern = true
+            console.log('[effectiveResolution] ✓ Found DAILY pattern in device:', deviceUUID)
+          } else if (firstDate.hourlyData.length > 1) {
+            foundHourlyPattern = true
+            console.log('[effectiveResolution] Found HOURLY pattern in device:', deviceUUID)
           }
         }
       }
     }
-    // Auto-switch: 3 days or less = hourly, 4+ days = daily
-    if (selectedDates.value.length <= 3) {
-      return 'hourly' as const
-    } else {
+
+    // Decision logic:
+    // 1. If we found daily pattern, prefer daily (even if some devices have hourly)
+    // 2. If only hourly pattern found, use hourly
+    // 3. Otherwise, use fallback based on selectedDates count
+    if (foundDailyPattern) {
+      console.log('[effectiveResolution] ✓ RETURNING DAILY (found daily pattern across devices)')
       return 'daily' as const
     }
+
+    if (foundHourlyPattern && selectedDates.value.length <= 3) {
+      console.log('[effectiveResolution] ✓ RETURNING HOURLY (found hourly pattern and <= 3 dates)')
+      return 'hourly' as const
+    }
+
+    // Auto-switch: 3 days or less = hourly, 4+ days = daily
+    const fallbackResolution = selectedDates.value.length <= 3 ? 'hourly' : 'daily'
+    console.log('[effectiveResolution] ✓ RETURNING FALLBACK:', fallbackResolution,
+                '(selectedDatesLength:', selectedDates.value.length, ')')
+
+    return fallbackResolution
   })
 
   const resolutionLabel = computed(() =>
@@ -212,6 +244,34 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Primary & Secondary Dates
   // ===========================
   const primaryDate = computed(() => selectedDates.value[0] || null)
+
+  function normalizeSelectedDates(dates: string[]): string[] {
+    if (dates.length <= 1) return dates
+
+    const sorted = [...dates].sort()
+    const minDate = sorted[0]
+    const maxDate = sorted[sorted.length - 1]
+    const continuous = getDatesBetween(minDate, maxDate)
+
+    if (continuous.length > 32) {
+      return continuous.slice(0, 32)
+    }
+
+    return continuous
+  }
+
+  watch(
+    () => selectedDates.value,
+    dates => {
+      if (dates.length <= 1) return
+
+      const normalized = normalizeSelectedDates(dates)
+      if (normalized.length !== dates.length || normalized.some((d, i) => d !== dates[i])) {
+        selectedDates.value = normalized
+      }
+    },
+    { deep: true }
+  )
 
   // ===========================
   // Computed - Calendar Days
@@ -291,6 +351,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Chart Data
   // ===========================
   const chartData = computed(() => {
+    // ⚠️ CRITICAL: Don't compute chart while loading API data
+    // Wait for loading flag to be false before building chart
+    if (loading.value) {
+      console.log('📊 [chartData] SKIPPING - Still loading from API (loading.value=true)')
+      return { labels: [], datasets: [] }
+    }
+
     console.log('📊 [chartData] Computed fired:', {
       selectedDatesCount: selectedDates.value.length,
       selectedDates: selectedDates.value,
@@ -298,6 +365,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       visibleCount: visibleCompteurs.value.length,
       historicalDataSize: historicalData.value.size,
       selectedMetricType: selectedMetric.value?.type,
+      chartWillBe: effectiveResolution.value === 'hourly' ? `HOURLY (${selectedDates.value.length * 24} labels)` : `DAILY (${selectedDates.value.length} labels)`,
     })
 
     const datasets: Array<{
@@ -316,7 +384,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       const metric = selectedMetric.value
       let dateStr = selectedDates.value[0]
 
-      console.log('[Chart] ⏰ Entering HOURLY mode')
+      console.log('[Chart] ⏰ Entering HOURLY mode, effectiveResolution:', effectiveResolution.value,
+                  'selectedDatesLength:', selectedDates.value.length,
+                  'historicalDataSize:', historicalData.value.size)
 
       // If no date selected, use the first available date from stored data
       if (!dateStr && historicalData.value.size > 0) {
@@ -490,33 +560,127 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       // Sort dates chronologically for daily mode - YYYY-MM-DD format sorts correctly with localeCompare
       let datesToUse = [...selectedDates.value]
       datesToUse.sort((a, b) => a.localeCompare(b))
-      console.log('[Chart] Daily mode - Sorted dates:', datesToUse)
+
+      // 🔍 DIAGNOSTIC: Show what dates are stored vs selected
+      const allStoredDates = new Set<string>()
+      for (const [_, records] of historicalData.value.entries()) {
+        records.forEach(r => allStoredDates.add(r.date))
+      }
+
+      console.log('[Chart] Daily mode - DATE MISMATCH CHECK:', {
+        selectedDates: datesToUse.slice(0, 5),
+        storedDates: Array.from(allStoredDates).sort().slice(0, 5),
+        selectedCount: datesToUse.length,
+        storedCount: allStoredDates.size,
+        firstSelectedDate: datesToUse[0],
+        firstStoredDate: Array.from(allStoredDates).sort()[0],
+      })
+
+      // First pass: identify which dates have any data across all meters
+      const datesWithData = new Set<string>()
+
+      datesToUse.forEach((dateStr, dateIdx) => {
+        const hasDataForThisDate = visibleCompteurs.value.some((compteur, meterIdx) => {
+          const dayData = getMetricDataForDate(dateStr, metric.type, compteur.id)
+          const hasData = dayData && dayData.hourlyData && dayData.hourlyData.length > 0
+          return hasData
+        })
+
+        if (hasDataForThisDate) {
+          datesWithData.add(dateStr)
+        }
+      })
+
+      console.log('[Chart] Daily mode - Dates with data:', {
+        totalSelected: datesToUse.length,
+        withData: datesWithData.size,
+        datesWithData: Array.from(datesWithData).sort(),
+      })
+
+      // ⚠️ IMPORTANT: Use ALL selected dates as labels to show gaps
+      // Don't filter - show all dates and use null for missing data
+      const datesToDisplay = datesToUse // Use ALL dates, not filtered
+
+      // Build datasets only for dates that have data
+      console.log('[Chart] Daily mode - Building datasets:', {
+        visibleCompteurCount: visibleCompteurs.value.length,
+        visibleCompteurs: visibleCompteurs.value.map(c => ({
+          id: c.id,
+          name: c.name,
+          deviceUUID: (c as any).deviceUUID,
+          hasDeviceUUID: !!(c as any).deviceUUID,
+        })),
+        storedDeviceUUIDs: Array.from(historicalData.value.keys()),
+        datesToDisplay: datesToDisplay.length,
+      })
 
       visibleCompteurs.value.forEach((compteur, idx) => {
         const dataPoints: (number | null)[] = []
-        datesToUse.forEach(dateStr => {
+        const sampleValues: any[] = []
+
+        console.log(`[Chart] Daily - Processing compteur ${idx + 1}/${visibleCompteurs.value.length}: ${compteur.id}`)
+
+        datesToDisplay.forEach(dateStr => {
           const dayData = getMetricDataForDate(dateStr, metric.type, compteur.id)
-          // calculateFilteredTotal now returns null when no data exists
-          const total = dayData && dayData.hourlyData ? calculateFilteredTotal(dayData.hourlyData) : null
+
+          if (!dayData || !dayData.hourlyData || dayData.hourlyData.length === 0) {
+            dataPoints.push(null)
+            sampleValues.push({ date: dateStr, value: null })
+            return
+          }
+
+          const total = calculateFilteredTotal(dayData.hourlyData)
           dataPoints.push(total)
+          sampleValues.push({ date: dateStr, value: total })
         })
+
         const color = getMeterColor(compteur.id, idx)
-        datasets.push({
+        const dataset = {
           label: `${compteur.name}`,
           data: dataPoints,
           borderColor: color,
           backgroundColor: hexToRgba(color, 0.5),
           yAxisID: metric.yAxisPosition === 'left' ? 'y' : 'y1',
           metricType: metric.type,
-          spanGaps: false, // Display gaps for null values instead of connecting across them
+          spanGaps: false,
+        }
+
+        console.log(`[Chart Daily] Dataset for ${compteur.name}:`, {
+          label: dataset.label,
+          dataLength: dataPoints.length,
+          nonNullCount: dataPoints.filter(v => v !== null).length,
+          minValue: dataPoints.filter(v => v !== null).length > 0 ? Math.min(...dataPoints.filter(v => v !== null)) : null,
+          maxValue: dataPoints.filter(v => v !== null).length > 0 ? Math.max(...dataPoints.filter(v => v !== null)) : null,
+          allValues: dataPoints,
+          sampleValues
         })
+
+        datasets.push(dataset)
       })
 
       const result = {
-        labels: datesToUse,
+        labels: datesToDisplay,
         datasets,
       }
-      console.log('chartData returning (daily):', { labelsLength: result.labels.length, datasetsLength: result.datasets.length, actualLabels: result.labels, sortedDates: datesToUse })
+
+      // Log exact data structure being returned
+      console.log('chartData returning (daily) - FINAL RESULT:', {
+        selectedDatesCount: datesToUse.length,
+        displayedDatesCount: datesToDisplay.length,
+        labelsLength: result.labels.length,
+        datasetsLength: result.datasets.length,
+        displayedLabels: result.labels,
+        datasetsWithValues: result.datasets.map((d, idx) => ({
+          index: idx,
+          label: d.label,
+          dataLength: d.data.length,
+          data: d.data,
+          nonNullCount: d.data.filter(v => v !== null).length,
+          borderColor: d.borderColor,
+          backgroundColor: d.backgroundColor,
+          yAxisID: d.yAxisID
+        }))
+      })
       return result
     }
   })
@@ -667,9 +831,47 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   function toggleDate(dateStr: string) {
     const index = selectedDates.value.indexOf(dateStr)
     if (index > -1) {
+      // Prevent removing interior dates to avoid gaps
+      if (selectedDates.value.length > 1) {
+        const sorted = [...selectedDates.value].sort()
+        const first = sorted[0]
+        const last = sorted[sorted.length - 1]
+        if (dateStr !== first && dateStr !== last) {
+          return
+        }
+      }
+
+      // Remove date if already selected (only edges allowed)
       selectedDates.value.splice(index, 1)
     } else {
-      selectedDates.value.push(dateStr)
+      // Add date and fill gaps to create continuous range
+      const newDates = [...selectedDates.value, dateStr]
+
+      if (newDates.length === 1) {
+        // First date selected
+        selectedDates.value = newDates
+      } else {
+        // Sort dates to find min and max
+        const sortedDates = newDates.map(d => new Date(d)).sort((a, b) => a.getTime() - b.getTime())
+        const minDate = sortedDates[0]
+        const maxDate = sortedDates[sortedDates.length - 1]
+
+        // Calculate continuous range
+        const continuousRange = getDatesBetween(
+          formatDate(minDate),
+          formatDate(maxDate)
+        )
+
+        // Check if range exceeds 32 days
+        if (continuousRange.length > 32) {
+          console.warn(`[toggleDate] Selection would exceed 32 days (${continuousRange.length} days). Limiting to 32 days from earliest date.`)
+          // Limit to 32 days from the earliest date
+          selectedDates.value = continuousRange.slice(0, 32)
+        } else {
+          // Use continuous range (fills gaps automatically)
+          selectedDates.value = continuousRange
+        }
+      }
     }
     // Clear preset when manually selecting dates
     activePeriodPreset.value = null
@@ -735,8 +937,6 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     activePeriodPreset.value = 'last7Days'
     // Navigate calendar to current month
     currentMonth.value = new Date(today)
-    // Set loading state immediately
-    loading.value = true
   }
 
   function selectLast30Days() {
@@ -751,8 +951,6 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     activePeriodPreset.value = 'last30Days'
     // Navigate calendar to current month (30 days might span 2 months)
     currentMonth.value = new Date(today)
-    // Set loading state immediately
-    loading.value = true
   }
 
   function selectThisMonth() {
@@ -766,8 +964,6 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     activePeriodPreset.value = 'thisMonth'
     // Navigate calendar to current month
     currentMonth.value = new Date(today)
-    // Set loading state immediately
-    loading.value = true
   }
 
   function selectLastMonth() {
@@ -777,12 +973,22 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const firstDay = new Date(year, month, 1)
     const lastDay = new Date(year, month + 1, 0)
     const dates = getDatesBetween(formatDate(firstDay), formatDate(lastDay))
+
+    console.log('[selectLastMonth] Calculated dates:', {
+      today: today.toISOString(),
+      year,
+      month,
+      firstDay: firstDay.toISOString(),
+      lastDay: lastDay.toISOString(),
+      datesCount: dates.length,
+      datesSample: dates.slice(0, 5),
+      datesEnd: dates.slice(-5)
+    })
+
     selectedDates.value = dates
     activePeriodPreset.value = 'lastMonth'
     // Navigate calendar to LAST month (not current)
     currentMonth.value = new Date(year, month, 1)
-    // Set loading state immediately
-    loading.value = true
   }
 
   // ===========================
@@ -821,55 +1027,99 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         hourTo: query.hourRange?.to,
       }
 
-      console.log('[energyHistoryStore] fetchHistoricalData calling API with:', {
+      console.log('[energyHistoryStore] ⏳ FETCH STARTING', {
+        timestamp: new Date().toISOString(),
         deviceUUIDs: apiQuery.deviceUUIDs,
-        startDate: new Date(apiQuery.startDate),
-        endDate: new Date(apiQuery.endDate),
+        startDate: new Date(apiQuery.startDate).toISOString(),
+        endDate: new Date(apiQuery.endDate).toISOString(),
         metricTypes: apiQuery.metricTypes,
         resolution: apiQuery.resolution,
       })
 
       // Fetch from API
+      console.log('[energyHistoryStore] 🔄 Calling energyHistory.fetchEnergyHistory...')
       const response: EnergyHistoryResponse = await energyHistory.fetchEnergyHistory(apiQuery, true)
 
-      console.log('[energyHistoryStore] API response received:', {
+      console.log('[energyHistoryStore] ✅ API response received:', {
+        timestamp: new Date().toISOString(),
         success: response.success,
-        deviceCount: response.meta.deviceUUIDs.length,
-        metrics: response.meta.metricTypes,
-        resolution: response.meta.resolution,
-        rawResponseData: response.data,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        deviceCount: response.meta?.deviceUUIDs?.length || 0,
+        metrics: response.meta?.metricTypes || [],
+        resolution: response.meta?.resolution,
       })
+
+      // Log detailed structure of response data
+      const dataStructure: any = {}
+      if (response.data) {
+        for (const deviceUUID of Object.keys(response.data)) {
+          const deviceMetrics = response.data[deviceUUID]
+          dataStructure[deviceUUID] = {}
+          for (const metricType of Object.keys(deviceMetrics)) {
+            const dataPoints = deviceMetrics[metricType]
+            dataStructure[deviceUUID][metricType] = dataPoints?.length || 0
+          }
+        }
+      }
+      console.log('[energyHistoryStore] Response data structure:', dataStructure)
 
       // ✅ CLEAR OLD DATA BEFORE STORING NEW DATA
       historicalData.value.clear()
-      console.log('[energyHistoryStore] Cleared old historical data')
+      console.log('[energyHistoryStore] 🗑️ Cleared old historical data')
+
+      // ✅ SAFETY CHECK: Verify response.data is not empty
+      const responseDataKeys = Object.keys(response.data)
+      console.log('[energyHistoryStore] 🔍 Checking response.data before processing:', {
+        hasData: response.data && responseDataKeys.length > 0,
+        keyCount: responseDataKeys.length,
+        keys: responseDataKeys,
+      })
+
+      if (!response.data || responseDataKeys.length === 0) {
+        console.warn('[energyHistoryStore] ⚠️ WARNING: API returned empty response.data!')
+        error.value = 'API returned empty data'
+        return
+      }
+
+      console.log('[energyHistoryStore] ✅ Response.data validation PASSED, starting device iteration')
 
       // Transform API response to internal format
+      let deviceProcessedCount = 0
+      let metricsProcessedCount = 0
+      let dataPointsProcessedCount = 0
 
       // Iterate through each device in the response
-      for (const deviceUUID of Object.keys(response.data)) {
+      for (const deviceUUID of responseDataKeys) {
         const deviceData = response.data[deviceUUID]
+        console.log(`[energyHistoryStore] 📦 DEVICE ${deviceProcessedCount + 1}/${responseDataKeys.length}: ${deviceUUID}`, {
+          metricsAvailable: Object.keys(deviceData),
+          metricCount: Object.keys(deviceData).length,
+        })
+
+        let deviceMetricsCount = 0
 
         // Iterate through each metric for this device
         for (const metricType of Object.keys(deviceData) as MetricType[]) {
           const dataPoints = deviceData[metricType]
+          console.log(`  └─ [METRIC] ${metricType}: ${dataPoints?.length || 0} points`)
 
           // ✅ SKIP IF NO DATA POINTS (empty array from API)
           if (!dataPoints || dataPoints.length === 0) {
-            console.log('[energyHistoryStore] Skipping empty data:', {
-              deviceUUID,
-              metricType,
-              dataPointsLength: dataPoints?.length || 0,
-            })
+            console.log(`     ⊘ Skipping empty metric: ${metricType}`)
             continue  // Skip to next metric/device
           }
 
-          console.log('[energyHistoryStore] Processing non-empty data:', {
-            deviceUUID,
-            metricType,
-            dataPointsLength: dataPoints.length,
-            firstDataPoint: dataPoints[0],
+          console.log(`     ✓ Processing ${dataPoints.length} data points for ${metricType}`, {
+            firstTimestamp: dataPoints[0].timestamp,
+            firstDate: dataPoints[0].date,
+            firstValue: dataPoints[0].value,
+            lastDate: dataPoints[dataPoints.length - 1].date,
+            lastValue: dataPoints[dataPoints.length - 1].value,
           })
+
+          deviceMetricsCount++
+          metricsProcessedCount++
 
           // Convert DataPoint[] to HourlyDataPoint[] format
           const hourlyData: HourlyDataPoint[] = dataPoints.map((dp, index) => {
@@ -900,7 +1150,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
             })
           })
 
+          console.log(`     ✓ Grouped into ${dateToPoints.size} dates:`, {
+            dates: Array.from(dateToPoints.keys()).sort(),
+            pointsPerDate: Array.from(dateToPoints.entries()).map(([d, pts]) => `${d}: ${pts.length}pt`),
+          })
+
           // Create daily data records for storage
+          let storedCount = 0
           dateToPoints.forEach((pointsForDate, dateStr) => {
             const totalValue = pointsForDate.reduce((sum, d) => sum + d.value, 0)
             const averageValue = totalValue / pointsForDate.length
@@ -920,28 +1176,53 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
               minHour: minData.hour,
             }
 
-            // Store by device UUID (not compteur ID, but they should match)
+            // Store by device UUID
             const existing = historicalData.value.get(deviceUUID) || []
             historicalData.value.set(deviceUUID, [...existing, dailyData])
+            storedCount++
+            dataPointsProcessedCount++
           })
+
+          console.log(`     ✓ Stored ${storedCount} daily records to historicalData[${deviceUUID}]`)
         }
+
+        deviceProcessedCount++
+        console.log(`  ✓ Device ${deviceUUID} complete: ${deviceMetricsCount} metrics processed`)
       }
 
-      console.log('[energyHistoryStore] Data stored:', {
-        deviceCount: historicalData.value.size,
-        deviceIds: Array.from(historicalData.value.keys()),
-        sampleData: Array.from(historicalData.value.entries())[0] ? {
-          device: Array.from(historicalData.value.entries())[0][0],
-          recordCount: Array.from(historicalData.value.entries())[0][1].length,
-          sample: Array.from(historicalData.value.entries())[0][1].slice(0, 2),
-        } : null,
+      console.log('[energyHistoryStore] ✨ DATA STORAGE COMPLETE:', {
+        timestamp: new Date().toISOString(),
+        devicesProcessed: deviceProcessedCount,
+        metricsProcessed: metricsProcessedCount,
+        dataPointsProcessed: dataPointsProcessedCount,
+        deviceCountStored: historicalData.value.size,
+        deviceUUIDs: Array.from(historicalData.value.keys()),
+        totalRecords: Array.from(historicalData.value.values()).reduce((sum, arr) => sum + arr.length, 0),
+        summary: Array.from(historicalData.value.entries()).map(([uuid, records]) => ({
+          deviceUUID: uuid,
+          recordCount: records.length,
+          dates: [...new Set(records.map(r => r.date))].sort(),
+          metrics: [...new Set(records.map(r => r.metricType))],
+        })),
+        // 🔍 NEW: Show all stored dates in summary
+        allStoredDatesAcrossDevices: [...new Set(Array.from(historicalData.value.values()).flat().map(r => r.date))].sort(),
       })
 
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       error.value = `Failed to fetch historical data: ${message}`
-      console.error('[energyHistoryStore] Fetch error:', err)
+      console.error('[energyHistoryStore] ❌ FETCH ERROR:', {
+        timestamp: new Date().toISOString(),
+        message,
+        stack: err instanceof Error ? err.stack : undefined,
+      })
     } finally {
+      console.log('[energyHistoryStore] 🏁 FETCH COMPLETE', {
+        timestamp: new Date().toISOString(),
+        loading: false,
+        historicalDataSize: historicalData.value.size,
+        error: error.value,
+      })
       loading.value = false
     }
   }
@@ -956,21 +1237,33 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
     // Detect resolution from API response
     const apiResolution = response.meta?.resolution || 'hourly'
+    console.log('[processAPIResponse] Starting with resolution:', apiResolution)
+    console.log('[processAPIResponse] Response structure:', {
+      dataKeys: Object.keys(response.data),
+      dataCount: Object.keys(response.data).length,
+      firstDeviceKey: Object.keys(response.data)[0],
+      firstDeviceMetrics: Object.keys(response.data[Object.keys(response.data)[0]] || {}),
+    })
 
     // Iterate through each device
     for (const deviceUUID of Object.keys(response.data)) {
       const deviceData = response.data[deviceUUID]
+      console.log(`[processAPIResponse] Processing device: ${deviceUUID}`)
 
       // Iterate through each metric for this device
       for (const metricType of Object.keys(deviceData) as MetricType[]) {
         const dataPoints = deviceData[metricType]
+        console.log(`[processAPIResponse] Device ${deviceUUID} metric ${metricType}: ${dataPoints?.length || 0} points`)
 
         // Skip empty arrays
-        if (!dataPoints || dataPoints.length === 0) continue
+        if (!dataPoints || dataPoints.length === 0) {
+          console.warn(`[processAPIResponse] Skipping empty metric: ${metricType}`)
+          continue
+        }
 
         // Group by date
         const dateToPoints = new Map<string, HourlyDataPoint[]>()
-        dataPoints.forEach(dp => {
+        dataPoints.forEach((dp, idx) => {
           const dateObj = new Date(dp.timestamp)
           let dateStr: string
           let hour: number
@@ -985,6 +1278,10 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
             hour = dateObj.getHours()
           }
 
+          if (idx === 0) {
+            console.log(`[processAPIResponse] First data point: dateStr=${dateStr}, hour=${hour}, value=${dp.value}`)
+          }
+
           if (!dateToPoints.has(dateStr)) {
             dateToPoints.set(dateStr, [])
           }
@@ -995,6 +1292,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
             timestamp: dateObj,
           })
         })
+
+        console.log(`[processAPIResponse] ${metricType} grouped into ${dateToPoints.size} dates`)
 
         // Create daily records and store
         dateToPoints.forEach((pointsForDate, dateStr) => {
@@ -1021,6 +1320,16 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         })
       }
     }
+
+    console.log('[processAPIResponse] Final historicalData:', {
+      size: historicalData.value.size,
+      keys: Array.from(historicalData.value.keys()),
+      entrySummary: Array.from(historicalData.value.entries()).map(([key, value]) => ({
+        deviceUUID: key,
+        datesCount: value.length,
+        firstFewDates: value.slice(0, 3).map(d => ({ date: d.date, metricType: d.metricType }))
+      }))
+    })
   }
 
   async function refreshData() {
@@ -1141,54 +1450,14 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     }
 
     const compteurId = compteurIdOverride || selectedCompteurs.value[0].id
-
-    // ✅ LOOKUP BY DEVICE UUID (API stores data by deviceUUID, not compteurId)
     const compteur = selectedCompteurs.value.find(c => c.id === compteurId)
-    const deviceUUID = compteur?.deviceUUID || compteurId  // Use deviceUUID if available
-
-    const compteurData = historicalData.value.get(deviceUUID) || []
-
-    console.log('getMetricDataForDate: Looking up data', {
-      compteurId,
-      deviceUUID,
-      dateStr,
-      metricType,
-      compteurDataLength: compteurData.length,
-      availableKeys: Array.from(historicalData.value.keys()),
-    })
+    const deviceUUID = compteur?.deviceUUID || compteurId
 
     // Try to find exact match in fetched data
+    const compteurData = historicalData.value.get(deviceUUID) || []
     const found = compteurData.find(d => d.date === dateStr && d.metricType === metricType)
 
-    if (found) {
-      console.log('getMetricDataForDate: Found real API data', {
-        dateStr,
-        metricType,
-        compteurId,
-        deviceUUID,
-        hourlyCount: found.hourlyData.length,
-        sampleValues: found.hourlyData.slice(0, 3).map(h => ({
-          hour: h.hour,
-          value: h.value,
-          hasTimestamp: !!h.timestamp,
-          timestamp: h.timestamp ? h.timestamp.toLocaleTimeString('fr-FR') : 'MISSING',
-        })),
-      })
-      return found
-    }
-
-    // If no fetched data, return null (no mock data fallback)
-    console.warn('getMetricDataForDate: No fetched data found for this date/metric - returning NULL', {
-      dateStr,
-      metricType,
-      compteurId,
-      deviceUUID,
-      compteurDataLength: compteurData.length,
-      availableDates: compteurData.slice(0, 3).map(d => d.date),
-      availableMetrics: Array.from(new Set(compteurData.map(d => d.metricType))),
-    })
-
-    return null  // ✅ NO MOCK DATA - return null when no real data exists
+    return found || null
   }
 
   function filterDataByHourRange(hourlyData: HourlyDataPoint[]): HourlyDataPoint[] {
@@ -1196,6 +1465,14 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   }
 
   function calculateFilteredTotal(hourlyData: HourlyDataPoint[]): number | null {
+    // For daily resolution (hour=12, single entry), return total directly without filtering
+    // The daily value is already a complete aggregate, not a per-hour breakdown
+    if (hourlyData.length === 1 && hourlyData[0].hour === 12) {
+      // This is daily resolution - return the single daily value
+      return hourlyData[0].value
+    }
+
+    // For hourly resolution, filter by hour range and sum
     const filtered = filterDataByHourRange(hourlyData)
     if (filtered.length === 0) {
       return null // No data after filtering = gap
