@@ -792,8 +792,13 @@
       }
     },
     "controls": {
+      "displayControls": "Display Controls",
+      "visible": "Visible",
       "columns": "Columns per row",
+      "columnsLabel": "Columns",
       "zones": "Zones",
+      "controllableZones": "Controllable Zone Sensors",
+      "externalSensors": "External Sensors",
       "selectAll": "Select all",
       "clear": "Clear",
       "orderHint": "Drag cards to reorder zones",

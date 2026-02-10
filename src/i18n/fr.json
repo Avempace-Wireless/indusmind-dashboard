@@ -795,8 +795,13 @@
       }
     },
     "controls": {
+      "displayControls": "Affichage et Contrôles",
+      "visible": "Visible",
       "columns": "Colonnes par ligne",
+      "columnsLabel": "Colonnes",
       "zones": "Zones",
+      "controllableZones": "Capteurs de zones contrôlables",
+      "externalSensors": "Capteurs externes",
       "selectAll": "Tout sélectionner",
       "clear": "Tout désélectionner",
       "orderHint": "Glissez les cartes pour réordonner les zones",
