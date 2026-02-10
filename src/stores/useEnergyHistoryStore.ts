@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import type {
   MetricType,
@@ -88,6 +88,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // State - Resolution/Period
   // ===========================
   const resolution = ref<'hourly' | 'daily'>('hourly') // Hourly for 1 day, daily for multiple
+  const lastApiResolution = ref<'hourly' | 'daily'>('hourly') // Track what resolution API actually returned
 
   // ===========================
   // Computed - Enabled Metrics
@@ -109,8 +110,27 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Auto Resolution
   // ===========================
   const effectiveResolution = computed(() => {
-    // Auto-switch: less than 8 days = hourly, 8+ days = daily
-    if (selectedDates.value.length < 8) {
+    // Check the actual data structure to determine resolution
+    // If we have data with single hour=12 entries for all dates, that's daily resolution
+    if (historicalData.value.size > 0) {
+      // Sample first device's first date
+      for (const [_, deviceDates] of historicalData.value.entries()) {
+        if (deviceDates.length > 0) {
+          const firstDate = deviceDates[0]
+          // If all hourly data points have the same hour (12), it's daily mode
+          const allHour12 = firstDate.hourlyData.length === 1 && firstDate.hourlyData[0].hour === 12
+          if (allHour12) {
+            return 'daily' as const
+          }
+          // If we have multiple hours, it's hourly mode
+          if (firstDate.hourlyData.length > 1) {
+            return 'hourly' as const
+          }
+        }
+      }
+    }
+    // Auto-switch: 3 days or less = hourly, 4+ days = daily
+    if (selectedDates.value.length <= 3) {
       return 'hourly' as const
     } else {
       return 'daily' as const
@@ -166,6 +186,34 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Primary & Secondary Dates
   // ===========================
   const primaryDate = computed(() => selectedDates.value[0] || null)
+
+  function normalizeSelectedDates(dates: string[]): string[] {
+    if (dates.length <= 1) return dates
+
+    const sorted = [...dates].sort()
+    const minDate = sorted[0]
+    const maxDate = sorted[sorted.length - 1]
+    const continuous = getDatesBetween(minDate, maxDate)
+
+    if (continuous.length > 32) {
+      return continuous.slice(0, 32)
+    }
+
+    return continuous
+  }
+
+  watch(
+    () => selectedDates.value,
+    dates => {
+      if (dates.length <= 1) return
+
+      const normalized = normalizeSelectedDates(dates)
+      if (normalized.length !== dates.length || normalized.some((d, i) => d !== dates[i])) {
+        selectedDates.value = normalized
+      }
+    },
+    { deep: true }
+  )
 
   // ===========================
   // Computed - Calendar Days
@@ -351,43 +399,34 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         }))
       })
 
-      // ✅ AGGREGATE BY HOUR (Average): track sums and counts per hour
-      const hourlyAggregated = new Map<number, { hour: number; sums: Map<string, number>; counts: Map<string, number> }>()
-
-      visibleCompteurs.value.forEach((compteur) => {
-        const d = dateStr ? getMetricDataForDate(dateStr, metric.type, compteur.id) : null
-        if (!d || !d.hourlyData) return
-        d.hourlyData.forEach(h => {
-          const hour = h.hour
-          if (!hourlyAggregated.has(hour)) {
-            hourlyAggregated.set(hour, { hour, sums: new Map(), counts: new Map() })
-          }
-          const entry = hourlyAggregated.get(hour)!
-          const prevSum = entry.sums.get(compteur.id) || 0
-          const prevCount = entry.counts.get(compteur.id) || 0
-          entry.sums.set(compteur.id, prevSum + (h.value ?? 0))
-          entry.counts.set(compteur.id, prevCount + 1)
+      // ✅ USE ACTUAL API TIMESTAMPS (no aggregation - API already provides data at specific times)
+      // API returns data at :30 minute marks (23:30, 00:30, 01:30, etc.)
+      // Display these exact timestamps on the chart
+      console.log('sortedTimestamps', sortedTimestamps)
+      if (sortedTimestamps.length > 0) {
+        // Build labels from actual sorted timestamps
+        const labels: string[] = sortedTimestamps.map(t => {
+          const ts = t.timestamp
+          const year = ts.getFullYear()
+          const month = String(ts.getMonth() + 1).padStart(2, '0')
+          const day = String(ts.getDate()).padStart(2, '0')
+          const hours = String(ts.getHours()).padStart(2, '0')
+          const minutes = String(ts.getMinutes()).padStart(2, '0')
+          return `${year}-${month}-${day} ${hours}:${minutes}`
         })
-      })
 
-      console.log('[Chart] Aggregated by hour (stores version average):', {
-        hourCount: hourlyAggregated.size,
-        hours: Array.from(hourlyAggregated.keys()).sort((a, b) => a - b),
-      })
+        // Extract raw timestamps (milliseconds) for tooltip display
+        const rawTimestamps: number[] = sortedTimestamps.map(t => t.timestamp.getTime())
 
-      if (hourlyAggregated.size > 0) {
+        // Create datasets for each visible compteur
         visibleCompteurs.value.forEach((compteur, idx) => {
-          const hourlySeries: (number | null)[] = Array.from({ length: 24 }, (_, h) => {
-            const agg = hourlyAggregated.get(h)
-            if (!agg) return null
-            const sum = agg.sums.get(compteur.id)
-            const count = agg.counts.get(compteur.id) || 0
-            return sum !== undefined && count > 0 ? sum / count : null
+          const dataSeries: (number | null)[] = sortedTimestamps.map(t => {
+            return t.values.get(compteur.id) ?? null
           })
           const color = getMeterColor(compteur.id, idx)
           datasets.push({
             label: `${compteur.name}`,
-            data: hourlySeries,
+            data: dataSeries,
             borderColor: color,
             backgroundColor: hexToRgba(color, 0.1),
             yAxisID: metric.yAxisPosition === 'left' ? 'y' : 'y1',
@@ -397,8 +436,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         })
 
         return {
-          labels: Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`),
+          labels,
           datasets,
+          rawTimestamps, // Add raw timestamps for tooltip use
         }
       }
 
@@ -577,9 +617,40 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   function toggleDate(dateStr: string) {
     const index = selectedDates.value.indexOf(dateStr)
     if (index > -1) {
+      // Prevent removing interior dates to avoid gaps
+      if (selectedDates.value.length > 1) {
+        const sorted = [...selectedDates.value].sort()
+        const first = sorted[0]
+        const last = sorted[sorted.length - 1]
+        if (dateStr !== first && dateStr !== last) {
+          return
+        }
+      }
+
       selectedDates.value.splice(index, 1)
     } else {
-      selectedDates.value.push(dateStr)
+      // Add date and fill gaps to create continuous range
+      const newDates = [...selectedDates.value, dateStr]
+
+      if (newDates.length === 1) {
+        selectedDates.value = newDates
+      } else {
+        const sortedDates = newDates.map(d => new Date(d)).sort((a, b) => a.getTime() - b.getTime())
+        const minDate = sortedDates[0]
+        const maxDate = sortedDates[sortedDates.length - 1]
+
+        const continuousRange = getDatesBetween(
+          formatDate(minDate),
+          formatDate(maxDate)
+        )
+
+        if (continuousRange.length > 32) {
+          console.warn(`[toggleDate] Selection would exceed 32 days (${continuousRange.length} days). Limiting to 32 days from earliest date.`)
+          selectedDates.value = continuousRange.slice(0, 32)
+        } else {
+          selectedDates.value = continuousRange
+        }
+      }
     }
     // Clear preset when manually selecting dates
     activePeriodPreset.value = null
@@ -746,11 +817,16 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   /**
    * Process API response and store data by date and metric type
    * Aggregates raw timestamp data into daily buckets
+   * IMPORTANT: Uses ISO date string from API (which is UTC) to avoid timezone issues
    */
   function processAPIResponse(apiResponse: any) {
     if (!apiResponse || !apiResponse.data) return
 
     const deviceData = apiResponse.data || {}
+    const resolution = apiResponse.meta?.resolution || 'hourly'
+
+    // Store the actual API resolution for display logic
+    lastApiResolution.value = resolution as 'hourly' | 'daily'
 
     // Clear historical data to avoid stale data from previous fetches
     historicalData.value.clear()
@@ -765,24 +841,33 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         dataPoints.forEach((point: any) => {
           if (!point.hasData) return // Skip points without data
 
-          // Create date from UTC timestamp (milliseconds)
-          // JavaScript automatically converts to local timezone when calling getHours(), etc.
-          const date = new Date(point.timestamp)
+          // Use the date from API response
+          let dateStr: string
+          let hour: number = 0
 
-          // Get local date string
-          const dateStr = formatDate(date)
-
-          // Get local hour
-          const hour = date.getHours()
+          if (resolution === 'daily') {
+            // Daily data: point.date is just "2026-02-05"
+            dateStr = point.date || new Date(point.timestamp).toISOString().split('T')[0]
+            hour = 12 // Use noon (12:00) as representative hour for daily data
+          } else {
+            // Hourly data: point.date is ISO like "2026-02-06T14:30:00.000Z"
+            const isoDateString = point.date || new Date(point.timestamp).toISOString()
+            dateStr = isoDateString.substring(0, 10)
+            const hourStr = isoDateString.substring(11, 13)
+            hour = parseInt(hourStr, 10) || 0
+          }
 
           if (!dataByDate.has(dateStr)) {
             dataByDate.set(dateStr, [])
           }
 
+          // Create Date object from timestamp for storage (timezone-aware conversion)
+          const dateObj = new Date(point.timestamp)
+
           dataByDate.get(dateStr)!.push({
             hour,
             value: point.value,
-            timestamp: date, // Store the date object (JavaScript handles timezone automatically)
+            timestamp: dateObj, // Store the date object
           })
         })
 
@@ -823,6 +908,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     })
 
     console.log('[Store] Processed API response:', {
+      resolution,
       deviceCount: Object.keys(deviceData).length,
       historicalDataSize: historicalData.value.size,
       timezone: {

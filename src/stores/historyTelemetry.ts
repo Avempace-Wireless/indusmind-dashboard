@@ -1,3 +1,4 @@
+
 /**
  * History Store with Telemetry Integration
  * Fetches historical telemetry data for energy history view

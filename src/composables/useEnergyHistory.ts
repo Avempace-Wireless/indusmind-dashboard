@@ -15,10 +15,12 @@ export interface EnergyHistoryQuery {
   resolution: 'hourly' | 'daily'
   hourFrom?: number
   hourTo?: number
+  selectedDates?: string[] // Optional array of date strings (YYYY-MM-DD)
 }
 
 export interface DataPoint {
   timestamp: number
+  date?: string // Optional date string (YYYY-MM-DD)
   value: number
   hasData: boolean
 }

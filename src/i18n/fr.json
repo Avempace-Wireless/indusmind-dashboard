@@ -549,10 +549,11 @@
       "table": "Tableau"
     },    "emptyState": {
       "noMeters": "Aucun compteur sélectionné",
-      "noDates": "Aucune date sélectionnée",
+      "selectDate": "Sélectionnez une date",
       "noMetrics": "Aucune métrique activée",
       "noData": "Aucune donnée disponible",
-      "hint": "Sélectionnez des compteurs, des dates et activez des métriques pour voir les données"
+      "hint": "Sélectionnez des compteurs, des dates et activez des métriques pour voir les données",
+      "selectDateHint": "Sélectionnez une date pour afficher les données"
     },    "chart": {
       "title": "Analyse {resolution} par compteur",
       "subtitle": {
