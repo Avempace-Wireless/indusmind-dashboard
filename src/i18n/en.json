@@ -637,7 +637,7 @@
     },
     "periods": {
       "title": "Select periods to compare",
-      "selected": "{count, plural, one {# period selected} other {# periods selected}}",
+      "selected": "{count} period selected | {count} periods selected",
       "range": "From {start} to {end}",
       "presets": {
         "last7Days": "Last 7 days",

@@ -640,7 +640,7 @@
     },
     "periods": {
       "title": "Sélectionnez les périodes à comparer",
-      "selected": "{count, plural, one {# période sélectionnée} other {# périodes sélectionnées}}",
+      "selected": "{count} période sélectionnée | {count} périodes sélectionnées",
       "range": "Du {start} au {end}",
       "presets": {
         "last7Days": "7 derniers jours",
