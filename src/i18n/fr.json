@@ -62,7 +62,7 @@
       "signUp": "S'inscrire",
       "orContinueWith": "Ou continuer avec",
       "error": "Email ou mot de passe invalide",
-      "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide"
+      "invalidCredentials": "Email ou mot de passe invalide"
     }
   },
   "user": {
@@ -615,6 +615,14 @@
   "comparison": {
     "title": "Comparaison - Analyse Multi-Mètres",
     "subtitle": "Comparez la performance entre plusieurs compteurs, périodes ou caractéristiques",
+    "fetchingData": "Récupération des données de comparaison...",
+    "errors": {
+      "loadFailed": "Impossible de charger les données de comparaison"
+    },
+    "empty": {
+      "title": "Aucune donnée de comparaison",
+      "description": "Aucune donnée de comparaison pour les compteurs et la période sélectionnés."
+    },
     "mode": {
       "title": "Choisir le type de comparaison",
       "byMeters": "Par Compteurs",
@@ -633,6 +641,7 @@
     "periods": {
       "title": "Sélectionnez les périodes à comparer",
       "selected": "{count, plural, one {# période sélectionnée} other {# périodes sélectionnées}}",
+      "range": "Du {start} au {end}",
       "presets": {
         "last7Days": "7 derniers jours",
         "last4Weeks": "4 dernières semaines",
@@ -645,7 +654,13 @@
       "hourly": "Horaire",
       "daily": "Quotidien",
       "weekly": "Hebdomadaire",
-      "monthly": "Mensuel"
+      "monthly": "Mensuel",
+      "short": {
+        "hourly": "H",
+        "daily": "J",
+        "weekly": "S",
+        "monthly": "M"
+      }
     },
     "characteristics": {
       "title": "Caractéristique métrique",
@@ -671,16 +686,37 @@
     },
     "kpi": {
       "highest": "Plus élevé",
+      "highestDesc": "Compteur avec la consommation totale la plus élevée pour la période sélectionnée",
+      "highestDetail": "Pic : {value} kWh le {date}",
+      "highestTooltip": "{meter} a consommé le plus : {total} kWh au total{peak}",
       "lowest": "Plus bas",
+      "lowestDesc": "Compteur avec la consommation totale la plus basse pour la période sélectionnée",
+      "lowestDetail": "Minimum : {value} kWh le {date}",
+      "lowestTooltip": "{meter} a consommé le moins : {total} kWh au total{min}",
       "average": "Moyenne",
+      "averageDesc": "Consommation moyenne par compteur (total ÷ nombre de compteurs)",
+      "averageDetail": "Sur {count} compteurs",
+      "averageTooltip": "Consommation moyenne par compteur : {average} kWh ({total} ÷ {count})",
       "total": "Total",
+      "totalDesc": "Somme des consommations de tous les compteurs pour la période",
+      "totalDetail": "Somme de {count} compteurs",
+      "totalTooltip": "Énergie totale consommée par tous les compteurs : {total} kWh",
       "variance": "Variance",
+      "varianceDesc": "Écart entre le max et le min en % de la moyenne",
+      "varianceDetail": "Écart : {value} kWh",
+      "varianceTooltip": "La variance mesure l'inégalité de consommation : {variance}% ({max} - {min}) ÷ {average}",
       "allMeters": "Tous les compteurs",
       "items": "éléments",
-      "fromAverage": "de la moyenne"
+      "fromAverage": "de la moyenne",
+      "peakOn": " (pic le {date})",
+      "minOn": " (minimum le {date})"
     },
     "table": {
       "detailed": "Comparaison détaillée",
+      "searchPlaceholder": "Rechercher par étiquette ou valeur",
+      "noResults": "Aucun résultat ne correspond à votre recherche.",
+      "meter": "Compteur",
+      "period": "Période",
       "rank": "Rang",
       "label": "Étiquette",
       "value": "Valeur",
