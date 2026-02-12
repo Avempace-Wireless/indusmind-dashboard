@@ -127,39 +127,43 @@
             </div>
           </div>
         </div>
-        <!-- KPI Cards -->
-        <div v-if="metersStore.selectedMeters.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- KPI Cards - Total consumption per meter (max 8, full width, responsive) -->
+        <div
+          v-if="metersStore.selectedMeters.length > 0"
+          class="grid gap-3 w-full"
+          :class="{
+            'grid-cols-1': kpiCards.length === 1,
+            'grid-cols-2': kpiCards.length === 2,
+            'grid-cols-3': kpiCards.length === 3,
+            'grid-cols-2 sm:grid-cols-4': kpiCards.length === 4,
+            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5': kpiCards.length === 5,
+            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6': kpiCards.length === 6,
+            'grid-cols-2 sm:grid-cols-4 lg:grid-cols-7': kpiCards.length === 7,
+            'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8': kpiCards.length >= 8,
+          }"
+        >
           <div
-            v-for="card in kpiCards"
+            v-for="card in kpiCards.slice(0, 8)"
             :key="card.label"
-            class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 relative overflow-hidden group cursor-help"
-            :title="card.tooltip || card.description || ''"
+            class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 relative overflow-hidden group cursor-help min-w-0 flex-1"
+            :title="card.tooltip || ''"
           >
-            <!-- Loading Overlay with Spinner -->
+            <!-- Loading Overlay -->
             <div v-if="isLoading" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-2xl">
-              <div class="flex flex-col items-center gap-2">
-                <div class="animate-spin rounded-full h-6 w-6 border-2 border-slate-300 dark:border-slate-600 border-t-blue-600 dark:border-t-blue-400"></div>
-                <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">{{ $t('common.loading') || 'Chargement' }}</p>
+              <div class="flex flex-col items-center gap-1">
+                <div class="animate-spin rounded-full h-5 w-5 border-2 border-slate-300 dark:border-slate-600 border-t-blue-600 dark:border-t-blue-400"></div>
               </div>
             </div>
 
-            <!-- Hidden tooltip shown on hover -->
-            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-100 text-xs rounded-md px-3 py-2 whitespace-nowrap z-20 pointer-events-none">
-              {{ card.tooltip || card.description || '' }}
-              <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+            <!-- Color indicator + icon -->
+            <div class="flex items-center justify-between mb-2">
+              <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: card.color }"></div>
+              <span class="material-symbols-outlined text-lg" :style="{ color: card.color }">bolt</span>
             </div>
-
-            <div class="flex items-center justify-between mb-3">
-              <span class="material-symbols-outlined text-2xl" :style="{ color: card.color }">{{ card.icon }}</span>
-            </div>
-            <div class="space-y-1">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ card.label }}</p>
-              <h4 class="text-2xl font-bold text-gray-900 dark:text-white">
-                {{ card.value }}
-              </h4>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ card.subtitle }}</p>
-
-
+            <div class="space-y-0.5">
+              <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium">Total</p>
+              <h4 class="text-xl font-bold text-gray-900 dark:text-white leading-tight">{{ card.value }} <span class="text-xs font-normal text-gray-400 dark:text-gray-500">kWh</span></h4>
+              <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight" :title="card.label">{{ card.label }}</p>
             </div>
           </div>
         </div>
@@ -259,7 +263,11 @@
                       {{ row.value }}
                     </td>
                     <td class="px-4 py-3 text-sm text-right">
-                      <span :class="row.variance > 0 ? 'text-green-600' : row.variance < 0 ? 'text-red-600' : 'text-gray-600'">
+                      <span
+                        :class="row.variance > 0 ? 'text-green-600' : row.variance < 0 ? 'text-red-600' : 'text-gray-600'"
+                        :title="row.varianceTooltip"
+                        class="cursor-help"
+                      >
                         {{ row.varianceText }}
                       </span>
                     </td>
@@ -419,13 +427,19 @@
                     {{ row.value }}
                   </td>
                   <td v-if="viewOptions.showVariance" class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                    <span :class="row.variance > 0 ? 'text-green-600' : row.variance < 0 ? 'text-red-600' : 'text-gray-600'">
+                    <span
+                      :class="row.variance > 0 ? 'text-green-600' : row.variance < 0 ? 'text-red-600' : 'text-gray-600'"
+                      class="cursor-help relative group/tip"
+                    >
                       {{ row.varianceText }}
+                      <span class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover/tip:block whitespace-nowrap rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-4 py-2.5 text-sm font-medium text-gray-800 dark:text-gray-100 shadow-xl z-50">
+                        {{ row.varianceTooltip }}
+                      </span>
                     </span>
                   </td>
                   <td v-if="viewOptions.showTrendArrows" class="px-6 py-4 whitespace-nowrap text-center">
                     <span
-                      class="material-symbols-outlined text-xl"
+                      class="material-symbols-outlined text-xl cursor-help relative group/trend"
                       :class="{
                         'text-green-600': row.trend === 'up',
                         'text-red-600': row.trend === 'down',
@@ -433,7 +447,11 @@
                       }"
                     >
                       {{ row.trend === 'up' ? 'trending_up' : row.trend === 'down' ? 'trending_down' : 'trending_flat' }}
+                      <span class="pointer-events-none absolute bottom-full right-0 mb-3 hidden group-hover/trend:block whitespace-nowrap rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-4 py-2.5 text-sm font-medium text-gray-800 dark:text-gray-100 shadow-xl z-50 not-italic" style="font-family: system-ui, sans-serif">
+                        {{ row.trendTooltip }}
+                      </span>
                     </span>
+                    <span class="block text-[10px] text-gray-400 dark:text-gray-500">{{ row.trendText }}</span>
                   </td>
                 </tr>
                   <tr v-if="paginatedComparisonTable.length === 0">
@@ -746,10 +764,16 @@ interface ComparisonDataItem {
 interface ComparisonTableRow {
   rank: number
   label: string
+  meterId?: string
+  meterLabel?: string
   value: string
   variance: number
   varianceText: string
+  varianceTooltip: string
   trend: string
+  trendPct: number
+  trendText: string
+  trendTooltip: string
   color: string
 }
 

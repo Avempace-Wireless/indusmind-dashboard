@@ -315,6 +315,76 @@ export const useComparisonStore = defineStore('comparison', () => {
 
   const activePeriodLabel = computed(() => aggregatedLabels.value[0] || '')
 
+  // ===========================
+  // Helper: Calculate KPIs by Daily Aggregation
+  // ===========================
+  /**
+   * Calculate KPIs based on daily aggregation (not by meter).
+   * This prevents aggregate meter totals from skewing the results.
+   *
+   * Returns: highest day, lowest day, average daily consumption, variance
+   */
+  function calculateDailyKPIs() {
+    if (apiTimeSeriesData.value.length === 0) {
+      return null
+    }
+
+    // Build daily totals: { dateStr: totalConsumption }
+    const dailyTotals = new Map<string, number>()
+    const dailyDetails = new Map<string, { date: string; total: number }>()
+
+    apiTimeSeriesData.value.forEach(meterData => {
+      meterData.values.forEach(({ ts, value }) => {
+        const dateStr = TimeUtils.toLocalDateStr(ts) // "YYYY-MM-DD" format
+        const currentTotal = dailyTotals.get(dateStr) || 0
+        dailyTotals.set(dateStr, currentTotal + value)
+
+        if (!dailyDetails.has(dateStr)) {
+          dailyDetails.set(dateStr, { date: dateStr, total: 0 })
+        }
+        const detail = dailyDetails.get(dateStr)!
+        detail.total = (dailyDetails.get(dateStr)?.total || 0) + value
+      })
+    })
+
+    if (dailyTotals.size === 0) return null
+
+    // Convert to array and sort
+    const dailyArray = Array.from(dailyTotals.entries()).map(([date, total]) => ({
+      date,
+      total
+    }))
+
+    // Find highest and lowest day
+    const highestDay = dailyArray.reduce((max, d) => d.total > max.total ? d : max)
+    const lowestDay = dailyArray.reduce((min, d) => d.total < min.total ? d : min)
+
+    // Calculate average
+    const totalSum = dailyArray.reduce((sum, d) => sum + d.total, 0)
+    const average = totalSum / dailyArray.length
+
+    // Calculate variance (percentage difference between max and min relative to average)
+    const variance = average > 0 ? ((highestDay.total - lowestDay.total) / average * 100) : 0
+
+    return {
+      highest: {
+        value: highestDay.total,
+        peakDate: highestDay.date,
+        peakValue: highestDay.total
+      },
+      lowest: {
+        value: lowestDay.total,
+        minDate: lowestDay.date,
+        minValue: lowestDay.total
+      },
+      average,
+      total: totalSum,
+      variance,
+      dailyCount: dailyArray.length,
+      meterTotals: apiKPIsData.value?.meterTotals || []
+    }
+  }
+
   // Helpers for aggregation labels
   function getMonthLabel(dateStr: string, localeCode: string): string {
     const d = new Date(dateStr)
@@ -337,201 +407,117 @@ export const useComparisonStore = defineStore('comparison', () => {
   }
 
   const kpiCards = computed(() => {
-    // Use real API KPI data when available
-    if (apiKPIsData.value) {
-      const kpi = apiKPIsData.value
-      const highestMeter = availableMeters.value.find(m => m.deviceUUID === kpi.highest.meterId)
-      const lowestMeter = availableMeters.value.find(m => m.deviceUUID === kpi.lowest.meterId)
+    // Always one card per meter, regardless of comparison mode
+    // In matrix mode, comparisonData has meter × period entries — aggregate per meter
+    const meterTotals = new Map<string, { label: string; value: number; color: string }>()
 
-      const highestName = highestMeter?.name || kpi.highest.meterId.substring(0, 8)
-      const lowestName = lowestMeter?.name || kpi.lowest.meterId.substring(0, 8)
-      const peakSuffix = kpi.highest.peakDate
-        ? i18n.global.t('comparison.kpi.peakOn', { date: kpi.highest.peakDate })
-        : ''
-      const minSuffix = kpi.lowest.minDate
-        ? i18n.global.t('comparison.kpi.minOn', { date: kpi.lowest.minDate })
-        : ''
+    comparisonData.value.forEach((item: any) => {
+      const meterId = item.id || item.meterId || ''
+      const meterName = item.label || item.meterLabel || 'Unknown'
+      const value = item.value ?? 0
 
-      return [
-        {
-          label: i18n.global.t('comparison.kpi.highest'),
-          value: kpi.highest.value.toFixed(2),
-          subtitle: highestName,
-          color: '#10b981',
-          icon: 'trending_up',
-          description: i18n.global.t('comparison.kpi.highestDesc'),
-          detail: kpi.highest.peakDate
-            ? i18n.global.t('comparison.kpi.highestDetail', {
-                value: kpi.highest.peakValue?.toFixed(2),
-                date: kpi.highest.peakDate
-              })
-            : undefined,
-          tooltip: i18n.global.t('comparison.kpi.highestTooltip', {
-            meter: highestName,
-            total: kpi.highest.value.toFixed(2),
-            peak: peakSuffix
-          })
-        },
-        {
-          label: i18n.global.t('comparison.kpi.lowest'),
-          value: kpi.lowest.value.toFixed(2),
-          subtitle: lowestName,
-          color: '#6b7280',
-          icon: 'trending_down',
-          description: i18n.global.t('comparison.kpi.lowestDesc'),
-          detail: kpi.lowest.minDate
-            ? i18n.global.t('comparison.kpi.lowestDetail', {
-                value: kpi.lowest.minValue?.toFixed(2),
-                date: kpi.lowest.minDate
-              })
-            : undefined,
-          tooltip: i18n.global.t('comparison.kpi.lowestTooltip', {
-            meter: lowestName,
-            total: kpi.lowest.value.toFixed(2),
-            min: minSuffix
-          })
-        },
-        {
-          label: i18n.global.t('comparison.kpi.average'),
-          value: kpi.average.toFixed(2),
-          subtitle: i18n.global.t('comparison.kpi.allMeters'),
-          color: '#3b82f6',
-          icon: 'analytics',
-          description: i18n.global.t('comparison.kpi.averageDesc'),
-          detail: i18n.global.t('comparison.kpi.averageDetail', { count: kpi.meterTotals.length }),
-          tooltip: i18n.global.t('comparison.kpi.averageTooltip', {
-            average: kpi.average.toFixed(2),
-            total: kpi.total.toFixed(2),
-            count: kpi.meterTotals.length
-          })
-        },
-        {
-          label: i18n.global.t('comparison.kpi.total'),
-          value: kpi.total.toFixed(2),
-          subtitle: `${kpi.meterTotals.length} ${i18n.global.t('comparison.kpi.items')}`,
-          color: '#8b5cf6',
-          icon: 'summarize',
-          description: i18n.global.t('comparison.kpi.totalDesc'),
-          detail: i18n.global.t('comparison.kpi.totalDetail', { count: kpi.meterTotals.length }),
-          tooltip: i18n.global.t('comparison.kpi.totalTooltip', { total: kpi.total.toFixed(2) })
-        },
-        {
-          label: i18n.global.t('comparison.kpi.variance'),
-          value: `±${kpi.variance.toFixed(1)}%`,
-          subtitle: i18n.global.t('comparison.kpi.fromAverage'),
-          color: '#f59e0b',
-          icon: 'percent',
-          description: i18n.global.t('comparison.kpi.varianceDesc'),
-          detail: i18n.global.t('comparison.kpi.varianceDetail', {
-            value: (kpi.highest.value - kpi.lowest.value).toFixed(2)
-          }),
-          tooltip: i18n.global.t('comparison.kpi.varianceTooltip', {
-            variance: kpi.variance.toFixed(1),
-            max: kpi.highest.value.toFixed(2),
-            min: kpi.lowest.value.toFixed(2),
-            average: kpi.average.toFixed(2)
-          })
-        }
-      ]
-    }
-
-    // Fallback: compute from comparisonData (for empty/loading states)
-    if (comparisonData.value.length === 0) return []
-
-    const values = comparisonData.value.map((d: any) => d.value).filter((v: number) => v !== undefined)
-    const total = values.reduce((sum: number, v: number) => sum + v, 0)
-    const average = total / values.length
-    const max = Math.max(...values)
-    const min = Math.min(...values)
-    const variance = values.length > 1
-      ? ((max - min) / average * 100).toFixed(1)
-      : '0.0'
-
-    const maxItem = comparisonData.value.find((d: any) => d.value === max)
-    const minItem = comparisonData.value.find((d: any) => d.value === min)
-
-    return [
-      {
-        label: i18n.global.t('comparison.kpi.highest'),
-        value: max.toFixed(2),
-        subtitle: maxItem?.label || '',
-        color: '#10b981',
-        icon: 'trending_up',
-        description: i18n.global.t('comparison.kpi.highestDesc'),
-        tooltip: i18n.global.t('comparison.kpi.highestTooltip', {
-          meter: maxItem?.label || i18n.global.t('comparison.table.meter'),
-          total: max.toFixed(2),
-          peak: ''
-        })
-      },
-      {
-        label: i18n.global.t('comparison.kpi.lowest'),
-        value: min.toFixed(2),
-        subtitle: minItem?.label || '',
-        color: '#6b7280',
-        icon: 'trending_down',
-        description: i18n.global.t('comparison.kpi.lowestDesc'),
-        tooltip: i18n.global.t('comparison.kpi.lowestTooltip', {
-          meter: minItem?.label || i18n.global.t('comparison.table.meter'),
-          total: min.toFixed(2),
-          min: ''
-        })
-      },
-      {
-        label: i18n.global.t('comparison.kpi.average'),
-        value: average.toFixed(2),
-        subtitle: i18n.global.t('comparison.kpi.allMeters'),
-        color: '#3b82f6',
-        icon: 'analytics',
-        description: i18n.global.t('comparison.kpi.averageDesc'),
-        detail: i18n.global.t('comparison.kpi.averageDetail', { count: values.length }),
-        tooltip: i18n.global.t('comparison.kpi.averageTooltip', {
-          average: average.toFixed(2),
-          total: total.toFixed(2),
-          count: values.length
-        })
-      },
-      {
-        label: i18n.global.t('comparison.kpi.total'),
-        value: total.toFixed(2),
-        subtitle: `${values.length} ${i18n.global.t('comparison.kpi.items')}`,
-        color: '#8b5cf6',
-        icon: 'summarize',
-        description: i18n.global.t('comparison.kpi.totalDesc'),
-        detail: i18n.global.t('comparison.kpi.totalDetail', { count: values.length }),
-        tooltip: i18n.global.t('comparison.kpi.totalTooltip', { total: total.toFixed(2) })
-      },
-      {
-        label: i18n.global.t('comparison.kpi.variance'),
-        value: `±${variance}%`,
-        subtitle: i18n.global.t('comparison.kpi.fromAverage'),
-        color: '#f59e0b',
-        icon: 'percent',
-        description: i18n.global.t('comparison.kpi.varianceDesc'),
-        detail: i18n.global.t('comparison.kpi.varianceDetail', { value: (max - min).toFixed(2) }),
-        tooltip: i18n.global.t('comparison.kpi.varianceTooltip', {
-          variance,
-          max: max.toFixed(2),
-          min: min.toFixed(2),
-          average: average.toFixed(2)
+      if (meterTotals.has(meterId)) {
+        meterTotals.get(meterId)!.value += value
+      } else {
+        meterTotals.set(meterId, {
+          label: meterName,
+          value,
+          color: metersStore.getMeterColor(meterId)
         })
       }
-    ]
+    })
+
+    return Array.from(meterTotals.values()).map(m => ({
+      label: m.label,
+      value: m.value.toFixed(2),
+      color: m.color,
+      tooltip: `${m.label}: ${m.value.toFixed(2)} kWh`
+    }))
   })
 
   const comparisonTable = computed(() => {
-    const rows = comparisonData.value.map((item, index) => {
-      const avg = kpiCards.value.find(k => k.label === i18n.global.t('comparison.kpi.average'))?.value || 0
-      const avgNum = parseFloat(avg.toString())
-      const variance = avgNum !== 0 ? ((item.value - avgNum) / avgNum * 100).toFixed(1) : '0.0'
+    const items = comparisonData.value
+
+    // ── Per-meter averages ──
+    const meterStats = new Map<string, { sum: number; count: number }>()
+    items.forEach((item: any) => {
+      const mid = item.id || item.meterId || ''
+      if (!meterStats.has(mid)) meterStats.set(mid, { sum: 0, count: 0 })
+      const s = meterStats.get(mid)!
+      s.sum += item.value
+      s.count++
+    })
+    const meterAvg = new Map<string, number>()
+    for (const [mid, s] of meterStats) {
+      meterAvg.set(mid, s.count > 0 ? s.sum / s.count : 0)
+    }
+
+    // ── Build chronological previous-date value per meter ──
+    // Group items by meter, sort each group by period, build a lookup: meterId → periodLabel → prevValue
+    const meterPeriods = new Map<string, { period: string; value: number }[]>()
+    items.forEach((item: any) => {
+      const mid = item.id || item.meterId || ''
+      const period = item.periodLabel || item.periodId || item.label || ''
+      if (!meterPeriods.has(mid)) meterPeriods.set(mid, [])
+      meterPeriods.get(mid)!.push({ period, value: item.value ?? 0 })
+    })
+    // Sort each meter's periods chronologically and build prev-value map
+    const prevValueLookup = new Map<string, Map<string, number>>() // meterId → periodLabel → previousPeriodValue
+    for (const [mid, periods] of meterPeriods) {
+      periods.sort((a, b) => a.period.localeCompare(b.period))
+      const lookup = new Map<string, number>()
+      for (let i = 1; i < periods.length; i++) {
+        lookup.set(periods[i].period, periods[i - 1].value)
+      }
+      prevValueLookup.set(mid, lookup)
+    }
+
+    const rows = items.map((item: any, index: number) => {
+      const mid = item.id || item.meterId || ''
+      const avg = meterAvg.get(mid) ?? 0
+      const val = item.value ?? 0
+      const period = item.periodLabel || item.periodId || item.label || ''
+
+      // Écart = (value − meter avg) / meter avg × 100
+      const varianceNum = avg !== 0 ? ((val - avg) / avg) * 100 : 0
+      const varianceStr = varianceNum.toFixed(1)
+
+      // Tendance = compare to same meter's previous date value
+      const meterLookup = prevValueLookup.get(mid)
+      const prevVal = meterLookup?.get(period)
+      let trendPct = 0
+      let trendDir: 'up' | 'down' | 'stable' = 'stable'
+      let prevDateLabel = ''
+      if (prevVal !== undefined && prevVal !== 0) {
+        trendPct = ((val - prevVal) / prevVal) * 100
+        trendDir = trendPct > 2 ? 'up' : trendPct < -2 ? 'down' : 'stable'
+        // Find which period was previous
+        const periods = meterPeriods.get(mid)!
+        const idx = periods.findIndex(p => p.period === period)
+        if (idx > 0) prevDateLabel = periods[idx - 1].period
+      }
+
+      // Tooltip formulas
+      const varianceTooltip = `Écart = (${val.toFixed(2)} − ${avg.toFixed(2)}) / ${avg.toFixed(2)} × 100 = ${varianceStr}%`
+      const trendTooltip = prevVal !== undefined
+        ? `vs ${prevDateLabel}: (${val.toFixed(2)} − ${prevVal.toFixed(2)}) / ${prevVal.toFixed(2)} × 100 = ${trendPct > 0 ? '+' : ''}${trendPct.toFixed(1)}%`
+        : 'Première période — pas de comparaison'
 
       return {
         rank: index + 1,
-        label: comparisonMode.value === 'byMeters' ? (item.label || item.meterLabel) : (item.periodLabel || item.label || item.meterLabel),
-        value: item.value.toFixed(2),
-        variance: parseFloat(variance),
-        varianceText: `${parseFloat(variance) > 0 ? '+' : ''}${variance}%`,
-        trend: parseFloat(variance) > 5 ? 'up' : parseFloat(variance) < -5 ? 'down' : 'stable',
+        label: comparisonMode.value === 'byMeters'
+          ? (item.label || item.meterLabel)
+          : (item.periodLabel || item.label || item.meterLabel),
+        meterId: mid,
+        meterLabel: item.label || item.meterLabel || '',
+        value: val.toFixed(2),
+        variance: parseFloat(varianceStr),
+        varianceText: `${parseFloat(varianceStr) > 0 ? '+' : ''}${varianceStr}%`,
+        varianceTooltip,
+        trend: trendDir,
+        trendPct: parseFloat(trendPct.toFixed(1)),
+        trendText: prevVal !== undefined ? `${trendPct > 0 ? '+' : ''}${trendPct.toFixed(1)}%` : '—',
+        trendTooltip,
         color: item.color
       }
     })
