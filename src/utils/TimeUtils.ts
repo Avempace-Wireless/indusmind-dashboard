@@ -322,4 +322,18 @@ export class TimeUtils {
     WEEK_1: 7 * 24 * 60 * 60 * 1000,
     MONTH_30: 30 * 24 * 60 * 60 * 1000
   } as const
+
+  /**
+   * Format a timestamp or Date as a LOCAL date string (YYYY-MM-DD).
+   * Uses getFullYear/getMonth/getDate (local timezone) instead of
+   * toISOString().split('T')[0] (UTC) to avoid off-by-one day errors
+   * when the local timezone is ahead of UTC (e.g. UTC+1).
+   */
+  static toLocalDateStr(input: number | Date): string {
+    const d = input instanceof Date ? input : new Date(input)
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
 }

@@ -90,20 +90,7 @@
         <div class="flex items-center justify-between gap-3">
           <!-- Export Buttons (left) -->
           <div class="flex gap-2">
-            <button
-              @click="exportToCSV"
-              class="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <span class="material-symbols-outlined text-sm">file_download</span>
-              {{ t('energyHistory.buttons.csv') }}
-            </button>
-            <button
-              @click="exportToPDF"
-              class="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
-              {{ t('energyHistory.buttons.pdf') }}
-            </button>
+
           </div>
 
           <!-- View Mode Toggle (right) -->

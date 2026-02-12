@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { MOCK_METERS, type Meter, type MeterElement } from '../data/mockData'
+import type { Compteur } from '@/services/deviceAPI'
 
 /**
  * Meter Metadata Interface
@@ -76,6 +77,31 @@ export const useMetersStore = defineStore('meters', () => {
       translationKey: meter.translationKey,
       elements: meter.elements?.map(el => el.id) as any,
       deviceUUID: meter.deviceUUID
+    }))
+
+    // Update last modified to trigger reactivity
+    lastModified.value = new Date()
+  }
+
+  /**
+   * Hydrate meters list from dashboard Compteur data
+   * Used by views that load Compteurs directly (Comparison, Energy History)
+   */
+  function setAllMetersFromCompteurs(compteurs: Compteur[]) {
+    allMeters.value = compteurs.map(compteur => ({
+      id: compteur.id,
+      name: compteur.name,
+      subtitle: compteur.subtitle,
+      type: compteur.category,
+      unit: 'kWh',
+      site: undefined,
+      color: compteur.color,
+      icon: undefined,
+      status: 'online',
+      linkedEquipment: compteur.linkedEquipment,
+      translationKey: compteur.translationKey,
+      elements: undefined,
+      deviceUUID: compteur.deviceUUID,
     }))
 
     // Update last modified to trigger reactivity
@@ -364,6 +390,7 @@ export const useMetersStore = defineStore('meters', () => {
     selectedMeterIds,
     lastModified,
     setAllMetersFromDashboard,
+    setAllMetersFromCompteurs,
 
     // Actions
     toggleMeter,
