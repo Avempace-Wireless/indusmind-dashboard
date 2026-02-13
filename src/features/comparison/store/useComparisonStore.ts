@@ -7,8 +7,6 @@ import { TimeUtils } from '@/utils/TimeUtils'
 import i18n from '@/i18n'
 import type { MetricType } from '@/types/metrics'
 import {
-  fetchComparisonAll,
-  buildComparisonRequest,
   type ComparisonDataResponse,
   type ComparisonKPIsResponse,
   type ComparisonSummaryResponse,
@@ -16,7 +14,7 @@ import {
 } from '@/services/comparisonAPI'
 
 export type ComparisonMode = 'byMeters' | 'matrix'
-export type AggregationLevel = 'hourly' | 'daily' | 'weekly' | 'monthly'
+export type AggregationLevel = 'hourly' | 'daily'
 export type ChartTypeComparison = 'bar' | 'line' | 'heatmap' | 'table'
 
 export interface ViewOptions {
@@ -58,8 +56,11 @@ export const useComparisonStore = defineStore('comparison', () => {
   // Selected metric for comparison
   const selectedMetric = ref<MetricType>('consumption')
 
-  // Aggregation level
-  const aggregationLevel = ref<AggregationLevel>('daily')
+  // Aggregation level - auto-determined from selected dates (≤3 days = hourly, >3 = daily)
+  const aggregationLevel = computed<AggregationLevel>(() => {
+    const dates = selectedDates.value.length > 0 ? selectedDates.value : selectedPeriods.value
+    return dates.length <= 3 ? 'hourly' : 'daily'
+  })
 
   // Chart type
   const chartType = ref<ChartTypeComparison>('bar')
@@ -279,7 +280,6 @@ export const useComparisonStore = defineStore('comparison', () => {
     const dates = selectedDates.value.length > 0 ? selectedDates.value : selectedPeriods.value
     if (dates.length === 0) return []
 
-    const localeCode = i18n.global.locale.value === 'en' ? 'en-US' : 'fr-FR'
     const labelSet = new Set<string>()
 
     // For daily aggregation, use dates directly
@@ -288,25 +288,11 @@ export const useComparisonStore = defineStore('comparison', () => {
         labelSet.add(dateStr)
       })
     } else {
-      // For hourly/weekly/monthly, generate labels from date strings
+      // For hourly, generate 24 labels per day (00:00 → 23:00)
       dates.forEach(dateStr => {
-        // Parse YYYY-MM-DD as local date
-        const [year, month, day] = dateStr.split('-').map(Number)
-        const date = new Date(year, month - 1, day, 12, 0, 0) // noon to avoid DST edge cases
-        const ts = date.getTime()
-
-        let label: string
-        if (aggregationLevel.value === 'hourly') {
-          // For hourly, we'd need to generate all 24 hours - skip for now
-          const dateLocal = toLocalDateStr(ts)
-          const hh = String(date.getHours()).padStart(2, '0')
-          label = `${dateLocal} ${hh}:00`
-        } else if (aggregationLevel.value === 'weekly') {
-          label = getWeekLabel(dateStr, localeCode)
-        } else {
-          label = getMonthLabel(dateStr, localeCode)
+        for (let hour = 0; hour < 24; hour++) {
+          labelSet.add(`${dateStr} ${String(hour).padStart(2, '0')}:00`)
         }
-        labelSet.add(label)
       })
     }
 
@@ -383,27 +369,6 @@ export const useComparisonStore = defineStore('comparison', () => {
       dailyCount: dailyArray.length,
       meterTotals: apiKPIsData.value?.meterTotals || []
     }
-  }
-
-  // Helpers for aggregation labels
-  function getMonthLabel(dateStr: string, localeCode: string): string {
-    const d = new Date(dateStr)
-    const s = d.toLocaleDateString(localeCode, { month: 'long', year: 'numeric' })
-    return s
-  }
-
-  function getWeekLabel(dateStr: string, localeCode: string): string {
-    const d = new Date(dateStr)
-    // ISO week calculation: Thursday-based week
-    const target = new Date(d.valueOf())
-    const dayNr = (d.getDay() + 6) % 7
-    target.setDate(target.getDate() - dayNr + 3)
-    const firstThursday = new Date(target.getFullYear(), 0, 4)
-    const diff = target.valueOf() - firstThursday.valueOf()
-    const week = 1 + Math.round(diff / (7 * 24 * 3600 * 1000))
-    const year = target.getFullYear()
-    const isFrench = localeCode.startsWith('fr')
-    return isFrench ? `Semaine ${week} ${year}` : `Week ${week} ${year}`
   }
 
   const kpiCards = computed(() => {
@@ -497,11 +462,21 @@ export const useComparisonStore = defineStore('comparison', () => {
         if (idx > 0) prevDateLabel = periods[idx - 1].period
       }
 
-      // Tooltip formulas
-      const varianceTooltip = `Écart = (${val.toFixed(2)} − ${avg.toFixed(2)}) / ${avg.toFixed(2)} × 100 = ${varianceStr}%`
+      // Tooltip formulas (i18n)
+      const tt = i18n.global.t
+      const varianceTooltip = tt('comparison.kpi.varianceFormula', {
+        value: val.toFixed(2),
+        avg: avg.toFixed(2),
+        result: varianceStr
+      })
       const trendTooltip = prevVal !== undefined
-        ? `vs ${prevDateLabel}: (${val.toFixed(2)} − ${prevVal.toFixed(2)}) / ${prevVal.toFixed(2)} × 100 = ${trendPct > 0 ? '+' : ''}${trendPct.toFixed(1)}%`
-        : 'Première période — pas de comparaison'
+        ? tt('comparison.kpi.trendFormula', {
+            prevDate: prevDateLabel,
+            value: val.toFixed(2),
+            prevValue: prevVal.toFixed(2),
+            result: `${trendPct > 0 ? '+' : ''}${trendPct.toFixed(1)}`
+          })
+        : tt('comparison.kpi.noPreviousPeriod')
 
       return {
         rank: index + 1,
@@ -614,11 +589,9 @@ export const useComparisonStore = defineStore('comparison', () => {
   // ===========================
 
   /**
-   * Fetch real comparison data from the backend API.
-   * Calls all three endpoints in parallel:
-   * - /comparison (time series)
-   * - /comparison/kpis
-   * - /comparison/summary
+   * Fetch comparison data using the fast Energy History API.
+   * Uses GET /telemetry/energy-history with parallel per-day fetching.
+   * Transforms response into MeterTimeSeriesData[] format for the store.
    */
   async function fetchComparisonDataFromAPI() {
     // Get device UUIDs for selected meters
@@ -626,7 +599,6 @@ export const useComparisonStore = defineStore('comparison', () => {
       .map(m => m.deviceUUID)
       .filter((uuid): uuid is string => !!uuid)
 
-    // Log the mapping for diagnostics
     const meterMapping = selectedMeters.value.map(m => ({
       id: m.id,
       name: m.name,
@@ -663,65 +635,103 @@ export const useComparisonStore = defineStore('comparison', () => {
     isLoading.value = true
     apiError.value = null
 
+    const startTime = performance.now()
+
     try {
-      // Auto-downgrade hourly to daily for ranges > 30 days (backend rejects hourly > 30d)
-      let effectiveResolution = aggregationLevel.value
+      // Resolution is auto-determined by aggregationLevel computed
+      const effectiveResolution: 'hourly' | 'daily' = aggregationLevel.value
       const sortedDates = [...dates].sort()
-      const rangeStart = new Date(sortedDates[0])
-      const rangeEnd = new Date(sortedDates[sortedDates.length - 1])
-      const rangeDays = Math.ceil((rangeEnd.getTime() - rangeStart.getTime()) / 86_400_000)
 
-      if (effectiveResolution === 'hourly' && rangeDays > 30) {
-        console.warn(`[ComparisonStore] Auto-downgrading hourly → daily for ${rangeDays}-day range`)
-        effectiveResolution = 'daily'
-      }
+      // Build timestamps (parse as local dates)
+      const [sYear, sMonth, sDay] = sortedDates[0].split('-').map(Number)
+      const startDate = new Date(sYear, sMonth - 1, sDay, 0, 0, 0, 0)
 
-      const requestBody = buildComparisonRequest(
-        deviceUUIDs,
-        dates,
-        effectiveResolution
-      )
+      const [eYear, eMonth, eDay] = sortedDates[sortedDates.length - 1].split('-').map(Number)
+      const endDate = new Date(eYear, eMonth - 1, eDay, 23, 59, 59, 999)
 
-      console.log('[ComparisonStore] Fetching comparison data:', {
-        meters: deviceUUIDs.length,
-        dates: dates.length,
-        rangeDays,
+      // Build energy-history API URL
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+      const params = new URLSearchParams({
+        devices: deviceUUIDs.join(','),
+        startDate: startDate.getTime().toString(),
+        endDate: endDate.getTime().toString(),
+        metrics: 'consumption',
         resolution: effectiveResolution,
-        startTs: new Date(requestBody.startTs).toISOString(),
-        endTs: new Date(requestBody.endTs).toISOString()
       })
 
-      // Single combined API call — returns data + KPIs + summary in one response
-      // Eliminates 2 extra HTTP round-trips for much faster loading
-      const allResponse = await fetchComparisonAll(requestBody)
+      console.log('[ComparisonStore] 🚀 Fetching via Energy History API:', {
+        meters: deviceUUIDs.length,
+        dates: dates.length,
+        resolution: effectiveResolution,
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+      })
 
-      const dataResponse = allResponse.comparison
-      const kpisResponse = allResponse.kpis
-      const summaryResponse = allResponse.summary
+      const response = await fetch(`${apiBaseUrl}/telemetry/energy-history?${params.toString()}`)
 
-      // Update all API state
-      apiTimeSeriesData.value = dataResponse.data
-      apiMeta.value = dataResponse.meta
-      apiKPIsData.value = kpisResponse.data
-      apiSummaryData.value = summaryResponse.data
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error('Energy History API returned error')
+      }
+
+      const elapsed = Math.round(performance.now() - startTime)
+
+      // Transform energy-history response → MeterTimeSeriesData[]
+      const meterTimeSeries: MeterTimeSeriesData[] = deviceUUIDs.map(uuid => {
+        const deviceData = result.data?.[uuid]
+        const consumptionPoints = deviceData?.consumption || []
+
+        // Convert DataPoint[] → { ts, value }[]
+        const values = consumptionPoints
+          .filter((p: any) => p.hasData !== false)
+          .map((p: any) => ({
+            ts: p.timestamp,
+            value: typeof p.value === 'number' ? p.value : 0,
+          }))
+
+        const totalConsumption = values.reduce((sum: number, v: any) => sum + v.value, 0)
+
+        return {
+          meterId: uuid,
+          values,
+          totalConsumption,
+        }
+      })
+
+      // Update store state
+      apiTimeSeriesData.value = meterTimeSeries
+      apiMeta.value = {
+        meters: deviceUUIDs,
+        resolution: effectiveResolution,
+        startTs: startDate.getTime(),
+        endTs: endDate.getTime(),
+        totalDataPoints: meterTimeSeries.reduce((sum, m) => sum + m.values.length, 0),
+        executionTimeMs: elapsed,
+        apiCallCount: 1,
+        requestedAt: Date.now(),
+      }
+      apiKPIsData.value = null
+      apiSummaryData.value = null
       hasLoadedOnce.value = true
 
-      // Log per-meter data point counts to help diagnose missing data
-      const perMeterSummary = dataResponse.data.map(m => ({
+      // Log summary
+      const perMeterSummary = meterTimeSeries.map(m => ({
         meterId: m.meterId.substring(0, 8),
         points: m.values.length,
         total: m.totalConsumption.toFixed(2),
       }))
-      console.log('[ComparisonStore] ✅ Data loaded:', {
-        meters: dataResponse.data.length,
-        totalPoints: dataResponse.meta.totalDataPoints,
-        executionMs: dataResponse.meta.executionTimeMs,
-        apiCalls: dataResponse.meta.apiCallCount,
+      console.log(`[ComparisonStore] ✅ Energy History API loaded in ${elapsed}ms:`, {
+        meters: meterTimeSeries.length,
+        totalPoints: apiMeta.value.totalDataPoints,
         perMeter: perMeterSummary,
       })
 
-      // Warn about meters with no data
-      const emptyMeters = dataResponse.data.filter(m => m.values.length === 0)
+      const emptyMeters = meterTimeSeries.filter(m => m.values.length === 0)
       if (emptyMeters.length > 0) {
         console.warn('[ComparisonStore] ⚠️ Meters with no data:', emptyMeters.map(m => m.meterId.substring(0, 8)))
       }
@@ -775,10 +785,6 @@ export const useComparisonStore = defineStore('comparison', () => {
 
   function setChartType(type: ChartTypeComparison) {
     chartType.value = type
-  }
-
-  function setAggregationLevel(level: AggregationLevel) {
-    aggregationLevel.value = level
   }
 
   function toggleViewOption(option: keyof ViewOptions) {
@@ -861,7 +867,6 @@ export const useComparisonStore = defineStore('comparison', () => {
     metersStore.clearSelection()
     selectedPeriods.value = []
     comparisonMode.value = 'matrix'
-    aggregationLevel.value = 'daily'
     chartType.value = 'bar'
     viewOptions.value = {
       showRanking: true,
@@ -927,12 +932,8 @@ export const useComparisonStore = defineStore('comparison', () => {
         const dateStr = toLocalDateStr(v.ts)
         const hh = String(d.getHours()).padStart(2, '0')
         label = `${dateStr} ${hh}:00`
-      } else if (level === 'daily') {
-        label = toLocalDateStr(v.ts)
-      } else if (level === 'weekly') {
-        label = getWeekLabel(toLocalDateStr(v.ts), localeCode)
       } else {
-        label = getMonthLabel(toLocalDateStr(v.ts), localeCode)
+        label = toLocalDateStr(v.ts)
       }
 
       groups[label] = (groups[label] || 0) + v.value
@@ -995,7 +996,6 @@ export const useComparisonStore = defineStore('comparison', () => {
     deselectAllMeters,
     setComparisonMode,
     setChartType,
-    setAggregationLevel,
     toggleViewOption,
     selectPeriodPreset,
     toggleDate,

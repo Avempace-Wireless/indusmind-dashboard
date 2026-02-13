@@ -93,9 +93,9 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <span class="material-symbols-outlined text-cyan-600 dark:text-blue-400 text-lg">cloud_download</span>
-            <h3 class="text-sm font-semibold text-cyan-900 dark:text-blue-100">{{ $t('common.loading') || 'Chargement des données...' }}</h3>
+            <h3 class="text-sm font-semibold text-cyan-900 dark:text-blue-100">{{ $t('common.loading') }}</h3>
           </div>
-          <p class="text-xs text-cyan-700 dark:text-blue-300">{{ $t('comparison.fetchingData') || 'Récupération des données de comparaison...' }}</p>
+          <p class="text-xs text-cyan-700 dark:text-blue-300">{{ $t('comparison.fetchingData') }}</p>
         </div>
         <div class="flex-shrink-0">
           <div class="flex items-center gap-1">
@@ -161,7 +161,7 @@
               <span class="material-symbols-outlined text-lg" :style="{ color: card.color }">bolt</span>
             </div>
             <div class="space-y-0.5">
-              <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium">Total</p>
+              <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium">{{ t('comparison.kpi.total') }}</p>
               <h4 class="text-xl font-bold text-gray-900 dark:text-white leading-tight">{{ card.value }} <span class="text-xs font-normal text-gray-400 dark:text-gray-500">kWh</span></h4>
               <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight" :title="card.label">{{ card.label }}</p>
             </div>
@@ -174,7 +174,7 @@
           <div v-if="isLoading" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-20 rounded-2xl">
             <div class="flex flex-col items-center gap-3">
               <div class="animate-spin rounded-full h-10 w-10 border-3 border-slate-300 dark:border-slate-600 border-t-blue-600 dark:border-t-blue-400"></div>
-              <p class="text-sm text-slate-600 dark:text-slate-300 font-medium">{{ $t('common.loading') || 'Chargement du graphique...' }}</p>
+              <p class="text-sm text-slate-600 dark:text-slate-300 font-medium">{{ $t('common.loading') }}</p>
             </div>
           </div>
           <div v-if="!isLoading" class="flex items-center justify-between mb-6">
@@ -644,31 +644,6 @@
           </div>
         </div>
 
-        <!-- Characteristics Selection -->
-        <!-- Aggregation Level Selector -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ t('comparison.aggregation.title') }}</h3>
-
-          <div class="grid grid-cols-4 gap-1.5">
-            <button
-              v-for="level in ['hourly', 'daily', 'weekly', 'monthly']"
-              :key="level"
-              @click="setAggregationLevel(level as any)"
-              :disabled="isLoading"
-              :class="[
-                'px-2 py-1.5 text-xs font-medium rounded transition-colors',
-                aggregationLevel === level
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700',
-                isLoading ? 'opacity-50 cursor-not-allowed' : ''
-              ]"
-              :title="t(`comparison.aggregation.${level}`)"
-            >
-              {{ t(`comparison.aggregation.short.${level}`) }}
-            </button>
-          </div>
-        </div>
-
         <!-- Chart Type Selector -->
         <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">{{ t('comparison.chartType.title') }}</h3>
@@ -714,7 +689,7 @@
               <span class="text-xs text-gray-700 dark:text-gray-300">
                 {{ t(`comparison.viewOptions.${option}`) }}
               </span>
-            </label>
+            </label>ne
           </div>
         </div>
       </div>
@@ -730,6 +705,7 @@ import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useComparisonStore } from '@/features/comparison/store/useComparisonStore'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
+
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { TimeUtils } from '@/utils/TimeUtils'
@@ -748,6 +724,8 @@ const {
   availableCompteurs: allCompteurs,
   initialize: initializeCompteurSelection,
 } = useCompteurSelection()
+
+
 
 // Type definitions for comparison data
 interface ComparisonDataItem {
@@ -810,7 +788,7 @@ function toggleMeterVisibility(meterId: string) {
 // Helper function to get meter name by ID
 function getMeterName(meterId: string): string {
   const meter = allCompteurs.value.find(c => c.id === meterId)
-  return meter?.name || 'Unknown'
+  return meter?.name || t('comparison.kpi.unknownMeter')
 }
 
 const { selectedMeterIds: metersStoreSelectedIds } = storeToRefs(metersStore)
@@ -859,7 +837,6 @@ const {
   selectAllMeters,
   setComparisonMode,
   setChartType,
-  setAggregationLevel,
   toggleViewOption,
   selectPeriodPreset,
   toggleDate,
@@ -1100,6 +1077,7 @@ function initChart() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
+          datalabels: { display: false },
           legend: {
             display: false
           },
@@ -1185,6 +1163,7 @@ function initChart() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
+          datalabels: { display: false },
           legend: {
             display: true,
             position: 'bottom'
@@ -1251,11 +1230,6 @@ watch([chartType, comparisonMode, comparisonData, selectedMeters], () => {
   }
 }, { deep: true })
 
-// Re-fetch data when aggregation level changes
-watch(aggregationLevel, () => {
-  fetchComparisonDataFromAPI()
-})
-
 // Watch for changes to selected meters and update active list
 watch(metersStoreSelectedIds, (newIds) => {
   // If new meters were added to selection, add them to active list
@@ -1305,9 +1279,9 @@ onMounted(async () => {
 })
 
 // Re-fetch data when selected dates change
-watch(selectedDates, () => {
+watch(selectedDates, async () => {
   if (hasLoadedOnce.value) {
-    fetchComparisonDataFromAPI()
+    await fetchComparisonDataFromAPI()
   }
 }, { deep: true })
 

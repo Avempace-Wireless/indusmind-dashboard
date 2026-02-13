@@ -709,7 +709,16 @@
       "items": "éléments",
       "fromAverage": "de la moyenne",
       "peakOn": " (pic le {date})",
-      "minOn": " (minimum le {date})"
+      "minOn": " (minimum le {date})",
+      "highestDay": "Jour avec la consommation la plus élevée",
+      "lowestDay": "Jour avec la consommation la plus basse",
+      "dailyAverage": "Consommation quotidienne moyenne",
+      "days": "jours",
+      "dayVariance": "Variance entre les valeurs quotidiennes",
+      "varianceFormula": "Écart = ({value} − {avg}) / {avg} × 100 = {result}%",
+      "trendFormula": "vs {prevDate} : ({value} − {prevValue}) / {prevValue} × 100 = {result}%",
+      "noPreviousPeriod": "Première période — pas de comparaison",
+      "unknownMeter": "Inconnu"
     },
     "table": {
       "detailed": "Comparaison détaillée",
