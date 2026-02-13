@@ -1,6 +1,6 @@
 /**
  * useEnergyHistoryComparison
- * 
+ *
  * Adapter to use the fast energy-history API in the comparison view
  * Converts energy-history API responses to comparison view format
  */
@@ -98,7 +98,7 @@ export function useEnergyHistoryComparison() {
 
   /**
    * Transform energy-history API response to comparison view format
-   * 
+   *
    * API response structure:
    * {
    *   "device-uuid": {
@@ -108,7 +108,7 @@ export function useEnergyHistoryComparison() {
    *     ]
    *   }
    * }
-   * 
+   *
    * Comparison format:
    * {
    *   id: "meter-id",
@@ -151,7 +151,7 @@ export function useEnergyHistoryComparison() {
       metricData.forEach((point: any) => {
         const timestamp = point.timestamp || 0
         const date = new Date(timestamp)
-        
+
         // Format date label based on resolution
         let periodLabel = ''
         if (resolution === 'daily') {
