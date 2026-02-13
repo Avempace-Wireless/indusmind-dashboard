@@ -255,7 +255,8 @@
                     </svg>
                     <span class="hidden sm:inline">{{ zone.powerStatus === false ? t('thermal.chart.inactive') :
                       t('thermal.chart.active') }}</span>
-                    <span class="sm:hidden">{{ zone.powerStatus === false ? t('thermal.power.off') : t('thermal.power.on') }}</span>
+                    <span class="sm:hidden">{{ zone.powerStatus === false ? t('thermal.chart.inactive') :
+                      t('thermal.chart.active') }}</span>
                   </span>
                 </div>
               </div>
