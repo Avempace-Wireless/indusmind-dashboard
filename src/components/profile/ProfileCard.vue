@@ -10,19 +10,12 @@
             <h4
               class="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left"
             >
-              Manager
+              {{ authStore.user?.name || 'Manager' }}
             </h4>
-            <div
-              class="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left"
-            >
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('profile.position') }}: Manager</p>
-              <div class="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('profile.accessLevel') }}: {{ t('profile.administrator') }}</p>
-            </div>
           </div>
           <div class="flex items-center order-2 gap-3 grow xl:order-3 xl:justify-end">
             <div class="text-sm text-gray-600 dark:text-gray-400">
-              <p class="font-medium">manager@indusmind.com</p>
+              <p class="font-medium">{{ authStore.user?.email || 'manager@indusmind.com' }}</p>
             </div>
           </div>
         </div>
@@ -222,9 +215,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '@/features/auth/store/useAuthStore'
 import Modal from './Modal.vue'
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 const isProfileInfoModal = ref(false)
 
 const saveProfile = () => {

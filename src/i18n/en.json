@@ -788,6 +788,7 @@
       "minTarget": "Min target",
       "active": "Active",
       "inactive": "Inactive",
+      "external": "External",
       "temperature": "Temperature",
       "annotationMax": "Max",
       "annotationMin": "Min"

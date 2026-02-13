@@ -23,23 +23,8 @@
                 {{ t('profile.email') }}
               </p>
               <p class="text-sm font-medium text-gray-800 dark:text-white/90">
-                manager@indusmind.com
+                {{ authStore.user?.email || 'manager@indusmind.com' }}
               </p>
-            </div>
-
-            <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.phone') }}</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">+33 1 45 67 89 00</p>
-            </div>
-
-            <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.position') }}</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">Manager</p>
-            </div>
-
-            <div>
-              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.accessLevel') }}</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ t('profile.administrator') }}</p>
             </div>
           </div>
         </div>
@@ -259,9 +244,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '@/features/auth/store/useAuthStore'
 import Modal from './Modal.vue'
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 const isProfileInfoModal = ref(false)
 
 const saveProfile = () => {

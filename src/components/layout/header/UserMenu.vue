@@ -27,7 +27,7 @@
     >
       <div
         v-if="dropdownOpen"
-        class="absolute right-0 mt-2 w-72 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl"
+        class="absolute right-0 mt-2 w-80 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl"
       >
     <!-- User Info Section -->
         <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -35,9 +35,9 @@
             <div class="flex items-center justify-center h-12 w-12 rounded-full ring-2 ring-emerald-500/30 bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-sm flex-shrink-0">
               {{ getUserInitials() }}
             </div>
-            <div>
-              <p class="font-semibold text-gray-900 dark:text-white">{{ authStore.user?.name || t('user.managerAccount') }}</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ authStore.user?.email || t('user.managerEmail') }}</p>
+            <div class="min-w-0">
+              <p class="font-semibold text-gray-900 dark:text-white break-words">{{ authStore.user?.name || t('user.managerAccount') }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 break-words">{{ authStore.user?.email || t('user.managerEmail') }}</p>
             </div>
           </div>
         </div>
@@ -100,12 +100,13 @@ const menuItems = [
   //   icon: SettingsIcon,
   //   translationKey: 'user.settings'
   // },
-  {
-    id: 'support',
-    href: '/support',
-    icon: SupportIcon,
-    translationKey: 'user.support'
-  },
+  // Commented out: Support menu item
+  // {
+  //   id: 'support',
+  //   href: '/support',
+  //   icon: SupportIcon,
+  //   translationKey: 'user.support'
+  // },
 ]
 
 const toggleDropdown = () => {

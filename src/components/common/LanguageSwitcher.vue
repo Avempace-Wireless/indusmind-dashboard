@@ -22,7 +22,7 @@
       <div
         v-show="showDropdown"
         @click.away="showDropdown = false"
-        class="absolute right-0 z-50 mt-2 w-40 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700"
+        class="absolute z-50 mt-2 w-40 rounded-lg bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 left-0 sm:left-auto sm:right-0"
       >
         <!-- Language options -->
         <div class="py-1">

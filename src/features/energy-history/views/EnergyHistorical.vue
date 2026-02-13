@@ -77,12 +77,30 @@
       @close="showCompteurSelector = false"
     />
 
-    <!-- Main Content Grid: 70% Chart Area, 30% Controls -->
-    <div v-if="dashboardLoading" class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex items-center justify-center text-slate-600 dark:text-slate-300 mb-6">
-      {{ t('common.loading') }}
+    <!-- Loading Bar (Top of content, like ComparisonView) -->
+    <div v-if="dashboardLoading" class="mb-6 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-slate-800 dark:to-slate-700 border border-cyan-200 dark:border-blue-900 rounded-xl p-4 shadow-md animate-fadeIn">
+      <div class="flex items-center gap-4">
+        <div class="flex-shrink-0">
+          <div class="animate-spin rounded-full h-8 w-8 border-3 border-cyan-200 dark:border-blue-700 border-t-cyan-600 dark:border-t-blue-400"></div>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="material-symbols-outlined text-cyan-600 dark:text-blue-400 text-lg">cloud_download</span>
+            <h3 class="text-sm font-semibold text-cyan-900 dark:text-blue-100">{{ $t('common.loading') }}</h3>
+          </div>
+          <p class="text-xs text-cyan-700 dark:text-blue-300">{{ $t('energyHistory.fetchingData') }}</p>
+        </div>
+        <div class="flex-shrink-0">
+          <div class="flex items-center gap-1">
+            <div class="w-1.5 h-1.5 rounded-full bg-cyan-600 dark:bg-blue-400 animate-pulse" style="animation-delay: 0ms"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-cyan-600 dark:bg-blue-400 animate-pulse" style="animation-delay: 150ms"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-cyan-600 dark:bg-blue-400 animate-pulse" style="animation-delay: 300ms"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div v-else class="grid grid-cols-1 xl:grid-cols-10 gap-6">
+    <div class="grid grid-cols-1 xl:grid-cols-10 gap-6" :class="{ 'opacity-60 pointer-events-none': dashboardLoading }">
       <!-- Left Panel: Chart Area (70%) -->
         <div class="xl:col-span-7 space-y-6">
 
@@ -122,13 +140,11 @@
 
           <!-- Chart Canvas -->
           <div class="relative" style="height: 400px;">
-            <!-- Loading State -->
-            <div v-if="store.loading" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/30 rounded-lg">
+            <!-- Loading State (show until first load completes) -->
+            <div v-if="!hasLoadedOnce || store.loading" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-2xl">
               <div class="flex flex-col items-center gap-3">
-                <div class="animate-spin">
-                  <span class="material-symbols-outlined text-4xl text-blue-500">sync</span>
-                </div>
-                <p class="text-sm font-medium text-gray-600 dark:text-gray-300">{{ t('common.loading') }}</p>
+                <div class="animate-spin rounded-full h-8 w-8 border-3 border-cyan-200 dark:border-blue-700 border-t-cyan-600 dark:border-t-blue-400"></div>
+                <p class="text-sm text-slate-600 dark:text-slate-300 font-medium">{{ t('common.loading') }}</p>
               </div>
             </div>
             <!-- Error State -->
@@ -153,7 +169,7 @@
 
             </div>
             <!-- Chart -->
-            <canvas v-show="hasChartData && !store.loading && !store.error" ref="chartCanvas"></canvas>
+            <canvas v-show="hasChartData && hasLoadedOnce && !store.loading && !store.error" ref="chartCanvas"></canvas>
           </div>
 
           <!-- Chart Legend (Interactive) -->
@@ -610,22 +626,7 @@ const {
 // ===========================
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
-const chartType = ref<'line' | 'bar'>('line')
-
-// Meter color mapping (dashboard theme)
-const METER_COLORS: Record<string, string> = {
-  'TGBT': '#ef4444',        // red-500
-  'Compresseurs': '#10b981', // green-500
-  'Clim': '#3b82f6',        // blue-500
-  'Cooling': '#3b82f6',     // blue-500 (alias)
-  'Éclairage': '#eab308',   // yellow-500
-  'Eclairage': '#eab308',   // yellow-500 (alias)
-  'Lighting': '#eab308',    // yellow-500 (alias)
-}
-
-function getMeterColor(meterName: string): string {
-  return METER_COLORS[meterName] || '#3b82f6'
-}
+const chartType = ref<'line' | 'bar'>('bar')
 
 function formatCell(v: any) {
   // Handle if v is an object with a value property
@@ -675,6 +676,12 @@ const dragStart = ref<string | null>(null)
 
 // API call tracking - prevent concurrent requests
 const isFetchingData = ref(false)
+
+// Track if data has been loaded at least once (for first-load loading state)
+const hasLoadedOnce = ref(false)
+
+// Guard: prevent watchers from re-triggering during initial mount setup
+const initialSetupDone = ref(false)
 
 // ===========================
 // Category Selection - Synced with Centralized Meter Selection
@@ -1022,7 +1029,7 @@ function initChart() {
         label: ds.label,
         data: ds.data,
         borderColor: ds.borderColor,
-        backgroundColor: ds.backgroundColor,
+        backgroundColor: chartType.value === 'bar' ? ds.borderColor : ds.borderColor + '20',
         yAxisID: ds.yAxisID,
         borderWidth: 2,
       }
@@ -1501,8 +1508,8 @@ onMounted(async () => {
 
   selectedCategory.value = null // No specific category filter
 
-  // Initialize with today's date
-  goToToday()
+  // Initialize with last 7 days (default period)
+  selectLast7Days()
 
   // Wait for next tick to ensure all state is synchronized
   await nextTick()
@@ -1523,12 +1530,20 @@ onMounted(async () => {
 
   await refreshData()
 
-  // Wait a bit longer to ensure computed properties fully recalculate after data arrives
-  await nextTick()
-  await nextTick()
-  await new Promise(resolve => setTimeout(resolve, 100))
+  // Wait for store to clear loading state
+  let loadingWaitCount = 0
+  while (store.loading && loadingWaitCount < 20) {
+    await new Promise(resolve => setTimeout(resolve, 50))
+    loadingWaitCount++
+  }
+  console.log(`Waited ${loadingWaitCount * 50}ms for store.loading to clear`)
 
-  // Debug: log chart state
+  // Wait for computed properties to recalculate after data loads
+  await nextTick()
+  await nextTick()
+  await new Promise(resolve => setTimeout(resolve, 200))
+
+  // Debug: log chart state after data is ready
   console.log('After refreshData:', {
     hasChartData: hasChartData.value,
     selectedDates: selectedDates.value.length,
@@ -1536,13 +1551,23 @@ onMounted(async () => {
     enabledMetrics: enabledMetrics.value.filter(m => m.enabled).length,
     chartLabels: Array.isArray(chartData.value?.labels) ? chartData.value.labels.length : 0,
     chartDatasets: Array.isArray(chartData.value?.datasets) ? chartData.value.datasets.length : 0,
+    storeLoading: store.loading,
+    storeError: store.error,
+    historicalDataSize: store.historicalData.size,
   })
 
-  // Initialize chart after data is loaded
+  // Only mark as loaded once data is actually ready
+  if (hasChartData.value) {
+    console.log('✅ Chart data is ready, initializing chart...')
+  } else {
+    console.warn('⚠️ Chart data is NOT ready after refreshData')
+  }
+  hasLoadedOnce.value = true
+
+  // Initialize chart after data is confirmed to be loaded
   if (hasChartData.value) {
     initChart()
   }
-  // If no data, show empty state instead of falling back to mock data
 
   // Force chart re-initialization if canvas still not ready after a delay
   setTimeout(() => {
@@ -1550,53 +1575,13 @@ onMounted(async () => {
       console.log('Delayed chart initialization (canvas/data ready now)...')
       initChart()
     }
-  }, 300)
+    // Allow watchers to run only after initial setup is fully done
+    initialSetupDone.value = true
+  }, 500)
 })
 
-// Re-initialize chart whenever data becomes available after loading
-watch(
-  () => ({ ready: hasChartData.value, loading: dashboardStore.loading }),
-  async ({ ready, loading }) => {
-    if (!ready || loading) return
-    await nextTick()
-    if (!chartInstance) {
-      initChart()
-    }
-  },
-  { deep: true }
-)
-
 // Rebuild chart when chart data shape changes (labels/datasets)
-watch(
-  () => ({
-    labels: Array.isArray(chartData.value?.labels) ? chartData.value.labels.length : 0,
-    datasets: Array.isArray(chartData.value?.datasets) ? chartData.value.datasets.length : 0,
-    ready: hasChartData.value
-  }),
-  async ({ labels, datasets, ready }) => {
-    console.log('Chart data watcher triggered:', { labels, datasets, ready, hasChartInstance: !!chartInstance, loading: store.loading })
-
-    // Skip if no data yet
-    // ⚠️ NOTE: store.loading check removed - chartData computed already has loading guard
-    // If chartData fired, data is ready. Don't add redundant loading check here.
-    if (!ready || (labels === 0 && datasets === 0)) {
-      console.log('Skipping chart init - data not ready')
-      return
-    }
-
-    // If chart exists, destroy it to force re-render with new data
-    if (chartInstance) {
-      console.log('Destroying existing chart to re-render with new data')
-      chartInstance.destroy()
-      chartInstance = null
-    }
-
-    // Re-initialize with fresh data
-    await nextTick()
-    initChart()
-  },
-  { immediate: false } // Don't run on initial setup, let onMounted handle it
-)
+// — handled by the unified watcher below, no separate watcher needed
 
 // Destroy chart when data is deselected (hasChartData becomes false)
 watch(
@@ -1615,10 +1600,13 @@ watch(
   () => dashboardStore.compteurs,
   async (compteurs) => {
     if (!compteurs || compteurs.length === 0) return
+    // Always hydrate meters store (needed for color mapping)
     metersStore.setAllMetersFromDashboard(compteurs as any)
     if (selectedMeterIds.value.length === 0) {
       metersStore.setSelectedMeters(compteurs.slice(0, 8).map(c => c.id))
     }
+    // Skip data refresh during initial mount — onMounted handles it
+    if (!initialSetupDone.value) return
     await nextTick()
     await refreshData()
     if (!chartInstance && hasChartData.value) {
@@ -1638,31 +1626,30 @@ onBeforeUnmount(() => {
 // Watchers
 // ===========================
 
-// Initialize chart when loading completes and data is ready
+// Single unified watcher: re-init chart when loading completes and data shape changes
+// This replaces multiple overlapping watchers that were causing destroy/re-create loops
 watch(
-  () => store.loading,
-  async (loading) => {
-    if (!loading && hasChartData.value) {
-      console.log('[Chart] Loading completed and data is ready, initializing chart')
-      await nextTick()
-      initChart()
-    }
-  }
-)
+  () => ({
+    loading: store.loading,
+    labels: Array.isArray(chartData.value?.labels) ? chartData.value.labels.length : 0,
+    datasets: Array.isArray(chartData.value?.datasets) ? chartData.value.datasets.length : 0,
+  }),
+  async ({ loading, labels, datasets }) => {
+    // Skip during initial mount — onMounted handles first render
+    if (!initialSetupDone.value) return
+    // Skip while loading
+    if (loading) return
+    // Skip if no data
+    if (!hasChartData.value || (labels === 0 && datasets === 0)) return
 
-watch(
-  () => chartData.value,
-  async () => {
-    // Don't initialize while loading - let the loading watcher handle it
-    if (store.loading) {
-      console.log('[Chart] Skipping chartData watcher - still loading')
-      return
+    console.log('[Chart Watcher] Data ready, re-initializing chart', { labels, datasets })
+    if (chartInstance) {
+      chartInstance.destroy()
+      chartInstance = null
     }
-    // Ensure DOM is ready before initializing chart
     await nextTick()
     initChart()
-  },
-  { deep: true }
+  }
 )
 
 // Re-init chart when toggling back to chart view
@@ -1672,11 +1659,13 @@ watch(viewMode, (m) => {
   }
 })
 
-// Refresh chart when meter selection changes (activeCompteurIds toggle)
+// Refresh data when meter visibility changes (activeCompteurIds toggle)
+// Chart will be re-initialized by the unified chart watcher when data loads
 watch(activeCompteurIds, async () => {
+  // Skip during initial mount — onMounted handles it
+  if (!initialSetupDone.value) return
   await nextTick()
   await refreshData()
-  initChart()
 }, { deep: true })
 
 // Adjust table paging when resolution changes
@@ -1701,7 +1690,15 @@ const debouncedRefreshData = debounce(async () => {
 }, 500)
 
 // Refresh data when dates or enabled metrics change
+// Guarded by initialSetupDone to prevent redundant fetch during mount
+// (onMounted already handles the first fetch via selectLast7Days → refreshData)
 watch([selectedDates, enabledMetrics, activePeriodPreset], async () => {
+  // Skip during initial mount — onMounted already fetched the data
+  if (!initialSetupDone.value) {
+    console.log('[EnergyHistorical WATCHER] Skipping - initial setup not done yet')
+    return
+  }
+
   console.log('[EnergyHistorical WATCHER] Triggered! Data:', {
     selectedDatesLength: selectedDates.value.length,
     enabledMetricsCount: enabledMetrics.value.filter((m: any) => m.enabled).length,

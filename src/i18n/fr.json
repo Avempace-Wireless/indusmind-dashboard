@@ -373,6 +373,7 @@
       "unit": "Unité",
       "lastUpdate": "Dernière Mise à Jour",
       "online": "En ligne",
+      "offline": "Hors ligne",
       "justNow": "À l'instant",
       "minutesAgo": "Il y a {n} minute(s)",
       "hoursAgo": "Il y a {n} heure(s)",
@@ -791,6 +792,7 @@
       "minTarget": "Cible min",
       "active": "Actif",
       "inactive": "Inactif",
+      "external": "Externe",
       "temperature": "Température",
       "annotationMax": "Max",
       "annotationMin": "Min"
@@ -826,7 +828,7 @@
         "subtitle": "Valeurs actuelles vs limites configurées par zone"
       },
       "exteriorTemp": {
-        "title": "Température Extérieure",
+        "title": "Température externe",
         "subtitle": "Temps réel - 12 dernières heures"
       },
       "placeholder": "Emplacement de visualisation graphique",
@@ -836,7 +838,7 @@
         "zone2": "Température Zone 2",
         "zone3": "Température Zone 3",
         "zone4": "Température Zone 4",
-        "exterior": "Température Extérieur"
+        "exterior": "Température externe"
       }
     },
     "controls": {

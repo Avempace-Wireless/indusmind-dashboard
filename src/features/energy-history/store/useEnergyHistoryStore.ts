@@ -526,7 +526,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
           label: `${compteur.name}`,
           data: allData,
           borderColor: color,
-          backgroundColor: hexToRgba(color, 0.1),
+          backgroundColor: color,
           yAxisID: metric.yAxisPosition === 'left' ? 'y' : 'y1',
           metricType: metric.type,
           spanGaps: false, // Display gaps for null values instead of connecting across them
@@ -639,7 +639,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
           label: `${compteur.name}`,
           data: dataPoints,
           borderColor: color,
-          backgroundColor: hexToRgba(color, 0.5),
+          backgroundColor: color,
           yAxisID: metric.yAxisPosition === 'left' ? 'y' : 'y1',
           metricType: metric.type,
           spanGaps: false,
