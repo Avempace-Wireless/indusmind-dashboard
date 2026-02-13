@@ -102,7 +102,7 @@
 
     <div class="grid grid-cols-1 xl:grid-cols-10 gap-6" :class="{ 'opacity-60 pointer-events-none': dashboardLoading }">
       <!-- Left Panel: Chart Area (70%) -->
-        <div class="xl:col-span-7 space-y-6">
+        <div class="xl:col-span-7 space-y-6 order-2 xl:order-1">
 
         <!-- View Mode Toggle & Export Buttons -->
         <div class="flex items-center justify-between gap-3">
@@ -140,15 +140,15 @@
 
           <!-- Chart Canvas -->
           <div class="relative" style="height: 400px;">
-            <!-- Loading State (show until first load completes) -->
-            <div v-if="!hasLoadedOnce || store.loading" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-2xl">
+            <!-- Loading Overlay (on top of chart, doesn't hide canvas) -->
+            <div v-if="!hasLoadedOnce || store.loading" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-20 rounded-2xl">
               <div class="flex flex-col items-center gap-3">
                 <div class="animate-spin rounded-full h-8 w-8 border-3 border-cyan-200 dark:border-blue-700 border-t-cyan-600 dark:border-t-blue-400"></div>
                 <p class="text-sm text-slate-600 dark:text-slate-300 font-medium">{{ t('common.loading') }}</p>
               </div>
             </div>
             <!-- Error State -->
-            <div v-else-if="store.error" class="absolute inset-0 flex flex-col items-center justify-center bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+            <div v-if="!store.loading && store.error" class="absolute inset-0 flex flex-col items-center justify-center bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 z-20">
               <span class="material-symbols-outlined text-5xl mb-3 text-red-400 opacity-50">error</span>
               <p class="text-sm font-medium text-red-700 dark:text-red-300">{{ t('common.error') }}</p>
               <p class="text-xs text-red-600 dark:text-red-400 mt-1 max-w-xs text-center">{{ store.error }}</p>
@@ -160,16 +160,15 @@
               </button>
             </div>
             <!-- Empty State -->
-            <div v-else-if="!hasChartData" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+            <div v-if="!store.loading && !store.error && hasLoadedOnce && !hasChartData" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 z-20">
               <span v-if="selectedDates.length === 0" class="material-symbols-outlined text-6xl mb-4 opacity-50 text-blue-400">calendar_today</span>
               <span v-else class="material-symbols-outlined text-6xl mb-4 opacity-30 text-gray-400">bar_chart</span>
               <p class="text-lg font-medium">{{ emptyStateMessage }}</p>
               <p v-if="selectedDates.length === 0" class="text-sm mt-2 text-blue-600 dark:text-blue-400">{{ t('energyHistory.emptyState.selectDate') }}</p>
               <p v-else class="text-sm mt-2">{{ t('energyHistory.emptyState.hint') }}</p>
-
             </div>
-            <!-- Chart -->
-            <canvas v-show="hasChartData && hasLoadedOnce && !store.loading && !store.error" ref="chartCanvas"></canvas>
+            <!-- Chart (always in DOM so Chart.js keeps proper dimensions) -->
+            <canvas ref="chartCanvas"></canvas>
           </div>
 
           <!-- Chart Legend (Interactive) -->
@@ -252,7 +251,7 @@
       </div>
 
       <!-- Right Panel: Controls (30%) -->
-      <div class="xl:col-span-3 space-y-6">
+      <div class="xl:col-span-3 space-y-6 order-1 xl:order-2">
         <!-- Calendar Selector -->
         <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
           <div class="flex items-center justify-between mb-4">
@@ -851,11 +850,11 @@ watch(
   () => selectedCompteurs.value,
   async (newCompteurs) => {
     if (newCompteurs.length > 0) {
-      // Wait for next tick to ensure computed values have updated
-      await nextTick()
       // Update activeCompteurIds to match new selection
       activeCompteurIds.value = newCompteurs.map(c => c.id)
-      // Refresh data to load new meter data
+      // Skip data refresh during initial mount — onMounted handles it
+      if (!initialSetupDone.value) return
+      await nextTick()
       await refreshData()
     }
   },
@@ -1419,11 +1418,8 @@ async function fetchEnergyHistoryData() {
         })))
       }
 
-      // Re-initialize chart with new data
-      if (hasChartData.value) {
-        console.log('[EnergyHistorical] Initializing chart with new data')
-        initChart()
-      } else {
+      // Chart will be re-initialized by the unified watcher when loading clears
+      if (!hasChartData.value) {
         console.warn('[EnergyHistorical] No chart data available after API response', {
           reason: !hasValidData.value ? 'No valid data' :
                   chartData.value.datasets.length === 0 ? 'No datasets' :
@@ -1469,13 +1465,7 @@ async function fetchEnergyHistoryData() {
     store.loading = false // Clear store loading state
     console.log('[EnergyHistorical] API fetch completed')
 
-    // Fallback: If chart still not initialized after a short delay, try again
-    setTimeout(() => {
-      if (!chartInstance && hasChartData.value && !store.loading) {
-        console.log('[EnergyHistorical] Delayed chart initialization attempt')
-        initChart()
-      }
-    }, 200)
+    // Chart re-initialization is handled by the unified watcher
   }
 }
 
@@ -1584,9 +1574,11 @@ onMounted(async () => {
 // — handled by the unified watcher below, no separate watcher needed
 
 // Destroy chart when data is deselected (hasChartData becomes false)
+// Only after initial setup — during mount, onMounted manages the chart lifecycle
 watch(
   () => hasChartData.value,
   (hasData) => {
+    if (!initialSetupDone.value) return
     if (!hasData && chartInstance) {
       console.log('Clearing chart - no data available')
       chartInstance.destroy()
@@ -1679,6 +1671,8 @@ watch([hourFrom, hourTo], () => {
   if (hourFrom.value > hourTo.value) {
     hourFrom.value = hourTo.value
   }
+  // Skip during initial mount — onMounted handles it
+  if (!initialSetupDone.value) return
   // Refresh data when hour range changes
   refreshData()
 })

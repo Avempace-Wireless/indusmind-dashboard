@@ -110,15 +110,15 @@
     <!-- Main Content Grid: 65% Chart Area, 35% Controls -->
     <div class="grid grid-cols-1 xl:grid-cols-10 gap-6">
       <!-- Left Panel: Chart & Analysis Area (65%) -->
-      <div class="xl:col-span-7 space-y-6">
-        <div v-if="apiError" class="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-200 flex items-center justify-between gap-3">
+      <div class="contents xl:block xl:col-span-7 xl:space-y-6">
+        <div v-if="apiError" class="order-1 rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-800 dark:text-red-200 flex items-center justify-between gap-3">
           <span>{{ t('comparison.errors.loadFailed') }}: {{ apiError }}</span>
           <button @click="fetchComparisonDataFromAPI()" class="shrink-0 px-3 py-1.5 text-xs font-medium rounded-md bg-red-100 dark:bg-red-800 hover:bg-red-200 dark:hover:bg-red-700 text-red-800 dark:text-red-200 transition-colors whitespace-nowrap">
             <span class="material-symbols-outlined text-sm align-middle mr-1">refresh</span>
             {{ t('common.retry') }}
           </button>
         </div>
-        <div v-else-if="hasLoadedOnce && comparisonData.length === 0" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/50 px-6 py-12 text-center">
+        <div v-else-if="hasLoadedOnce && comparisonData.length === 0" class="order-1 rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/50 px-6 py-12 text-center">
           <div class="flex flex-col items-center gap-3">
             <span class="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">inbox</span>
             <div>
@@ -130,7 +130,7 @@
         <!-- KPI Cards - Total consumption per meter (max 8, full width, responsive) -->
         <div
           v-if="metersStore.selectedMeters.length > 0"
-          class="grid gap-3 w-full"
+          class="order-2 grid gap-3 w-full"
           :class="{
             'grid-cols-1': kpiCards.length === 1,
             'grid-cols-2': kpiCards.length === 2,
@@ -169,7 +169,7 @@
         </div>
 
         <!-- Main Comparison Chart -->
-        <div v-if="metersStore.selectedMeters.length > 0" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 relative overflow-hidden">
+        <div v-if="metersStore.selectedMeters.length > 0" class="order-6 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 relative overflow-hidden">
           <!-- Loading Overlay with Spinner -->
           <div v-if="isLoading" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-20 rounded-2xl">
             <div class="flex flex-col items-center gap-3">
@@ -342,7 +342,7 @@
         </div>
 
         <!-- Comparison Data Table -->
-        <div v-if="metersStore.selectedMeters.length > 0 && chartType !== 'table'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+        <div v-if="metersStore.selectedMeters.length > 0 && chartType !== 'table'" class="order-8 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
           <div class="p-6 border-b border-gray-200 dark:border-gray-700">
             <div class="flex flex-col gap-3">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('comparison.table.detailed') }}</h3>
@@ -508,9 +508,9 @@
       </div>
 
       <!-- Right Panel: Controls (35%) -->
-      <div class="xl:col-span-3 space-y-6" :class="{ 'opacity-60 pointer-events-none': isLoading }">
+      <div class="contents xl:block xl:col-span-3 xl:space-y-6">
         <!-- Comparison Mode Selector -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+        <div class="order-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5" :class="{ 'opacity-60 pointer-events-none': isLoading }">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ t('comparison.mode.title') }}</h3>
 
           <div class="space-y-2">
@@ -545,7 +545,7 @@
 
 
         <!-- Period Selection -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+        <div class="order-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6" :class="{ 'opacity-60 pointer-events-none': isLoading }">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('comparison.periods.title') }}</h3>
             <button v-if="selectedDates.length > 0" @click="clearDates" :disabled="isLoading" class="text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed">
@@ -645,7 +645,7 @@
         </div>
 
         <!-- Chart Type Selector -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div class="order-5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4" :class="{ 'opacity-60 pointer-events-none': isLoading }">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">{{ t('comparison.chartType.title') }}</h3>
 
           <div class="grid grid-cols-4 gap-1.5">
@@ -671,7 +671,7 @@
         </div>
 
         <!-- View Options -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div class="order-7 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4" :class="{ 'opacity-60 pointer-events-none': isLoading }">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">{{ t('comparison.viewOptions.title') }}</h3>
 
           <div class="space-y-2">
