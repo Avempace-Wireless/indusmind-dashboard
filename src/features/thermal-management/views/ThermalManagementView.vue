@@ -682,7 +682,7 @@
     </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
 import { dataMode } from '@/config/dataMode'
@@ -724,6 +724,25 @@ const showChartModal = computed(() => chartModalZoneId.value !== null)
 const chartModalZone = computed(() => {
   const zone = zones.value.find(z => z.id === chartModalZoneId.value)
   return zone || undefined
+})
+
+const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+const isMobileViewport = computed(() => viewportWidth.value < 640)
+
+const handleResize = () => {
+  if (typeof window === 'undefined') return
+  viewportWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  if (typeof window === 'undefined') return
+  handleResize()
+  window.addEventListener('resize', handleResize)
+})
+
+onBeforeUnmount(() => {
+  if (typeof window === 'undefined') return
+  window.removeEventListener('resize', handleResize)
 })
 
 interface Zone {
@@ -1398,9 +1417,18 @@ const getAllSensorsChartOptions = () => {
     xaxis: {
       categories: xLabels,
       labels: {
-        style: { fontSize: '11px', colors: '#9ca3af' },
-        rotate: -45
+        style: { fontSize: isMobileViewport.value ? '9px' : '11px', colors: '#9ca3af' },
+        rotate: isMobileViewport.value ? -60 : -45,
+        trim: true,
+        formatter: (value: string, _timestamp: number, opts: { i?: number }) => {
+          if (!isMobileViewport.value) return value
+          const step = Math.max(1, Math.ceil(xLabels.length / 4))
+          const index = typeof opts?.i === 'number' ? opts.i : xLabels.indexOf(value)
+          if (index % step !== 0) return ''
+          return value ? value.toString().slice(0, 5) : ''
+        }
       },
+      tickAmount: isMobileViewport.value ? 4 : 8,
       axisBorder: { show: true, color: '#e5e7eb' },
       axisTicks: { show: false }
     },
@@ -1556,9 +1584,18 @@ const getExternalSensorsChartOptions = () => {
     xaxis: {
       categories: xLabels,
       labels: {
-        style: { fontSize: '11px', colors: '#9ca3af' },
-        rotate: -45
+        style: { fontSize: isMobileViewport.value ? '9px' : '11px', colors: '#9ca3af' },
+        rotate: isMobileViewport.value ? -60 : -45,
+        trim: true,
+        formatter: (value: string, _timestamp: number, opts: { i?: number }) => {
+          if (!isMobileViewport.value) return value
+          const step = Math.max(1, Math.ceil(xLabels.length / 4))
+          const index = typeof opts?.i === 'number' ? opts.i : xLabels.indexOf(value)
+          if (index % step !== 0) return ''
+          return value ? value.toString().slice(0, 5) : ''
+        }
       },
+      tickAmount: isMobileViewport.value ? 4 : 8,
       axisBorder: { show: true, color: '#e5e7eb' },
       axisTicks: { show: false }
     },
