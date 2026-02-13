@@ -847,7 +847,7 @@ const tempChartRange = computed(() => {
   const max = Math.max(...values)
   const pad = Math.max((max - min) * 0.15, 1)
   return {
-    min: Math.max(0, Number((min - pad).toFixed(1))),
+    min: Number((min - pad).toFixed(1)),
     max: Number((max + pad).toFixed(1))
   }
 })
@@ -862,7 +862,7 @@ const minMaxChartRange = computed(() => {
   const max = Math.max(...values)
   const pad = Math.max((max - min) * 0.15, 1)
   return {
-    min: Math.max(0, Number((min - pad).toFixed(1))),
+    min: Number((min - pad).toFixed(1)),
     max: Number((max + pad).toFixed(1))
   }
 })
@@ -1417,18 +1417,14 @@ const getAllSensorsChartOptions = () => {
     xaxis: {
       categories: xLabels,
       labels: {
+        show: true,
         style: { fontSize: isMobileViewport.value ? '9px' : '11px', colors: '#9ca3af' },
         rotate: isMobileViewport.value ? -60 : -45,
         trim: true,
-        formatter: (value: string, _timestamp: number, opts: { i?: number }) => {
-          if (!isMobileViewport.value) return value
-          const step = Math.max(1, Math.ceil(xLabels.length / 4))
-          const index = typeof opts?.i === 'number' ? opts.i : xLabels.indexOf(value)
-          if (index % step !== 0) return ''
-          return value ? value.toString().slice(0, 5) : ''
-        }
+        hideOverlappingLabels: true,
+        showDuplicates: false
       },
-      tickAmount: isMobileViewport.value ? 4 : 8,
+      tickAmount: isMobileViewport.value ? Math.min(6, Math.floor(xLabels.length / 4)) : undefined,
       axisBorder: { show: true, color: '#e5e7eb' },
       axisTicks: { show: false }
     },
@@ -1437,7 +1433,7 @@ const getAllSensorsChartOptions = () => {
         style: { fontSize: '12px', colors: '#9ca3af' },
         formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(1)}°C` : ''
       },
-      min: Math.max(0, minValue - padding),
+      min: minValue - padding,
       max: maxValue + padding
     },
     grid: {
@@ -1584,18 +1580,14 @@ const getExternalSensorsChartOptions = () => {
     xaxis: {
       categories: xLabels,
       labels: {
+        show: true,
         style: { fontSize: isMobileViewport.value ? '9px' : '11px', colors: '#9ca3af' },
         rotate: isMobileViewport.value ? -60 : -45,
         trim: true,
-        formatter: (value: string, _timestamp: number, opts: { i?: number }) => {
-          if (!isMobileViewport.value) return value
-          const step = Math.max(1, Math.ceil(xLabels.length / 4))
-          const index = typeof opts?.i === 'number' ? opts.i : xLabels.indexOf(value)
-          if (index % step !== 0) return ''
-          return value ? value.toString().slice(0, 5) : ''
-        }
+        hideOverlappingLabels: true,
+        showDuplicates: false
       },
-      tickAmount: isMobileViewport.value ? 4 : 8,
+      tickAmount: isMobileViewport.value ? Math.min(6, Math.floor(xLabels.length / 4)) : undefined,
       axisBorder: { show: true, color: '#e5e7eb' },
       axisTicks: { show: false }
     },
@@ -1604,7 +1596,7 @@ const getExternalSensorsChartOptions = () => {
         style: { fontSize: '12px', colors: '#9ca3af' },
         formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(1)}°C` : ''
       },
-      min: Math.max(0, minValue - padding),
+      min: minValue - padding,
       max: maxValue + padding
     },
     grid: {
@@ -1731,7 +1723,7 @@ const getChartOptions = (zone: Zone) => {
         style: { fontSize: '12px', colors: '#9ca3af' },
         formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(1)}°C` : ''
       },
-      min: Math.max(0, minValue - padding),
+      min: minValue - padding,
       max: maxValue + padding
     },
     grid: {
@@ -1859,7 +1851,7 @@ const getMiniChartOptions = (zone: Zone) => {
         style: { fontSize: '10px', colors: '#94a3b8' },
         formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(0)}` : ''
       },
-      min: Math.max(0, minValue - padding),
+      min: minValue - padding,
       max: maxValue + padding
     },
     grid: {
