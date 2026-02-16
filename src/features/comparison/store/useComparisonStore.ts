@@ -594,6 +594,12 @@ export const useComparisonStore = defineStore('comparison', () => {
    * Transforms response into MeterTimeSeriesData[] format for the store.
    */
   async function fetchComparisonDataFromAPI() {
+    // Prevent concurrent API calls
+    if (isLoading.value) {
+      console.log('[ComparisonStore] ⏭️ Skipping fetch - already loading')
+      return
+    }
+
     // Get device UUIDs for selected meters
     const deviceUUIDs = selectedMeters.value
       .map(m => m.deviceUUID)
@@ -657,6 +663,8 @@ export const useComparisonStore = defineStore('comparison', () => {
         endDate: endDate.getTime().toString(),
         metrics: 'consumption',
         resolution: effectiveResolution,
+        hourFrom: '0',
+        hourTo: '23',
       })
 
       console.log('[ComparisonStore] 🚀 Fetching via Energy History API:', {
