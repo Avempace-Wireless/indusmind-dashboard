@@ -369,6 +369,9 @@ const allEquipmentDevices = ref<Device[]>([])
 const equipmentTelemetry = ref<Map<string, DeviceTelemetryData>>(new Map())
 let equipmentTelemetryInterval: ReturnType<typeof setInterval> | null = null
 
+// Auto-refresh intervals
+let telemetryRefreshInterval: ReturnType<typeof setInterval> | null = null
+
 // ✅ HANDLE MODAL VISIBILITY WITH LOCAL STATE
 const showCompteurSelector = ref(false)
 
@@ -1079,6 +1082,14 @@ onMounted(async () => {
   timeInterval = window.setInterval(() => {
     currentTime.value = new Date()
   }, 1000)
+
+  // Set up auto-refresh for telemetry data every 20 seconds (silent, no loader)
+  telemetryRefreshInterval = window.setInterval(() => {
+    if (selectedCompteurs.value.length > 0) {
+      console.log('[DashboardView] Silent telemetry refresh (20s interval)')
+      fetchTelemetryData()
+    }
+  }, 20000)
 })
 
 // ============================================================================
@@ -1365,6 +1376,11 @@ onUnmounted(() => {
   // Clear equipment telemetry interval
   if (equipmentTelemetryInterval) {
     clearInterval(equipmentTelemetryInterval)
+  }
+
+  // Clear telemetry refresh interval
+  if (telemetryRefreshInterval) {
+    clearInterval(telemetryRefreshInterval)
   }
 })
 
