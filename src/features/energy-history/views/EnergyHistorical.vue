@@ -4,7 +4,7 @@
     <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-5">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">
             {{ t('energyHistory.title') }}
           </h1>
           <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">

@@ -308,7 +308,7 @@
                 <h4 class="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('thermal.chart.trend') }}</h4>
               </div>
               <div
-                class="flex-1 p-2 sm:p-3 flex flex-col bg-white dark:bg-slate-900 min-h-[300px] sm:min-h-[350px]">
+                class="flex-1 p-2 sm:p-3 flex flex-col bg-white dark:bg-slate-900 min-h-[140px] sm:min-h-[210px]">
                 <div v-if="isFetchingChartData" class="flex items-center justify-center flex-1">
                   <div class="text-center">
                     <div
@@ -601,7 +601,7 @@
 
                 <!-- Chart -->
                 <div
-                  class="flex-1 p-3 sm:p-4 flex flex-col bg-white dark:bg-slate-900 min-h-[480px]">
+                  class="flex-1 p-3 sm:p-4 flex flex-col bg-white dark:bg-slate-900 min-h-[140px] sm:min-h-[160px]">
                   <div v-if="isFetchingChartData" class="flex items-center justify-center flex-1">
                     <div class="text-center">
                       <div
@@ -610,8 +610,8 @@
                       <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</p>
                     </div>
                   </div>
-                  <div v-else class="w-full relative" style="height: 500px;">
-                    <VueApexCharts :key="`external-chart-${chartDataMap.size}`" type="area" height="500"
+                  <div v-else class="w-full relative flex-1">
+                    <VueApexCharts :key="`external-chart-${chartDataMap.size}`" type="area" height="100%"
                       :options="getExternalSensorsChartOptions()" :series="getExternalSensorsChartSeries()" />
                     <div v-if="!hasExternalSensorsData()" class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 rounded-2xl pointer-events-none">
                       <div class="text-center">
