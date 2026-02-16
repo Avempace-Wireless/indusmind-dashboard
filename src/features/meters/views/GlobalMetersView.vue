@@ -1,19 +1,18 @@
 <template>
   <AdminLayout>
     <div class="w-full flex flex-col gap-0 px-1 py-1 global-meters-view">
-      <!-- Ultra-compact Header -->
-      <div class="flex items-center justify-between gap-2" style="padding: 4px 0; border-bottom: 1px solid #e2e8f0; --tw-border-opacity: 1;">
-        <h1 class="text-slate-900 dark:text-white text-sm font-bold">
-          {{ $t('globalMeters.pageTitle') }}
-        </h1>
-        <button
-          @click="showCompteurSelector = true"
-          class="flex items-center gap-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap"
-          style="font-size: 11px; padding: 3px 6px;"
-        >
-          <span class="material-symbols-outlined" style="font-size: 14px;">tune</span>
-          {{ $t('globalMeters.selectMeters') }}
-        </button>
+      <div class="border-b border-slate-200 dark:border-border-dark pb-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
+          <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">Vue Compteurs Globaux</h1>
+          <button
+            @click="showCompteurSelector = true"
+            class="flex w-full sm:w-auto items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm self-start"
+          >
+            <span class="material-symbols-outlined text-base">tune</span>
+            {{ $t('dashboard.manageMeters') }}
+          </button>
+        </div>
+
       </div>
 
       <!-- CompteurSelector Modal -->

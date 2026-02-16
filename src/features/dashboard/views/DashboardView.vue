@@ -3,13 +3,7 @@
     <div class="w-full flex flex-col gap-6">
       <!-- Breadcrumbs & Header -->
       <div class="flex flex-col gap-6">
-        <nav class="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400">
-          <a class="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">{{ $t('navigation.home') }}</a>
-          <span class="mx-2 text-slate-400 dark:text-slate-600">/</span>
-          <a class="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">{{ $t('navigation.dashboard') }}</a>
-          <span class="mx-2 text-slate-400 dark:text-slate-600">/</span>
-          <span class="text-blue-600 dark:text-blue-400">{{ $t('navigation.realtime') }}</span>
-        </nav>
+
 
         <!-- Page title with status and Manage Meters button -->
         <div class="border-b border-slate-200 dark:border-border-dark pb-6">
