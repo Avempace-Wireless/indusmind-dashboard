@@ -13,6 +13,7 @@ import { DEFAULT_METRICS as METRICS_CONFIG } from '@/types/metrics'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { useEnergyHistory, type EnergyHistoryResponse, type EnergyHistoryQuery } from '@/composables/useEnergyHistory'
+import { TimeUtils } from '@/utils/TimeUtils'
 import i18n from '@/i18n'
 import { getMeterOrderRank } from '@/utils/meterColors'
 
@@ -65,7 +66,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   const selectedDates = ref<string[]>([]) // Format: YYYY-MM-DD
   const currentMonth = ref(new Date())
-  const activePeriodPreset = ref<'last7Days' | 'last30Days' | 'thisMonth' | 'lastMonth' | null>(null)
+  const activePeriodPreset = ref<'last7Days' | 'last4Weeks' | 'last3Months' | 'last30Days' | 'thisMonth' | 'lastMonth' | null>(null)
 
   // ===========================
   // State - Time Range Filter
@@ -263,10 +264,6 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const maxDate = sorted[sorted.length - 1]
     const continuous = getDatesBetween(minDate, maxDate)
 
-    if (continuous.length > 32) {
-      return continuous.slice(0, 32)
-    }
-
     return continuous
   }
 
@@ -308,7 +305,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const leadingDays = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1 // Adjust for Monday start
     for (let i = leadingDays; i > 0; i--) {
       const date = new Date(year, month - 1, prevMonthLastDay - i + 1)
-      const dateStr = formatDate(date)
+      const dateStr = TimeUtils.toLocalDateStr(date)
       days.push({
         date: dateStr,
         dateObj: date,
@@ -322,7 +319,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     // Add current month's days
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day)
-      const dateStr = formatDate(date)
+      const dateStr = TimeUtils.toLocalDateStr(date)
       const today = new Date()
       const isToday =
         date.getDate() === today.getDate() &&
@@ -343,7 +340,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const remainingDays = 42 - days.length
     for (let day = 1; day <= remainingDays; day++) {
       const date = new Date(year, month + 1, day)
-      const dateStr = formatDate(date)
+      const dateStr = TimeUtils.toLocalDateStr(date)
       days.push({
         date: dateStr,
         dateObj: date,
@@ -426,6 +423,12 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       // ✅ HOURLY MODE: Display each selected day's 24-hour breakdown sequentially
       let datesToUse = selectedDates.value.length > 0 ? [...selectedDates.value] : (dateStr ? [dateStr] : [])
 
+      console.log('[Chart] 🔍 Selected dates for chart:', {
+        selectedDatesCount: selectedDates.value.length,
+        selectedDates: selectedDates.value.slice(0, 10),
+        datesToUse: datesToUse.slice(0, 10)
+      })
+
       // Sort dates chronologically - YYYY-MM-DD format sorts correctly with localeCompare
       datesToUse.sort((a, b) => a.localeCompare(b))
       console.log('[Chart] Hourly mode - Sorted dates:', datesToUse)
@@ -455,7 +458,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
               const timeLabel = `${hour.toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
 
               // Create composite key for day+hour to handle multi-day data
-              const dateStr = formatDate(date)
+              const dateStr = TimeUtils.toLocalDateStr(date)
               const compositeKey = new Date(`${dateStr}T${hour.toString().padStart(2, '0')}:00:00`).getTime()
               timestampMap.set(compositeKey, `${dateStr} ${timeLabel}`)
             }
@@ -510,7 +513,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
               if (d.timestamp && hourIndices.size > 0) {
                 const date = new Date(d.timestamp)
                 const hour = date.getHours()
-                const dateStr = formatDate(date)
+                const dateStr = TimeUtils.toLocalDateStr(date)
                 const compositeKey = new Date(`${dateStr}T${hour.toString().padStart(2, '0')}:00:00`).getTime()
                 const idx = hourIndices.get(compositeKey)
 
@@ -772,7 +775,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
       // Filter out current incomplete hour (if viewing today)
       const today = new Date()
-      const todayStr = formatDate(today)
+      const todayStr = TimeUtils.toLocalDateStr(today)
       if (dateStr === todayStr) {
         const currentHour = today.getHours()
         // Remove the current incomplete hour (don't show consumption until the hour ends)
@@ -868,19 +871,12 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
         // Calculate continuous range
         const continuousRange = getDatesBetween(
-          formatDate(minDate),
-          formatDate(maxDate)
+          TimeUtils.toLocalDateStr(minDate),
+          TimeUtils.toLocalDateStr(maxDate)
         )
 
-        // Check if range exceeds 32 days
-        if (continuousRange.length > 32) {
-          console.warn(`[toggleDate] Selection would exceed 32 days (${continuousRange.length} days). Limiting to 32 days from earliest date.`)
-          // Limit to 32 days from the earliest date
-          selectedDates.value = continuousRange.slice(0, 32)
-        } else {
-          // Use continuous range (fills gaps automatically)
-          selectedDates.value = continuousRange
-        }
+        // Use continuous range (fills gaps automatically)
+        selectedDates.value = continuousRange
       }
     }
     // Clear preset when manually selecting dates
@@ -927,7 +923,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   function goToToday() {
     currentMonth.value = new Date()
     // Always select today's date
-    selectSingleDate(formatDate(new Date()))
+    selectSingleDate(TimeUtils.toLocalDateStr(new Date()))
     // Clear preset indicator
     activePeriodPreset.value = null
   }
@@ -937,68 +933,56 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   function selectLast7Days() {
     const today = new Date()
+    console.log('[EnergyHistory Store] selectLast7Days called, today:', today.toISOString())
     const dates: string[] = []
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today)
       date.setDate(date.getDate() - i)
-      dates.push(formatDate(date))
+      dates.push(TimeUtils.toLocalDateStr(date))
     }
     selectedDates.value = dates
     activePeriodPreset.value = 'last7Days'
+    console.log('[EnergyHistory Store] selectLast7Days set dates:', dates.length, 'first:', dates[0], 'last:', dates[dates.length - 1])
     // Navigate calendar to current month
     currentMonth.value = new Date(today)
   }
 
-  function selectLast30Days() {
+  function selectLast4Weeks() {
     const today = new Date()
+    console.log('[EnergyHistory Store] selectLast4Weeks called, today:', today.toISOString())
     const dates: string[] = []
-    for (let i = 29; i >= 0; i--) {
+    // Generate all 28 dates for a full 4-week range to align with ComparisonView
+    const start4w = new Date(today)
+    start4w.setDate(start4w.getDate() - 27)
+    for (let i = 27; i >= 0; i--) {
       const date = new Date(today)
       date.setDate(date.getDate() - i)
-      dates.push(formatDate(date))
+      dates.push(TimeUtils.toLocalDateStr(date))
     }
     selectedDates.value = dates
-    activePeriodPreset.value = 'last30Days'
-    // Navigate calendar to current month (30 days might span 2 months)
-    currentMonth.value = new Date(today)
+    activePeriodPreset.value = 'last4Weeks'
+    console.log('[EnergyHistory Store] selectLast4Weeks set dates:', dates.length, 'first:', dates[0], 'last:', dates[dates.length - 1])
+    // Navigate calendar to earliest selected month
+    currentMonth.value = start4w
   }
 
-  function selectThisMonth() {
+  function selectLast3Months() {
     const today = new Date()
-    const year = today.getFullYear()
-    const month = today.getMonth()
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const dates = getDatesBetween(formatDate(firstDay), formatDate(lastDay))
+    console.log('[EnergyHistory Store] selectLast3Months called, today:', today.toISOString())
+    const dates: string[] = []
+    // Generate all ~90 dates for a full 3-month range (fixed loop like selectLast4Weeks)
+    const start3m = new Date(today)
+    start3m.setDate(start3m.getDate() - 89)
+    for (let i = 89; i >= 0; i--) {
+      const date = new Date(today)
+      date.setDate(date.getDate() - i)
+      dates.push(TimeUtils.toLocalDateStr(date))
+    }
     selectedDates.value = dates
-    activePeriodPreset.value = 'thisMonth'
-    // Navigate calendar to current month
-    currentMonth.value = new Date(today)
-  }
-
-  function selectLastMonth() {
-    const today = new Date()
-    const year = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear()
-    const month = today.getMonth() === 0 ? 11 : today.getMonth() - 1
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const dates = getDatesBetween(formatDate(firstDay), formatDate(lastDay))
-
-    console.log('[selectLastMonth] Calculated dates:', {
-      today: today.toISOString(),
-      year,
-      month,
-      firstDay: firstDay.toISOString(),
-      lastDay: lastDay.toISOString(),
-      datesCount: dates.length,
-      datesSample: dates.slice(0, 5),
-      datesEnd: dates.slice(-5)
-    })
-
-    selectedDates.value = dates
-    activePeriodPreset.value = 'lastMonth'
-    // Navigate calendar to LAST month (not current)
-    currentMonth.value = new Date(year, month, 1)
+    activePeriodPreset.value = 'last3Months'
+    console.log('[EnergyHistory Store] selectLast3Months set dates:', dates.length, 'first:', dates[0], 'last:', dates[dates.length - 1])
+    // Navigate calendar to earliest selected month
+    currentMonth.value = start3m
   }
 
   // ===========================
@@ -1147,7 +1131,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
           const dateToPoints = new Map<string, HourlyDataPoint[]>()
           dataPoints.forEach((dp, index) => {
             const date = new Date(dp.timestamp)
-            const dateStr = formatDate(date)
+            const dateStr = TimeUtils.toLocalDateStr(date) // ✅ Use consistent date formatting
             if (!dateToPoints.has(dateStr)) {
               dateToPoints.set(dateStr, [])
             }
@@ -1212,10 +1196,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
           deviceUUID: uuid,
           recordCount: records.length,
           dates: [...new Set(records.map(r => r.date))].sort(),
-          metrics: [...new Set(records.map(r => r.metricType))],
-        })),
-        // 🔍 NEW: Show all stored dates in summary
-        allStoredDatesAcrossDevices: [...new Set(Array.from(historicalData.value.values()).flat().map(r => r.date))].sort(),
+          sampleDates: [...new Set(records.map(r => r.date))].sort().slice(0, 10),
+        }))
+      })
+
+      console.log('[energyHistoryStore] 🎯 Current selectedDates:', {
+        count: selectedDates.value.length,
+        dates: selectedDates.value.slice(0, 10)
       })
 
     } catch (err) {
@@ -1279,12 +1266,12 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
           let hour: number
 
           if (apiResolution === 'daily') {
-            // Daily data: use the date string from API and set hour to 12 (noon)
-            dateStr = dp.date || formatDate(dateObj)
+            // Daily data: always convert timestamp to local date format (YYYY-MM-DD)
+            dateStr = TimeUtils.toLocalDateStr(dateObj)
             hour = 12
           } else {
             // Hourly data: extract hour from timestamp
-            dateStr = formatDate(dateObj)
+            dateStr = TimeUtils.toLocalDateStr(dateObj)
             hour = dateObj.getHours()
           }
 
@@ -1467,6 +1454,16 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const compteurData = historicalData.value.get(deviceUUID) || []
     const found = compteurData.find(d => d.date === dateStr && d.metricType === metricType)
 
+    // Debug logging for date matching
+    if (!found && compteurData.length > 0) {
+      const availableDates = compteurData.filter(d => d.metricType === metricType).map(d => d.date)
+      console.log(`[getMetricDataForDate] ❌ No match for date="${dateStr}", metric="${metricType}", device="${deviceUUID.substring(0, 8)}"`, {
+        requestedDate: dateStr,
+        availableDates: availableDates.slice(0, 10),
+        totalAvailable: availableDates.length
+      })
+    }
+
     return found || null
   }
 
@@ -1502,7 +1499,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
     const current = new Date(startDate)
     while (current <= endDate) {
-      dates.push(formatDate(current))
+      dates.push(TimeUtils.toLocalDateStr(current))
       current.setDate(current.getDate() + 1)
     }
 
@@ -1686,7 +1683,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const end = new Date(query.endDate)
 
     while (current <= end) {
-      const dateStr = formatDate(current)
+      const dateStr = TimeUtils.toLocalDateStr(current)
 
       query.compteurIds.forEach(compteurId => {
         query.metricTypes.forEach(metricType => {
@@ -1751,9 +1748,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     nextMonth,
     goToToday,
     selectLast7Days,
-    selectLast30Days,
-    selectThisMonth,
-    selectLastMonth,
+    selectLast4Weeks,
+    selectLast3Months,
 
     // Actions - Time Range
     setTimeRange,
