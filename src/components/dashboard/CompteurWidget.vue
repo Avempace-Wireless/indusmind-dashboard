@@ -159,7 +159,7 @@
 import { computed, ref, watch, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Compteur, CompteurMode } from '@/composables/useCompteurSelection'
-import { getMeterColorByIndex } from '@/utils/meterColors'
+import { getMeterColorByName } from '@/utils/meterColors'
 import { DEFAULT_WIDGET_CONFIG, getKeyConfig, formatTelemetryValue } from '@/config/telemetryConfig'
 import { useApiOnly } from '@/config/dataMode'
 
@@ -238,7 +238,7 @@ const translatedSubtitle = computed(() => {
 
 const colorClasses = computed(() => {
   // Use shared color utility for consistency with charts
-  const colorConfig = getMeterColorByIndex(props.colorIndex)
+  const colorConfig = getMeterColorByName(props.compteur.name, props.colorIndex)
   const tailwindColor = colorConfig.tailwind
 
   // Map to complete Tailwind class names (required for JIT compilation)

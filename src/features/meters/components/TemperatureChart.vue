@@ -42,7 +42,7 @@ import {
   Filler,
 } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
-import { getMeterColorByIndex } from '@/utils/meterColors'
+import { getMeterColorByName } from '@/utils/meterColors'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, ChartDataLabels)
 
@@ -70,8 +70,8 @@ const sensorsWithData = computed(() => {
 })
 
 // Color palette for sensors using dashboard colors
-const getSensorColor = (index: number) => {
-  const colorConfig = getMeterColorByIndex(index)
+const getSensorColor = (index: number, label?: string, name?: string) => {
+  const colorConfig = getMeterColorByName(label || name, index)
   // Convert hex to rgba with transparency for fill
   const hexToRgba = (hex: string, alpha: number) => {
     const r = parseInt(hex.slice(1, 3), 16)
@@ -96,19 +96,21 @@ const chartData = computed(() => {
     }
   }
 
-  // Use labels from first sensor with date and time formatting
+  // Use labels from first sensor with time formatting (HH:mm only, like ThermalManagementView charts)
   const labels = sensorsWithData.value[0].data.map(point => {
+    // Use readableDate if available, otherwise format from timestamp
+    if (point.readableDate) {
+      return point.readableDate
+    }
     const date = new Date(point.timestamp)
-    const day = date.getDate().toString().padStart(2, '0')
-    const month = (date.getMonth() + 1).toString().padStart(2, '0')
     const hours = date.getHours().toString().padStart(2, '0')
     const minutes = date.getMinutes().toString().padStart(2, '0')
-    return `${day}/${month} ${hours}:${minutes}`
+    return `${hours}:${minutes}`
   })
 
   // Create datasets for each sensor
   const datasets = sensorsWithData.value.map((sensor, index) => {
-    const colors = getSensorColor(index)
+    const colors = getSensorColor(index, sensor.sensorLabel, sensor.sensorName)
     const data = sensor.data.map(point => point.value)
 
     return {

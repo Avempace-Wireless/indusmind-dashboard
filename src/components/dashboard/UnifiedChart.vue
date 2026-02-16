@@ -58,7 +58,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Chart, LineController, BarController, LinearScale, PointElement, LineElement, BarElement, CategoryScale, Tooltip, Legend, Filler } from 'chart.js'
-import { getMeterColorByIndex } from '@/utils/meterColors'
+import { getMeterColorByName } from '@/utils/meterColors'
 import { useTelemetryDynamic, TELEMETRY_KEYS } from '@/composables/useTelemetryDynamic'
 import { useApiData, useHybridMode, useMockData } from '@/config/dataMode'
 import { getTimeRange } from '@/config/telemetryConfig'
@@ -823,7 +823,7 @@ function renderChart() {
     // Build datasets dynamically from selected compteurs with distinct colors
     const datasets = props.selectedCompteurs.map((compteur, index) => {
       // Use shared color utility for consistent colors across dashboard
-      const colorConfig = getMeterColorByIndex(index)
+      const colorConfig = getMeterColorByName(compteur.name, index)
 
       const dataValues = data.data[compteur.name] || []
 

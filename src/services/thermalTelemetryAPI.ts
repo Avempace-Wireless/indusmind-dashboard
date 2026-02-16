@@ -35,6 +35,12 @@ export interface ThermalSensorData {
   displayName: string | null
   hideAutoMode: boolean | null
   delay: number | null
+  // Configuration (from ThingsBoard attributes)
+  mode: string | null
+  minTemp: number | null
+  maxTemp: number | null
+  relay: string | null
+  controllerUUID: string | null
   // Current telemetry
   temperature: number | null
   humidity: number | null

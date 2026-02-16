@@ -14,6 +14,7 @@ import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { useEnergyHistory, type EnergyHistoryResponse, type EnergyHistoryQuery } from '@/composables/useEnergyHistory'
 import i18n from '@/i18n'
+import { getMeterOrderRank } from '@/utils/meterColors'
 
 /**
  * Energy History Store - Multi-Metric Historical Data Analysis
@@ -204,6 +205,11 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     const result = dashboardStore.compteurs.filter(c =>
       metersStore.selectedMeterIds.includes(c.id)
     )
+    .sort((a, b) => {
+      const rankDiff = getMeterOrderRank(a.name) - getMeterOrderRank(b.name)
+      if (rankDiff !== 0) return rankDiff
+      return (a.name ?? '').localeCompare(b.name ?? '')
+    })
     console.log('selectedCompteurs computed:', {
       dashboardCompteurs: dashboardStore.compteurs.length,
       dashboardCompteurIds: dashboardStore.compteurs.map(c => c.id),
@@ -219,8 +225,12 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   const visibleCompteurs = computed(() => {
     const ids = activeCompteurIds.value
     const list = selectedCompteurs.value
-    if (ids.length === 0) return list
-    return list.filter(c => ids.includes(c.id))
+    const filtered = ids.length === 0 ? list : list.filter(c => ids.includes(c.id))
+    return [...filtered].sort((a, b) => {
+      const rankDiff = getMeterOrderRank(a.name) - getMeterOrderRank(b.name)
+      if (rankDiff !== 0) return rankDiff
+      return (a.name ?? '').localeCompare(b.name ?? '')
+    })
   })
 
   function toggleCompteurActive(id: string) {

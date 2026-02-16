@@ -19,6 +19,7 @@ import { storeToRefs } from 'pinia'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useEquipmentStore } from '@/stores/useEquipmentStore'
+import { getMeterOrderRank } from '@/utils/meterColors'
 
 // Type definitions
 export interface Compteur {
@@ -97,9 +98,19 @@ export function useCompteurSelection() {
    * ✅ GET SELECTED COMPTEURS (filtered from all available)
    * Synced from centralized store, updates across all views
    */
-  const selectedCompteurs = computed<Compteur[]>(() =>
-    availableCompteurs.value.filter(c => selectedMeterIds.value.includes(c.id))
-  )
+  const selectedCompteurs = computed<Compteur[]>(() => {
+    const selected = availableCompteurs.value
+      .map((compteur, index) => ({ compteur, index }))
+      .filter(({ compteur }) => selectedMeterIds.value.includes(compteur.id))
+
+    selected.sort((a, b) => {
+      const rankDiff = getMeterOrderRank(a.compteur.name) - getMeterOrderRank(b.compteur.name)
+      if (rankDiff !== 0) return rankDiff
+      return a.index - b.index
+    })
+
+    return selected.map(({ compteur }) => compteur)
+  })
 
   /**
    * Select all available compteurs by default

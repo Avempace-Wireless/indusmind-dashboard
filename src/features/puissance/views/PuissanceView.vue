@@ -41,13 +41,13 @@
           </div>
 
           <!-- All Meters Pills - Grid Layout -->
-          <div v-if="validSelectedMeterIds.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          <div v-if="validSelectedMeterIds.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
             <button
               v-for="(meterId, index) in validSelectedMeterIds"
               :key="meterId"
               @click="selectMeter(index)"
               :class="[
-                'px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 border-2 flex items-center justify-center gap-1 relative overflow-hidden group',
+                'px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 border-2 flex items-center justify-center gap-1 relative overflow-hidden group',
                 currentMeterIndex === index
                   ? 'text-white shadow-lg scale-105 border-transparent'
                   : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 bg-slate-50 dark:bg-slate-800/50'
@@ -550,7 +550,6 @@ import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
-import { getMeterColorByIndex } from '@/utils/meterColors'
 import { usePuissance } from '@/composables/usePuissance'
 import { useApiData } from '@/config/dataMode'
 import type { Meter, KPIValues } from '@/data/mockData'
@@ -571,14 +570,32 @@ const {
   initialize: initializeCompteurSelection,
 } = useCompteurSelection()
 
+// Import for sorting by meter name
+import { getMeterOrderRank } from '@/utils/meterColors'
+
 // Get selected meter IDs as a reactive computed
 const selectedMeterIds = computed(() => selectedCompteurIds.value)
 
 // Filter out any meter IDs that don't exist in allCompteurs (to avoid showing "Unknown")
+// Also sort by TGBT -> Climatisation -> Compressor
 const validSelectedMeterIds = computed(() => {
-  return selectedMeterIds.value.filter(meterId => {
+  const valid = selectedMeterIds.value.filter(meterId => {
     return allCompteurs.value.some(c => c.id === meterId)
   })
+
+  // Sort by TGBT -> Climatisation -> Compressor
+  const sorted = [...valid].map(id => {
+    const meter = allCompteurs.value.find(c => c.id === id)
+    return { id, name: meter?.name }
+  })
+
+  sorted.sort((a, b) => {
+    const rankDiff = getMeterOrderRank(a.name) - getMeterOrderRank(b.name)
+    if (rankDiff !== 0) return rankDiff
+    return valid.indexOf(a.id) - valid.indexOf(b.id)
+  })
+
+  return sorted.map(item => item.id)
 })
 
 // Create a separate ref that tracks the array for prop passing
@@ -634,11 +651,6 @@ function handleCompteurSelection(selectedIds: string[]) {
 function getMeterName(meterId: string): string {
   const compteur = allCompteurs.value.find(c => c.id === meterId)
   return compteur?.name || 'Unknown'
-}
-
-// Helper function to get meter color by index
-function getMeterColorByIndexHelper(index: number): string {
-  return getMeterColorByIndex(index).hex
 }
 
 /**

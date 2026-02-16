@@ -11,6 +11,8 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import VueApexCharts from 'vue3-apexcharts'
+import { Chart as ChartJS } from 'chart.js'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 import i18n from '@/i18n'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { setupDebugTools } from '@/services/WidgetDataValidator'
@@ -22,6 +24,22 @@ app.use(pinia)
 app.use(router)
 app.use(i18n)
 app.use(VueApexCharts)
+
+// Disable data labels globally to avoid numbers/text drawn on charts
+ChartJS.register(ChartDataLabels)
+if (ChartJS.defaults.plugins?.datalabels) {
+  ChartJS.defaults.plugins.datalabels.display = false
+}
+
+if (typeof window !== 'undefined') {
+  const apexDefaults = (window as any).Apex || {}
+  ;(window as any).Apex = {
+    ...apexDefaults,
+    dataLabels: {
+      enabled: false,
+    },
+  }
+}
 
 // Initialize centralized meter selection from localStorage
 const metersStore = useMetersStore()

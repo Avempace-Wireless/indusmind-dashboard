@@ -795,7 +795,8 @@
       "external": "Externe",
       "temperature": "Température",
       "annotationMax": "Max",
-      "annotationMin": "Min"
+      "annotationMin": "Min",
+      "trend": "Tendance 24h"
     },
     "status": {
       "active": "Zones Actives",

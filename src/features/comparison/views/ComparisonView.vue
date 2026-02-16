@@ -132,18 +132,18 @@
           v-if="metersStore.selectedMeters.length > 0"
           class="order-2 grid gap-3 w-full"
           :class="{
-            'grid-cols-1': kpiCards.length === 1,
-            'grid-cols-2': kpiCards.length === 2,
-            'grid-cols-3': kpiCards.length === 3,
-            'grid-cols-2 sm:grid-cols-4': kpiCards.length === 4,
-            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5': kpiCards.length === 5,
-            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6': kpiCards.length === 6,
-            'grid-cols-2 sm:grid-cols-4 lg:grid-cols-7': kpiCards.length === 7,
-            'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8': kpiCards.length >= 8,
+            'grid-cols-1': sortedKpiCards.length === 1,
+            'grid-cols-2': sortedKpiCards.length === 2,
+            'grid-cols-3': sortedKpiCards.length === 3,
+            'grid-cols-2 sm:grid-cols-4': sortedKpiCards.length === 4,
+            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5': sortedKpiCards.length === 5,
+            'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6': sortedKpiCards.length === 6,
+            'grid-cols-2 sm:grid-cols-4 lg:grid-cols-7': sortedKpiCards.length === 7,
+            'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8': sortedKpiCards.length >= 8,
           }"
         >
           <div
-            v-for="card in kpiCards.slice(0, 8)"
+            v-for="card in sortedKpiCards.slice(0, 8)"
             :key="card.label"
             class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4 relative overflow-hidden group cursor-help min-w-0 flex-1"
             :title="card.tooltip || ''"
@@ -221,7 +221,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="meter in (activeMeterIds.length > 0 ? metersStore.selectedMeters.filter(m => activeMeterIds.includes(m.id)) : metersStore.selectedMeters)" :key="meter.id">
+                  <tr v-for="meter in visibleSortedMeters" :key="meter.id">
                     <td class="border border-gray-300 dark:border-gray-600 p-2 text-xs font-medium text-gray-700 dark:text-gray-300">
                       {{ meter.name }}
                     </td>
@@ -325,7 +325,7 @@
           <!-- Chart Legend (Interactive) -->
           <div v-if="chartType === 'bar' || chartType === 'line'" class="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
-              v-for="meterId in metersStoreSelectedIds"
+              v-for="meterId in sortedSelectedMeterIds"
               :key="meterId"
               @click="toggleMeterVisibility(meterId)"
               :class="[
@@ -705,6 +705,7 @@ import { useMetersStore } from '@/stores/useMetersStore'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useComparisonStore } from '@/features/comparison/store/useComparisonStore'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
+import { getMeterOrderRank } from '@/utils/meterColors'
 
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
@@ -795,9 +796,22 @@ const { selectedMeterIds: metersStoreSelectedIds } = storeToRefs(metersStore)
 
 // Filter out any meter IDs that don't exist in allCompteurs (to avoid showing "Unknown")
 const validSelectedMeterIds = computed(() => {
-  return metersStoreSelectedIds.value.filter(meterId => {
+  const valid = metersStoreSelectedIds.value.filter(meterId => {
     return allCompteurs.value.some(c => c.id === meterId)
   })
+
+  const sorted = valid.map(id => {
+    const meter = allCompteurs.value.find(c => c.id === id)
+    return { id, name: meter?.name }
+  })
+
+  sorted.sort((a, b) => {
+    const rankDiff = getMeterOrderRank(a.name) - getMeterOrderRank(b.name)
+    if (rankDiff !== 0) return rankDiff
+    return valid.indexOf(a.id) - valid.indexOf(b.id)
+  })
+
+  return sorted.map(item => item.id)
 })
 
 const {
@@ -831,6 +845,43 @@ const {
 
 // Use metersStore as the source of truth for selected meters
 const selectedMeters = computed(() => metersStore.selectedMeters)
+
+const sortedSelectedMeters = computed(() => {
+  return [...metersStore.selectedMeters].sort((a, b) => {
+    const rankDiff = getMeterOrderRank(a.name) - getMeterOrderRank(b.name)
+    if (rankDiff !== 0) return rankDiff
+    return (a.name ?? '').localeCompare(b.name ?? '')
+  })
+})
+
+const sortedSelectedMeterIds = computed(() => {
+  const ids = validSelectedMeterIds.value
+  const sorted = ids.map(id => {
+    const meter = allCompteurs.value.find(c => c.id === id)
+    return { id, name: meter?.name }
+  })
+
+  sorted.sort((a, b) => {
+    const rankDiff = getMeterOrderRank(a.name) - getMeterOrderRank(b.name)
+    if (rankDiff !== 0) return rankDiff
+    return ids.indexOf(a.id) - ids.indexOf(b.id)
+  })
+
+  return sorted.map(item => item.id)
+})
+
+const visibleSortedMeters = computed(() => {
+  if (activeMeterIds.value.length === 0) return sortedSelectedMeters.value
+  return sortedSelectedMeters.value.filter(m => activeMeterIds.value.includes(m.id))
+})
+
+const sortedKpiCards = computed(() => {
+  return [...kpiCards.value].sort((a, b) => {
+    const rankDiff = getMeterOrderRank(a.label) - getMeterOrderRank(b.label)
+    if (rankDiff !== 0) return rankDiff
+    return (a.label ?? '').localeCompare(b.label ?? '')
+  })
+})
 
 const {
   toggleMeter,

@@ -86,3 +86,55 @@ export function getMeterColorById(meterId: string): ColorConfig {
   const numId = parseInt(meterId, 10)
   return METER_COLORS[numId % METER_COLORS.length]
 }
+
+/**
+ * Get color configuration for a meter by name/label
+ * Falls back to index-based color if no named match exists
+ */
+export function getMeterColorByName(name: string | undefined, fallbackIndex: number = 0): ColorConfig {
+  if (!name) {
+    return getMeterColorByIndex(fallbackIndex)
+  }
+
+  const normalized = normalizeMeterName(name)
+
+  if (normalized.includes('tgbt')) {
+    return METER_COLORS[0] // Red
+  }
+
+  if (normalized.includes('climatisation') || normalized.includes('clim')) {
+    return METER_COLORS[1] // Blue
+  }
+
+  if (normalized.includes('compressor') || normalized.includes('compresseur')) {
+    return METER_COLORS[2] // Green
+  }
+
+  return getMeterColorByIndex(fallbackIndex)
+}
+
+/**
+ * Normalize meter name for matching (case-insensitive, strip accents)
+ */
+function normalizeMeterName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+/**
+ * Get display order rank for known meters
+ * Lower rank means earlier in lists
+ */
+export function getMeterOrderRank(name: string | undefined): number {
+  if (!name) return 99
+
+  const normalized = normalizeMeterName(name)
+
+  if (normalized.includes('tgbt')) return 0
+  if (normalized.includes('climatisation') || normalized.includes('clim')) return 1
+  if (normalized.includes('compressor') || normalized.includes('compresseur')) return 2
+
+  return 99
+}
