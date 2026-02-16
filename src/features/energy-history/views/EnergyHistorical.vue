@@ -516,6 +516,7 @@ import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { useEnergyHistory } from '@/composables/useEnergyHistory'
 import { useMockData } from '@/config/dataMode'
+import { getMeterOrderRank } from '@/utils/meterColors'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
@@ -554,9 +555,22 @@ const {
 
 // Filter out any meter IDs that don't exist in allCompteurs (to avoid showing "Unknown")
 const validSelectedMeterIds = computed(() => {
-  return selectedMeterIds.value.filter(meterId => {
+  const valid = selectedMeterIds.value.filter(meterId => {
     return allCompteurs.value.some(c => c.id === meterId)
   })
+
+  const sorted = valid.map(id => {
+    const meter = allCompteurs.value.find(c => c.id === id)
+    return { id, name: meter?.name }
+  })
+
+  sorted.sort((a, b) => {
+    const rankDiff = getMeterOrderRank(a.name) - getMeterOrderRank(b.name)
+    if (rankDiff !== 0) return rankDiff
+    return valid.indexOf(a.id) - valid.indexOf(b.id)
+  })
+
+  return sorted.map(item => item.id)
 })
 
 // UI State for Meter Selection
@@ -698,8 +712,16 @@ const selectedElement = ref<string | null>(null)
  */
 const meterCategories = computed(() => {
   const categories = Array.from(new Set(metersStore.allMeters.map(m => m.type ?? 'meter')))
-  const order = ['TGBT', 'Compresseurs', 'Clim', 'Éclairage']
-  return categories.sort((a, b) => order.indexOf(a as string) - order.indexOf(b as string)).slice(0, 4)
+  const order = ['TGBT', 'Climatisation', 'Clim', 'Compresseurs', 'Compressor', 'Compressors', 'Éclairage', 'Eclairage']
+  return categories
+    .sort((a, b) => {
+      const aIndex = order.indexOf(a as string)
+      const bIndex = order.indexOf(b as string)
+      const rankA = aIndex === -1 ? Number.MAX_SAFE_INTEGER : aIndex
+      const rankB = bIndex === -1 ? Number.MAX_SAFE_INTEGER : bIndex
+      return rankA - rankB
+    })
+    .slice(0, 4)
 })
 
 /**
@@ -713,8 +735,15 @@ const selectedMetersFromStore = computed(() => metersStore.selectedMeters)
  * Does NOT affect data - data comes from selectedMetersFromStore
  */
 const filteredMetersForDisplay = computed(() => {
-  if (!selectedCategory.value) return metersStore.allMeters
-  return metersStore.allMeters.filter(m => (m.type ?? 'meter') === selectedCategory.value)
+  const filtered = !selectedCategory.value
+    ? metersStore.allMeters
+    : metersStore.allMeters.filter(m => (m.type ?? 'meter') === selectedCategory.value)
+
+  return [...filtered].sort((a, b) => {
+    const rankDiff = getMeterOrderRank(a.name) - getMeterOrderRank(b.name)
+    if (rankDiff !== 0) return rankDiff
+    return (a.name ?? '').localeCompare(b.name ?? '')
+  })
 })
 
 /**

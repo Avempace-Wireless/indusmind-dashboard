@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { MOCK_METERS, type Meter, type MeterElement } from '../data/mockData'
 import type { Compteur } from '@/services/deviceAPI'
+import { getMeterColorByName, getMeterOrderRank } from '@/utils/meterColors'
 
 /**
  * Meter Metadata Interface
@@ -264,9 +265,19 @@ export const useMetersStore = defineStore('meters', () => {
    * Get currently selected meter objects (not just IDs)
    * Used by views to render selected meters
    */
-  const selectedMeters = computed(() =>
-    allMeters.value.filter(m => selectedMeterIds.value.includes(m.id))
-  )
+  const selectedMeters = computed(() => {
+    const selected = allMeters.value
+      .map((meter, index) => ({ meter, index }))
+      .filter(({ meter }) => selectedMeterIds.value.includes(meter.id))
+
+    selected.sort((a, b) => {
+      const rankDiff = getMeterOrderRank(a.meter.name) - getMeterOrderRank(b.meter.name)
+      if (rankDiff !== 0) return rankDiff
+      return a.index - b.index
+    })
+
+    return selected.map(({ meter }) => meter)
+  })
 
   /**
    * Get meter by ID with fallback
@@ -287,30 +298,15 @@ export const useMetersStore = defineStore('meters', () => {
    * @returns Hex color or fallback gray
    */
   function getMeterColor(meterId: string): string {
-    // Unique color palette - each meter gets a different color
-    const colorPalette = [
-      '#ef4444', // red-500
-      '#f97316', // orange-500
-      '#eab308', // yellow-500
-      '#22c55e', // green-500
-      '#10b981', // emerald-500
-      '#14b8a6', // teal-500
-      '#06b6d4', // cyan-500
-      '#3b82f6', // blue-500
-      '#6366f1', // indigo-500
-      '#8b5cf6', // violet-500
-      '#d946ef', // fuchsia-500
-      '#ec4899', // pink-500
-    ]
-
     if (!meterId || allMeters.value.length === 0) return '#999999'
 
-    // Find meter index to assign consistent color
     const meterIndex = allMeters.value.findIndex(m => m.id === meterId)
     if (meterIndex === -1) return '#999999'
 
-    // Assign color based on index modulo palette length for cycling
-    return colorPalette[meterIndex % colorPalette.length]
+    const meter = allMeters.value[meterIndex]
+    if (!meter) return '#999999'
+
+    return getMeterColorByName(meter.name, meterIndex).hex
   }
 
   /**

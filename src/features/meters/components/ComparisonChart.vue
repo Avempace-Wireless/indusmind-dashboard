@@ -60,7 +60,7 @@
       </svg>
 
       <div class="mt-4 text-sm text-slate-600 dark:text-slate-400">
-        <p>{{ $t('globalMeters.instantaneousPower') }} - Sorted by consumption</p>
+        <p>{{ $t('globalMeters.instantaneousPower') }}</p>
       </div>
     </div>
   </div>
@@ -68,6 +68,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { getMeterOrderRank } from '@/utils/meterColors'
 
 const props = defineProps<{
   meters: any[]
@@ -77,7 +78,11 @@ const props = defineProps<{
 const hoveredMeterId = ref<string | null>(null)
 
 const sortedMeters = computed(() => {
-  return [...props.meters].sort((a, b) => b.currentPower - a.currentPower)
+  return [...props.meters].sort((a, b) => {
+    const rankDiff = getMeterOrderRank(a.name) - getMeterOrderRank(b.name)
+    if (rankDiff !== 0) return rankDiff
+    return b.currentPower - a.currentPower
+  })
 })
 
 const getMeterColor = (index: number) => {

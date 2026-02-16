@@ -133,18 +133,18 @@
           </div>
 
           <div class="mt-3 grid gap-3 lg:grid-cols-2">
-            <div v-if="zones.filter((z) => z.minTemp !== null && z.maxTemp !== null && z.mode !== null).length > 0"
+            <div v-if="zones.filter((z) => !isZoneExternal(z)).length > 0"
               class="rounded-lg border border-indigo-100 bg-indigo-50/50 p-2.5 dark:border-indigo-900/40 dark:bg-indigo-900/10">
               <div class="mb-2 flex items-center justify-between">
                 <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-200">
                   {{ t('thermal.controls.controllableZones') }}
                 </span>
                 <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
-                  {{ zones.filter((z) => z.minTemp !== null && z.maxTemp !== null && z.mode !== null).length }}
+                  {{ zones.filter((z) => !isZoneExternal(z)).length }}
                 </span>
               </div>
               <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2">
-                <button v-for="z in zones.filter((zone) => zone.minTemp !== null && zone.maxTemp !== null && zone.mode !== null)" :key="'sel-' + z.id" @click="toggleZoneVisibility(z.id)"
+                <button v-for="z in zones.filter((zone) => !isZoneExternal(zone))" :key="'sel-' + z.id" @click="toggleZoneVisibility(z.id)"
                   :title="`${z.sensorName || `Z${z.id}`}${z.sensorLabel ? ` - ${z.sensorLabel}` : ''}`" :class="[
                     'px-2 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-semibold transition-all duration-200 border flex flex-col items-start gap-1 relative overflow-hidden group',
                     visibleZoneIds.includes(z.id)
@@ -165,18 +165,18 @@
               </div>
             </div>
 
-            <div v-if="zones.filter((z) => z.minTemp === null || z.maxTemp === null || z.mode === null).length > 0"
+            <div v-if="zones.filter((z) => isZoneExternal(z)).length > 0"
               class="rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-800/60">
               <div class="mb-2 flex items-center justify-between">
                 <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">
                   {{ t('thermal.controls.externalSensors') }}
                 </span>
                 <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                  {{ zones.filter((z) => z.minTemp === null || z.maxTemp === null || z.mode === null).length }}
+                  {{ zones.filter((z) => isZoneExternal(z)).length }}
                 </span>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button v-for="z in zones.filter((zone) => zone.minTemp === null || zone.maxTemp === null || zone.mode === null)" :key="'sel-ext-' + z.id" @click="toggleZoneVisibility(z.id)"
+                <button v-for="z in zones.filter((zone) => isZoneExternal(zone))" :key="'sel-ext-' + z.id" @click="toggleZoneVisibility(z.id)"
                   :title="`${z.sensorName || `Z${z.id}`}${z.sensorLabel ? ` - ${z.sensorLabel}` : ''}`" :class="[
                     'px-2 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-semibold transition-all duration-200 border flex flex-col items-start gap-1 relative overflow-hidden group',
                     visibleZoneIds.includes(z.id)
@@ -235,7 +235,7 @@
 
                 <!-- Status Badge -->
                 <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                  <span v-if="zone.minTemp === null || zone.maxTemp === null || zone.mode === null" class="inline-flex items-center gap-1 rounded-full border-2 border-slate-300 bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                  <span v-if="isZoneExternal(zone)" class="inline-flex items-center gap-1 rounded-full border-2 border-slate-300 bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                     <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
                       <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
@@ -294,33 +294,41 @@
               <div class="flex items-baseline gap-1 sm:gap-2">
                 <span
                   class="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">{{
-                    zone.currentTemp !== null ? zone.currentTemp.toFixed(1) : '--' }}</span>
+                    zone.currentTemp !== null ? zone.currentTemp.toFixed(1) : '-' }}</span>
                 <span class="text-base sm:text-lg lg:text-xl font-semibold text-gray-500 dark:text-gray-400">°C</span>
               </div>
             </div>
 
-            <!-- External Zones: 24h Temperature Sparkline -->
+            <!-- External Zones: Full Temperature Chart (Non-Controllable) -->
             <div
-              v-if="zone.minTemp === null || zone.maxTemp === null || zone.mode === null"
-              class="mt-2 sm:mt-3 lg:mt-4 rounded-md sm:rounded-lg border border-slate-200 bg-white/80 p-2 shadow-inner dark:border-slate-700 dark:bg-slate-900/60">
-              <div class="mb-1 flex items-center justify-between">
-                <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">24h</span>
-                <span class="text-[10px] text-slate-400 dark:text-slate-500">Trend</span>
+              v-if="isZoneExternal(zone)"
+              class="mt-2 sm:mt-3 lg:mt-4 rounded-md sm:rounded-lg lg:rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900 overflow-hidden flex flex-col">
+              <div
+                class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3">
+                <h4 class="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">{{ t('thermal.chart.trend') }}</h4>
               </div>
-              <div v-if="hasMiniChartData(zone)">
-                <VueApexCharts
-                  type="area"
-                  height="240"
-                  :options="getMiniChartOptions(zone)"
-                  :series="getMiniChartSeries(zone)" />
-              </div>
-              <div v-else class="h-[240px] flex items-center justify-center text-[10px] text-slate-400 dark:text-slate-500">
-                No data
+              <div
+                class="flex-1 p-2 sm:p-3 flex flex-col bg-white dark:bg-slate-900 min-h-[300px] sm:min-h-[350px]">
+                <div v-if="isFetchingChartData" class="flex items-center justify-center flex-1">
+                  <div class="text-center">
+                    <div
+                      class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-blue-300 border-t-blue-600 dark:border-blue-700 dark:border-t-blue-400 mb-2">
+                    </div>
+                    <p class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ t('common.loading') }}</p>
+                  </div>
+                </div>
+                <div v-else-if="hasZoneChartData(zone)" class="w-full flex-1">
+                  <VueApexCharts :key="`zone-external-chart-${zone.id}-${chartDataMap.size}`" type="area" height="100%"
+                    :options="getZoneExternalChartOptions(zone)" :series="getZoneExternalChartSeries(zone)" />
+                </div>
+                <div v-else class="flex items-center justify-center flex-1">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Aucune donnée disponible</p>
+                </div>
               </div>
             </div>
 
-            <!-- Controls Area: Only show for controllable zones -->
-            <div v-if="zone.minTemp !== null && zone.maxTemp !== null && zone.mode !== null" class="flex flex-col">
+            <!-- Controllable Zones: Controls Area -->
+            <div v-if="!isZoneExternal(zone)" class="flex flex-col">
               <!-- Controls Content (Fixed Height) -->
               <div class="min-h-[140px] sm:min-h-[160px] lg:min-h-[200px] flex items-center justify-center mb-3 sm:mb-4 lg:mb-5">
                 <!-- No Data Message (Missing Critical Fields) -->
@@ -529,7 +537,7 @@
             <!-- Status Indicator Bar -->
             <div :class="[
               'absolute bottom-0 left-0 right-0 h-1 sm:h-1.5 lg:h-2 transition-all duration-300',
-              zone.minTemp === null || zone.maxTemp === null || zone.mode === null
+              isZoneExternal(zone)
                 ? zone.power
                   ? 'bg-gradient-to-r from-slate-400 via-slate-500 to-slate-600 shadow-lg shadow-slate-500/50'
                   : 'bg-slate-200 dark:bg-slate-700'
@@ -568,9 +576,15 @@
                       <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</p>
                     </div>
                   </div>
-                  <div v-else class="w-full" style="height: 500px;">
+                  <div v-else class="w-full relative" style="height: 500px;">
                     <VueApexCharts :key="`chart-${chartDataMap.size}`" type="area" height="500"
                       :options="getAllSensorsChartOptions()" :series="getAllSensorsChartSeries()" />
+                    <div v-if="!hasControllableSensorsData()" class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 rounded-2xl pointer-events-none">
+                      <div class="text-center">
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Aucune donnée disponible</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">Pas de données de température détectées pour les zones contrôlables</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -596,9 +610,15 @@
                       <p class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('common.loading') }}</p>
                     </div>
                   </div>
-                  <div v-else class="w-full" style="height: 500px;">
+                  <div v-else class="w-full relative" style="height: 500px;">
                     <VueApexCharts :key="`external-chart-${chartDataMap.size}`" type="area" height="500"
                       :options="getExternalSensorsChartOptions()" :series="getExternalSensorsChartSeries()" />
+                    <div v-if="!hasExternalSensorsData()" class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 rounded-2xl pointer-events-none">
+                      <div class="text-center">
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Aucune donnée disponible</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">Pas de données de température détectées pour les capteurs externes</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -639,9 +659,15 @@
 
                 <!-- Modal Body with Chart -->
                 <div class="flex-1 overflow-auto p-2 sm:p-4 md:p-6">
-                  <div v-if="chartModalZone" class="h-[250px] sm:h-[350px] md:h-[500px]">
+                  <div v-if="chartModalZone" class="h-[250px] sm:h-[350px] md:h-[500px] relative">
                     <VueApexCharts type="area" :height="'100%'" :options="getChartOptions(chartModalZone!)"
                       :series="getChartSeries(chartModalZone!)" />
+                    <div v-if="!hasZoneChartData(chartModalZone)" class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-800/50 rounded pointer-events-none">
+                      <div class="text-center">
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Aucune donnée disponible</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">Pas de données de température pour ce capteur</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -652,7 +678,7 @@
                     <div>
                       <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('thermal.chart.current') }}</div>
                       <div class="text-lg font-bold text-gray-900 dark:text-white">{{ chartModalZone.currentTemp !== null ?
-                        chartModalZone.currentTemp.toFixed(1) : '--' }}°C</div>
+                        chartModalZone.currentTemp.toFixed(1) : '-' }}°C</div>
                     </div>
                     <div>
                       <div class="text-xs text-red-500">{{ t('thermal.chart.maxTarget') }}</div>
@@ -784,6 +810,11 @@ const getSensorName = (sensor: Sensor) => sensor.name
 // Check if a zone has missing essential data
 const hasNoData = (zone: Zone): boolean => {
   return zone.powerStatus === null || zone.active === null || zone.minTemp === null || zone.maxTemp === null || zone.mode === null
+}
+
+// Check if a zone is external sensor (either by "Extérieur" label or missing control data)
+const isZoneExternal = (zone: Zone): boolean => {
+  return (zone.sensorLabel?.includes('Extérieur') ?? false) || zone.minTemp === null || zone.maxTemp === null || zone.mode === null
 }
 
 // Display only real sensors from API (no padding)
@@ -1150,7 +1181,7 @@ const displayedZones = computed(() => {
 
   return filtered
 })
-
+console.log('Displayed zones:', displayedZones.value)
 // Calculate optimal columns so rows stay even (prefer divisible by 4, then 3)
 const autoColumnsPerRow = computed(() => {
   const count = displayedZones.value.length
@@ -1342,7 +1373,7 @@ const closeChartModal = () => {
 const getAllSensorsChartOptions = () => {
   // Filter out external sensors - only show controllable zones
   const controllableZones = displayedZones.value.filter(
-    (zone) => zone.minTemp !== null && zone.maxTemp !== null && zone.mode !== null
+    (zone) => !isZoneExternal(zone)
   )
 
   // Get all data from controllable sensors to calculate ranges
@@ -1356,10 +1387,27 @@ const getAllSensorsChartOptions = () => {
     }
   })
 
-  // Get x-axis labels from first controllable sensor (all should have same timestamps)
-  const firstZone = controllableZones.find(z => z.sensorId && chartDataMap.value.has(z.sensorId))
-  const firstChartData = firstZone?.sensorId ? chartDataMap.value.get(firstZone.sensorId) : null
-  const xLabels = firstChartData?.map((p: any) => p.readableDate) || []
+  // Get x-axis labels from first controllable sensor with actual data (all should have same timestamps)
+  let firstChartData: any = null
+  for (const zone of controllableZones) {
+    if (zone.sensorId) {
+      const data = chartDataMap.value.get(zone.sensorId)
+      if (data && data.length > 0) {
+        firstChartData = data
+        break
+      }
+    }
+  }
+  const xLabels = firstChartData?.map((p: any) => {
+    if (p.readableDate) {
+      return p.readableDate
+    }
+    // Fallback: format from timestamp
+    const date = new Date(p.timestamp)
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${hours}:${minutes}`
+  }) || []
 
   console.log(`[Chart Options] xLabels count: ${xLabels.length}`)
   console.log(`[Chart Options] allDataPoints count: ${allDataPoints.length}`)
@@ -1478,7 +1526,7 @@ const getAllSensorsChartSeries = () => {
 
   // Filter out external sensors - only show controllable zones
   const controllableZones = displayedZones.value.filter(
-    (zone) => zone.minTemp !== null && zone.maxTemp !== null && zone.mode !== null
+    (zone) => !isZoneExternal(zone)
   )
 
   const series = controllableZones.map((zone, idx) => {
@@ -1494,13 +1542,11 @@ const getAllSensorsChartSeries = () => {
       }
     }
 
-    // Fallback to synthetic data
-    console.log(`[Chart Series] Using synthetic data for ${zone.sensorLabel}`)
-    const baseTemp = zone.currentTemp ?? 21.2
-    const syntheticData = generate24HData(zone.id, baseTemp)
+    // No synthetic data - return empty series
+    console.log(`[Chart Series] No data for ${zone.sensorLabel}`)
     return {
       name: zone.sensorLabel || zone.sensorName || `Zone ${zone.id}`,
-      data: syntheticData,
+      data: [],
       color: COLORS[idx % COLORS.length]
     }
   })
@@ -1513,15 +1559,35 @@ const getAllSensorsChartSeries = () => {
 const getExternalSensorsChartOptions = () => {
   // Get only external zones
   const externalZones = displayedZones.value.filter(
-    (zone) => zone.minTemp === null || zone.maxTemp === null || zone.mode === null
+    (zone) => isZoneExternal(zone)
   )
 
   // Collect all data points for calculating ranges
   const allDataPoints: number[] = []
-  const firstChartData = externalZones.length > 0 && externalZones[0].sensorId
-    ? chartDataMap.value.get(externalZones[0].sensorId)
-    : null
-  const xLabels = firstChartData?.map((p: any) => p.readableDate) || []
+
+  // Find first external zone with actual chart data (not empty)
+  let firstChartData: any = null
+  for (const zone of externalZones) {
+    if (zone.sensorId) {
+      const data = chartDataMap.value.get(zone.sensorId)
+      if (data && data.length > 0) {
+        firstChartData = data
+        break
+      }
+    }
+  }
+
+  // Format xLabels to HH:mm format (use readableDate if available, else parse timestamp)
+  const xLabels = firstChartData?.map((p: any) => {
+    if (p.readableDate) {
+      return p.readableDate
+    }
+    // Fallback: format from timestamp
+    const date = new Date(p.timestamp)
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${hours}:${minutes}`
+  }) || []
 
   externalZones.forEach((zone) => {
     const sensorId = zone.sensorId
@@ -1641,7 +1707,7 @@ const getExternalSensorsChartSeries = () => {
 
   // Filter only external zones
   const externalZones = displayedZones.value.filter(
-    (zone) => zone.minTemp === null || zone.maxTemp === null || zone.mode === null
+    (zone) => isZoneExternal(zone)
   )
 
   const series = externalZones.map((zone, idx) => {
@@ -1657,19 +1723,58 @@ const getExternalSensorsChartSeries = () => {
       }
     }
 
-    // Fallback to synthetic data
-    console.log(`[External Chart Series] Using synthetic data for ${zone.sensorLabel}`)
-    const baseTemp = zone.currentTemp ?? 21.2
-    const syntheticData = generate24HData(zone.id, baseTemp)
+    // No synthetic data - return empty series
+    console.log(`[External Chart Series] No data for ${zone.sensorLabel}`)
     return {
       name: zone.sensorLabel || zone.sensorName || `External ${zone.id}`,
-      data: syntheticData,
+      data: [],
       color: COLORS[idx % COLORS.length]
     }
   })
 
   console.log(`[External Chart Series] Generated ${series.length} series for external sensors`)
   return series
+}
+
+// Check if external sensors have any actual API data
+const hasExternalSensorsData = () => {
+  const externalZones = displayedZones.value.filter(
+    (zone) => isZoneExternal(zone)
+  )
+
+  for (const zone of externalZones) {
+    if (zone.sensorId) {
+      const chartData = chartDataMap.value.get(zone.sensorId)
+      if (chartData && chartData.length > 0) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
+// Check if a specific zone has chart data
+const hasZoneChartData = (zone: Zone) => {
+  if (!zone.sensorId) return false
+  const chartData = chartDataMap.value.get(zone.sensorId)
+  return chartData && chartData.length > 0
+}
+
+// Check if controllable zones have any actual API data
+const hasControllableSensorsData = () => {
+  const controllableZones = displayedZones.value.filter(
+    (zone) => !isZoneExternal(zone)
+  )
+
+  for (const zone of controllableZones) {
+    if (zone.sensorId) {
+      const chartData = chartDataMap.value.get(zone.sensorId)
+      if (chartData && chartData.length > 0) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 // Single zone chart functions for modal
@@ -1711,7 +1816,13 @@ const getChartOptions = (zone: Zone) => {
       hover: { size: 6 }
     },
     xaxis: {
-      categories: chartData?.map((p: any) => p.readableDate) || [],
+      categories: chartData?.map((p: any) => {
+        if (p.readableDate) return p.readableDate
+        const date = new Date(p.timestamp)
+        const hours = date.getHours().toString().padStart(2, '0')
+        const minutes = date.getMinutes().toString().padStart(2, '0')
+        return `${hours}:${minutes}`
+      }) || [],
       labels: {
         style: { fontSize: '12px', colors: '#9ca3af' }
       },
@@ -1764,11 +1875,164 @@ const getChartSeries = (zone: Zone) => {
     ]
   }
 
-  const currentTemp = zone.currentTemp ?? 21.2
+  // Return empty series when no data (axes will still show)
   return [
     {
       name: t('thermal.chart.temperature'),
-      data: generate24HData(zone.id, currentTemp)
+      data: []
+    }
+  ]
+}
+
+// External zone card chart functions
+const getZoneExternalChartOptions = (zone: Zone) => {
+  const chartData = zone.sensorId ? chartDataMap.value.get(zone.sensorId) : null
+
+  // Get data points for calculating ranges
+  const dataPoints = chartData?.map((p: any) => p.value) || []
+  const xLabels = chartData?.map((p: any) => {
+    if (p.readableDate) {
+      return p.readableDate
+    }
+    // Fallback: format from timestamp
+    const date = new Date(p.timestamp)
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${hours}:${minutes}`
+  }) || []
+  const minValue = dataPoints.length > 0 ? Math.min(...dataPoints) : 20
+  const maxValue = dataPoints.length > 0 ? Math.max(...dataPoints) : 30
+  const padding = (maxValue - minValue) * 0.15
+
+  return {
+    chart: {
+      type: 'area',
+      fontFamily: 'inherit',
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      animations: {
+        enabled: true,
+        speed: 800,
+        animateGradually: {
+          enabled: true,
+          delay: 150
+        },
+        dynamicAnimation: {
+          enabled: true,
+          speed: 150
+        }
+      }
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 2
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.4,
+        opacityTo: 0.05,
+        stops: [20, 100, 100, 100]
+      }
+    },
+    dataLabels: { enabled: false },
+    markers: {
+      size: 3,
+      strokeColors: '#fff',
+      strokeWidth: 1,
+      hover: { size: 5 }
+    },
+    xaxis: {
+      categories: xLabels,
+      labels: {
+        show: true,
+        style: { fontSize: isMobileViewport.value ? '9px' : '11px', colors: '#9ca3af' },
+        rotate: isMobileViewport.value ? -60 : -45,
+        trim: true,
+        hideOverlappingLabels: true,
+        showDuplicates: false
+      },
+      tickAmount: isMobileViewport.value ? Math.min(6, Math.floor(xLabels.length / 4)) : undefined,
+      axisBorder: { show: true, color: '#e5e7eb' },
+      axisTicks: { show: false }
+    },
+    yaxis: {
+      labels: {
+        style: { fontSize: '12px', colors: '#9ca3af' },
+        formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(1)}°C` : ''
+      },
+      min: minValue - padding,
+      max: maxValue + padding
+    },
+    grid: {
+      show: true,
+      borderColor: 'rgba(229, 231, 235, 0.3)',
+      strokeDashArray: 0,
+      xaxis: { lines: { show: true } }
+    },
+    tooltip: {
+      theme: 'light',
+      x: { format: 'HH:mm' },
+      y: {
+        formatter: (value: number | undefined) => value !== undefined ? `${value.toFixed(1)}°C` : 'N/A'
+      }
+    },
+    legend: {
+      show: true,
+      position: 'top',
+      fontFamily: 'inherit',
+      offsetY: 0,
+      horizontalAlign: 'center',
+      labels: {
+        colors: '#6b7280',
+        useSeriesColors: true,
+        fontSize: '12px'
+      },
+      markers: {
+        width: 12,
+        height: 12,
+        radius: 2
+      },
+      itemMargin: {
+        horizontal: 10,
+        vertical: 5
+      }
+    }
+  }
+}
+
+const getZoneExternalChartSeries = (zone: Zone) => {
+  const sensorId = zone.sensorId
+  const chartData = sensorId ? chartDataMap.value.get(sensorId) : null
+
+  if (chartData && chartData.length > 0) {
+    return [
+      {
+        name: zone.sensorLabel || zone.sensorName || `Zone ${zone.id}`,
+        data: chartData.map((point: any) => point.value),
+        color: '#64748b'
+      }
+    ]
+  }
+
+  // No chart data and no currentTemp - return empty series
+  if (zone.currentTemp === null) {
+    return [
+      {
+        name: zone.sensorLabel || zone.sensorName || `Zone ${zone.id}`,
+        data: [],
+        color: '#64748b'
+      }
+    ]
+  }
+
+  // Fallback to synthetic data for card charts (only if currentTemp available)
+  return [
+    {
+      name: zone.sensorLabel || zone.sensorName || `Zone ${zone.id}`,
+      data: generate24HData(zone.id, zone.currentTemp),
+      color: '#64748b'
     }
   ]
 }
@@ -1776,14 +2040,30 @@ const getChartSeries = (zone: Zone) => {
 const getMiniChartSeries = (zone: Zone) => {
   const sensorId = zone.sensorId
   const chartData = sensorId ? chartDataMap.value.get(sensorId) : null
-  if (!chartData || chartData.length === 0) {
-    return []
+  if (chartData && chartData.length > 0) {
+    return [
+      {
+        name: '24h',
+        data: chartData.map((point: any) => point.value)
+      }
+    ]
   }
 
+  // No chart data and no currentTemp - return empty series
+  if (zone.currentTemp === null) {
+    return [
+      {
+        name: '24h',
+        data: []
+      }
+    ]
+  }
+
+  // Fallback to synthetic data for card charts (only if currentTemp available)
   return [
     {
       name: '24h',
-      data: chartData.map((point: any) => point.value)
+      data: generate24HData(zone.id, zone.currentTemp)
     }
   ]
 }
@@ -1791,14 +2071,21 @@ const getMiniChartSeries = (zone: Zone) => {
 const hasMiniChartData = (zone: Zone) => {
   const sensorId = zone.sensorId
   const chartData = sensorId ? chartDataMap.value.get(sensorId) : null
-  return Boolean(chartData && chartData.length > 0)
+  // Always true for external sensors because we generate synthetic data as fallback
+  return true
 }
 
 const getMiniChartOptions = (zone: Zone) => {
   const sensorId = zone.sensorId
   const chartData = sensorId ? chartDataMap.value.get(sensorId) : null
   const dataPoints = chartData?.map((p: any) => p.value) || []
-  const xLabels = chartData?.map((p: any) => p.readableDate) || []
+  const xLabels = chartData?.map((p: any) => {
+    if (p.readableDate) return p.readableDate
+    const date = new Date(p.timestamp)
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${hours}:${minutes}`
+  }) || []
   const minValue = dataPoints.length > 0 ? Math.min(...dataPoints) : 20
   const maxValue = dataPoints.length > 0 ? Math.max(...dataPoints) : 30
   const padding = Math.max((maxValue - minValue) * 0.15, 1)
@@ -1986,8 +2273,8 @@ function buildZonesFromSensors(sensors: Sensor[]) {
 
   // Sort zones alphabetically: controllable first (alphabetically), then external (alphabetically)
   const sorted = built.sort((a, b) => {
-    const aIsExternal = a.minTemp === null || a.maxTemp === null || a.mode === null
-    const bIsExternal = b.minTemp === null || b.maxTemp === null || b.mode === null
+    const aIsExternal = isZoneExternal(a)
+    const bIsExternal = isZoneExternal(b)
 
     // First, separate by type (controllable vs external)
     if (aIsExternal !== bIsExternal) {
@@ -2034,8 +2321,8 @@ function buildZonesFromThermalAPI(thermalData: any) {
   for (let i = 0; i < sensors.length; i++) {
     const sensor = sensors[i]
 
-    // Current temperature from sensor reading
-    const currentTemp = sensor.temperature ?? 22
+    // Current temperature from sensor reading (keep null if not available)
+    const currentTemp = sensor.temperature
 
     // Use API min/max if available, fallback to dew point-based calculation
     let minTemp = sensor.minTemp
@@ -2043,15 +2330,19 @@ function buildZonesFromThermalAPI(thermalData: any) {
 
     // Fallback: Calculate from dew point if API values not available
     if (minTemp === null || minTemp === undefined) {
-      const dewPoint = sensor.dewPoint ?? (currentTemp - 3)
+      // Use currentTemp if available, otherwise use 20 as fallback for calculation
+      const tempForCalc = currentTemp ?? 20
+      const dewPoint = sensor.dewPoint ?? (tempForCalc - 3)
       minTemp = Math.max(
-        Math.round((dewPoint || currentTemp - 2) * 10) / 10,
+        Math.round((dewPoint || tempForCalc - 2) * 10) / 10,
         10  // Absolute minimum 10°C
       )
     }
 
     if (maxTemp === null || maxTemp === undefined) {
-      maxTemp = Math.round((currentTemp + 3) * 10) / 10
+      // Use currentTemp if available, otherwise use 25 as fallback for calculation
+      const tempForCalc = currentTemp ?? 25
+      maxTemp = Math.round((tempForCalc + 3) * 10) / 10
     }
 
     // Map mode: "manuel" → "manuel", preserve null if no mode configured
@@ -2075,7 +2366,7 @@ function buildZonesFromThermalAPI(thermalData: any) {
       mode: mode,  // Use API mode, properly mapped
       powerStatus: sensor.powerStatus,  // Store sensor active/inactive status
       sensorId: sensor.deviceUUID,
-      sensorLabel: sensor.displayName || sensor.label || sensor.name,
+      sensorLabel: sensor.label || sensor.displayName || sensor.name,
       sensorName: sensor.name,
       humidity: sensor.humidity,
       dewPoint: sensor.dewPoint,
@@ -2086,8 +2377,8 @@ function buildZonesFromThermalAPI(thermalData: any) {
 
   // Sort zones alphabetically: controllable first (alphabetically), then external (alphabetically)
   const sorted = built.sort((a, b) => {
-    const aIsExternal = a.minTemp === null || a.maxTemp === null || a.mode === null
-    const bIsExternal = b.minTemp === null || b.maxTemp === null || b.mode === null
+    const aIsExternal = isZoneExternal(a)
+    const bIsExternal = isZoneExternal(b)
 
     // First, separate by type (controllable vs external)
     if (aIsExternal !== bIsExternal) {

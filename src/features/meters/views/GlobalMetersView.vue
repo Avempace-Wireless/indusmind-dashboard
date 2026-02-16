@@ -75,20 +75,20 @@
               :key="compteur.id"
               class="rounded-xl bg-white dark:bg-slate-900 shadow-xl hover:shadow-2xl transition-all overflow-hidden relative border-2 flex flex-col"
               :style="{
-                borderColor: getChartColor(index),
-                boxShadow: `0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 0 0 2px ${getChartColor(index)}15`,
+                borderColor: getChartColor(index, compteur.name),
+                boxShadow: `0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 0 0 2px ${getChartColor(index, compteur.name)}15`,
                 minHeight: 'clamp(200px, 40vh, 350px)',
                 ...getCardGridSpan(index, enrichedCompteurs.length)
               }"
             >
               <!-- Top accent line -->
-              <div class="absolute top-0 left-0 right-0 h-1" :style="{ backgroundColor: getChartColor(index) }"></div>
+              <div class="absolute top-0 left-0 right-0 h-1" :style="{ backgroundColor: getChartColor(index, compteur.name) }"></div>
 
               <!-- Card Header with color accent and custom tooltip -->
               <div :class="[
                 'px-4 py-1.5 flex-shrink-0 border-b-2 relative group/header flex items-start justify-between gap-2 overflow-hidden',
-                `border-${getMeterColorTailwind(index)}-400 dark:border-${getMeterColorTailwind(index)}-500`
-              ]" :style="{ backgroundColor: `${getChartColor(index)}08`, minHeight: '90px' }">
+                `border-${getMeterColorTailwind(index, compteur.name)}-400 dark:border-${getMeterColorTailwind(index, compteur.name)}-500`
+              ]" :style="{ backgroundColor: `${getChartColor(index, compteur.name)}08`, minHeight: '90px' }">
                 <div class="flex-1 min-w-0 overflow-hidden">
                   <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight break-words pt-1">{{ compteur.name }}</h3>
                   <p class="text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">{{ compteur.subtitle || $t('globalMeters.energyMeter') }}</p>
@@ -119,7 +119,7 @@
                     </span>
                   </div>
                   <div class="flex items-baseline justify-center gap-0.5 mt-0.25">
-                    <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getChartColor(index) }">
+                    <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getChartColor(index, compteur.name) }">
                       {{ formatValue(compteur.instantaneous) }}
                     </span>
                     <span class="font-bold text-slate-900 dark:text-slate-100" style="font-size: clamp(8px, 1vmin, 12px);">kW</span>
@@ -202,7 +202,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import EnergyConsumptionChart from '@/features/meters/components/EnergyConsumptionChart.vue'
 import TemperatureChart from '@/features/meters/components/TemperatureChart.vue'
-import { getMeterColorByIndex } from '@/utils/meterColors'
+import { getMeterColorByName } from '@/utils/meterColors'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useGlobalMeters, type GlobalMeterData } from '@/composables/useGlobalMeters'
@@ -418,8 +418,8 @@ const rightPanelStyle = computed(() => {
 })
 
 // Methods
-const getMeterColorTailwind = (index: number) => {
-  return getMeterColorByIndex(index).tailwind
+const getMeterColorTailwind = (index: number, name?: string) => {
+  return getMeterColorByName(name, index).tailwind
 }
 
 const getDelta = (compteur: any) => {
@@ -431,18 +431,8 @@ const formatValue = (value: number | undefined): string => {
   return value.toFixed(1)
 }
 
-const getChartColor = (index: number) => {
-  const colors = [
-    'rgba(16, 185, 129, 1)',   // green
-    'rgba(59, 130, 246, 1)',   // blue
-    'rgba(239, 68, 68, 1)',    // red
-    'rgba(245, 158, 11, 1)',   // orange
-    'rgba(139, 92, 246, 1)',   // purple
-    'rgba(236, 72, 153, 1)',   // pink
-    'rgba(34, 211, 238, 1)',   // cyan
-    'rgba(20, 184, 166, 1)',   // teal
-  ]
-  return colors[index % colors.length]
+const getChartColor = (index: number, name?: string) => {
+  return getMeterColorByName(name, index).hex
 }
 
 // Helper function to make overflow items span properly

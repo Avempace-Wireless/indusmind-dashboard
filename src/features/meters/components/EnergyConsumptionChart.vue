@@ -40,6 +40,7 @@ import {
   type ChartOptions,
 } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
+import { getMeterColorByName } from '@/utils/meterColors'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels)
 
@@ -73,16 +74,12 @@ const metersWithData = computed(() => {
 })
 
 // Color palette for meters
-const getMeterColor = (index: number) => {
-  const colors = [
-    { bg: 'rgba(16, 185, 129, 0.7)', border: 'rgba(16, 185, 129, 1)' }, // green
-    { bg: 'rgba(59, 130, 246, 0.7)', border: 'rgba(59, 130, 246, 1)' }, // blue
-    { bg: 'rgba(239, 68, 68, 0.7)', border: 'rgba(239, 68, 68, 1)' },   // red
-    { bg: 'rgba(245, 158, 11, 0.7)', border: 'rgba(245, 158, 11, 1)' }, // orange
-    { bg: 'rgba(139, 92, 246, 0.7)', border: 'rgba(139, 92, 246, 1)' }, // purple
-    { bg: 'rgba(236, 72, 153, 0.7)', border: 'rgba(236, 72, 153, 1)' }, // pink
-  ]
-  return colors[index % colors.length]
+const getMeterColor = (index: number, name?: string) => {
+  const color = getMeterColorByName(name, index)
+  return {
+    bg: `${color.hex}B3`,
+    border: color.hex,
+  }
 }
 
 // Extract all timestamps and labels for use in chart and tooltips
@@ -122,7 +119,7 @@ const chartData = computed(() => {
 
   // Create datasets for each meter
   const datasets = metersWithData.value.map((meter, index) => {
-    const colors = getMeterColor(index)
+    const colors = getMeterColor(index, meter.name)
 
     // Create a map of timestamp -> value for this meter
     const valueMap = new Map<number, number>()

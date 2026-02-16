@@ -115,7 +115,7 @@ import { useWidgetData } from '@/composables/useWidgetData'
 import { TelemetryTransformers } from '@/utils/TelemetryTransformers'
 import type { TransformContext, WidgetConfig } from '@/types/widgetRegistry'
 import type { Compteur, CompteurMode } from '@/composables/useCompteurSelection'
-import { getMeterColorByIndex } from '@/utils/meterColors'
+import { getMeterColorByName } from '@/utils/meterColors'
 
 // ============================================================================
 // PROPS & EMITS
@@ -177,7 +177,7 @@ const translatedSubtitle = computed(() => {
 })
 
 const colorClasses = computed(() => {
-  const colorConfig = getMeterColorByIndex(props.colorIndex)
+  const colorConfig = getMeterColorByName(props.compteur.name, props.colorIndex)
   const tailwindColor = colorConfig.tailwind
 
   const colorMap: Record<string, { border: string; text: string; chartBar: string; activeTab: string; widget: string }> = {
