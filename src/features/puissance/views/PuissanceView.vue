@@ -537,7 +537,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -641,6 +641,9 @@ const isLoadingTelemetry = computed(() => isLoading.value)
 // Temporary cache mapping for backward compatibility with view logic
 const telemetryCache = ref<Map<string, any>>(new Map())
 
+// Auto-refresh interval for telemetry data (20-second silent refresh)
+let telemetryRefreshInterval: ReturnType<typeof setInterval> | null = null
+
 // Handle meter selection from modal
 function handleCompteurSelection(selectedIds: string[]) {
   metersStore.setSelectedMeters(selectedIds)
@@ -689,6 +692,23 @@ onMounted(async () => {
   // Fetch telemetry data for current meter if API mode enabled
   if (useApiData()) {
     await loadCurrentMeterData()
+  }
+
+  // Start 20-second silent refresh interval for telemetry data
+  if (useApiData()) {
+    telemetryRefreshInterval = setInterval(() => {
+      if (selectedMeterIds.value.length > 0 && currentMeterId.value) {
+        console.log('[Puissance] Silent refresh triggered (20s interval)')
+        loadCurrentMeterDataSilently()
+      }
+    }, 20000)
+  }
+})
+
+// Clean up refresh interval on component unmount
+onUnmounted(() => {
+  if (telemetryRefreshInterval) {
+    clearInterval(telemetryRefreshInterval)
   }
 })
 
@@ -788,6 +808,66 @@ async function loadCurrentMeterData() {
 }
 
 /**
+ * Silently fetch data without showing loading indicators
+ * Used for 20-second auto-refresh intervals
+ * Makes direct API calls without triggering the composable's isLoading flag
+ */
+async function loadCurrentMeterDataSilently() {
+  if (!useApiData() || !currentMeterId.value) {
+    return
+  }
+
+  const meter = allCompteurs.value.find(c => c.id === currentMeterId.value)
+  if (!meter?.deviceUUID) {
+    return
+  }
+
+  try {
+    console.log(`[Puissance] → Silent refresh: Fetching fresh KPI data for meter: ${meter.name}`)
+
+    // Direct API call without triggering composable's isLoading
+    const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4000'
+    const endpoint = `${apiBaseUrl}/telemetry/${meter.deviceUUID}/puissance`
+
+    const response = await fetch(endpoint)
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+
+    if (!result.success) {
+      console.error('[Puissance] API returned error:', result)
+      return
+    }
+
+    const cachedData = {
+      meterId: meter.id,
+      instantaneousConsumption: result.data.instantaneousPower,
+      consumedThisHour: result.data.consumedThisHour,
+      consumedToday: result.data.consumedToday,
+      consumedYesterday: result.data.consumedYesterday,
+      consumedThisMonth: result.data.consumedThisMonth,
+      consumedLastMonth: result.data.consumedLastMonth,
+      instantaneousPower: result.data.instantaneousPower !== null
+        ? [{ts: Date.now(), value: result.data.instantaneousPower }]
+        : [],
+      hourlyData: result.data.hourlyData,
+      dailyData: result.data.dailyData,
+      monthlyData: result.data.monthlyData
+    }
+
+    telemetryCache.value.set(meter.id, cachedData)
+    telemetryCache.value = new Map(telemetryCache.value)
+
+    console.log(`[Puissance] ✓ Silent refresh complete for ${meter.name}`)
+  } catch (err) {
+    console.error(`[Puissance] ✗ Silent refresh failed for ${meter.name}:`, err instanceof Error ? err.message : String(err))
+  }
+}
+
+/**
  * Watch for current meter changes and fetch telemetry if needed
  * Only runs when meter actually changes (not on initial mount)
  */
@@ -796,6 +876,13 @@ watch(currentMeterId, async (newMeterId, oldMeterId) => {
   if (newMeterId && useApiData() && newMeterId !== oldMeterId) {
     console.log('[Puissance] Current meter changed:', { from: oldMeterId, to: newMeterId })
     await loadCurrentMeterData()
+  }
+})
+
+// Clean up auto-refresh interval on component unmount
+onUnmounted(() => {
+  if (telemetryRefreshInterval) {
+    clearInterval(telemetryRefreshInterval)
   }
 })
 

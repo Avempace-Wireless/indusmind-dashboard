@@ -769,6 +769,9 @@ const isLoading = ref(false)
 const isChartLoading = ref(false)
 const chartHasData = ref(true)
 
+// Auto-refresh interval for telemetry data (20-second silent refresh)
+let telemetryRefreshInterval: ReturnType<typeof setInterval> | null = null
+
 // Pagination state for each table
 const dayCurrentPage = ref(1)
 const weekCurrentPage = ref(1)
@@ -1190,6 +1193,53 @@ const loadCurrentMeterData = async () => {
 const reloadCharts = async () => {
   // Reload data and reinitialize charts for new period
   await loadCurrentMeterData()
+}
+
+const loadCurrentMeterDataSilently = async () => {
+  // Silent refresh without showing loading indicators
+  // Makes direct API calls without triggering the composable's isLoading flag
+  if (!currentMeterId.value || !currentDeviceUUID.value) {
+    return
+  }
+
+  try {
+    if (isApiMode) {
+      console.log('[CurrentView] Silent refresh: Fetching fresh current data for:', currentDeviceUUID.value)
+
+      const baseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4000'
+
+      // Fetch both endpoints in parallel without going through composable
+      const [overviewResponse, chartResponse] = await Promise.all([
+        fetch(`${baseUrl}/api/telemetry/${currentDeviceUUID.value}/current/overview`),
+        fetch(`${baseUrl}/api/telemetry/${currentDeviceUUID.value}/current/chart`)
+      ])
+
+      if (!overviewResponse.ok || !chartResponse.ok) {
+        throw new Error(`Failed to fetch data: overview=${overviewResponse.ok}, chart=${chartResponse.ok}`)
+      }
+
+      const overviewJson = await overviewResponse.json()
+      const chartJson = await chartResponse.json()
+
+      if (overviewJson?.success && overviewJson?.data) {
+        currentOverviewDataMap.value.set(currentDeviceUUID.value, overviewJson.data)
+        console.log('[CurrentView] ✓ Silent refresh: Overview data updated')
+        await nextTick()
+        initOverviewChart()
+      }
+
+      if (chartJson?.success && chartJson?.data) {
+        currentChartDataMap.value.set(currentDeviceUUID.value, chartJson.data)
+        console.log('[CurrentView] ✓ Silent refresh: Chart data updated')
+        await nextTick()
+        initDetailedCharts()
+      }
+
+      console.log('[CurrentView] ✓ Silent refresh complete')
+    }
+  } catch (err) {
+    console.error('[CurrentView] ✗ Silent refresh failed:', err instanceof Error ? err.message : String(err))
+  }
 }
 
 const reloadChartsOnly = async () => {
@@ -2457,6 +2507,16 @@ onMounted(async () => {
     currentMeterIndex.value = 0
     await loadCurrentMeterData()
   }
+
+  // Start 20-second silent refresh interval for telemetry data
+  if (isApiMode) {
+    telemetryRefreshInterval = setInterval(() => {
+      if (validSelectedMeterIds.value.length > 0 && currentDeviceUUID.value) {
+        console.log('[Current] Silent refresh triggered (20s interval)')
+        loadCurrentMeterDataSilently()
+      }
+    }, 20000)
+  }
 })
 
 const formatTime = (timestamp?: number): string => {
@@ -2551,6 +2611,11 @@ onUnmounted(() => {
   chartDaily?.destroy()
   chartWeekly?.destroy()
   chartYearly?.destroy()
+  
+  // Clean up auto-refresh interval
+  if (telemetryRefreshInterval) {
+    clearInterval(telemetryRefreshInterval)
+  }
 })
 </script>
 
