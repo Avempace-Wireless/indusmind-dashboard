@@ -41,9 +41,10 @@ import {
   Legend,
   Filler,
 } from 'chart.js'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { getMeterColorByIndex } from '@/utils/meterColors'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, ChartDataLabels)
 
 const { t } = useI18n()
 
@@ -148,6 +149,9 @@ const chartOptions = computed(() => {
     },
     plugins: {
       legend: {
+        display: false,
+      },
+      datalabels: {
         display: false,
       },
       tooltip: {

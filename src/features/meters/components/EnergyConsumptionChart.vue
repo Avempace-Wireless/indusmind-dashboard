@@ -39,8 +39,9 @@ import {
   Legend,
   type ChartOptions,
 } from 'chart.js'
+import ChartDataLabels from 'chartjs-plugin-datalabels'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels)
 
 interface ChartDataPoint {
   ts: number
@@ -196,6 +197,9 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
     },
     plugins: {
       legend: {
+        display: false,
+      },
+      datalabels: {
         display: false,
       },
       tooltip: {
