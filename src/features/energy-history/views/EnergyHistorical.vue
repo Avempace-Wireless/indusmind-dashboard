@@ -267,88 +267,40 @@
           <!-- Period Presets -->
           <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ t('energyHistory.calendar.periods.title') }}</p>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-3 gap-2">
               <button
-                @click="selectLast7Days"
+                v-for="preset in ['last7Days', 'last4Weeks', 'last3Months']"
+                :key="preset"
+                @click="selectPreset(preset)"
                 :disabled="energyHistoryLoading"
                 :class="[
                   'px-3 py-2 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-                  activePeriodPreset === 'last7Days'
+                  activePeriodPreset === preset
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 ]"
               >
-                {{ t('energyHistory.calendar.periods.last7Days') }}
-              </button>
-              <button
-                @click="selectLast30Days"
-                :disabled="energyHistoryLoading"
-                :class="[
-                  'px-3 py-2 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-                  activePeriodPreset === 'last30Days'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                ]"
-              >
-                {{ t('energyHistory.calendar.periods.last30Days') }}
-              </button>
-              <button
-                @click="selectThisMonth"
-                :disabled="energyHistoryLoading"
-                :class="[
-                  'px-3 py-2 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-                  activePeriodPreset === 'thisMonth'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                ]"
-              >
-                {{ t('energyHistory.calendar.periods.thisMonth') }}
-              </button>
-              <button
-                @click="selectLastMonth"
-                :disabled="energyHistoryLoading"
-                :class="[
-                  'px-3 py-2 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-                  activePeriodPreset === 'lastMonth'
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                ]"
-              >
-                {{ t('energyHistory.calendar.periods.lastMonth') }}
+                {{ t(`energyHistory.calendar.periods.${preset}`) }}
               </button>
             </div>
           </div>
 
            <!-- Selected Dates Range Info -->
-          <div v-if="selectedDates.length > 0" class="mb-4 mt-2 p-3 rounded-lg border"
-               :class="selectedDates.length >= 32
-                 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-                 : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'">
+          <div v-if="selectedDates.length > 0"
+               class="mb-4 mt-2 p-3 rounded-lg border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
             <div class="flex items-center justify-between">
               <div class="text-xs">
-                <span class="font-semibold"
-                      :class="selectedDates.length >= 32
-                        ? 'text-orange-900 dark:text-orange-100'
-                        : 'text-blue-900 dark:text-blue-100'">
+                <span class="font-semibold text-blue-900 dark:text-blue-100">
                   {{ t('energyHistory.calendar.daysSelected', { count: selectedDates.length }) }}
-                  <span v-if="selectedDates.length >= 32" class="ml-2 text-orange-600 dark:text-orange-400">
-                    ({{ t('energyHistory.calendar.maxReached') || 'Max 32 days' }})
-                  </span>
                 </span>
                 <div v-if="selectedDates.length > 1"
-                     :class="selectedDates.length >= 32
-                       ? 'text-orange-700 dark:text-orange-300'
-                       : 'text-blue-700 dark:text-blue-300'"
-                     class="mt-1">
+                     class="text-blue-700 dark:text-blue-300 mt-1">
                   {{ selectedDates[0] }} → {{ selectedDates[selectedDates.length - 1] }}
                 </div>
               </div>
               <button
                 @click="goToToday"
-                :class="selectedDates.length >= 32
-                  ? 'text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200'
-                  : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200'"
-                class="text-xs"
+                class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-xs"
               >
                 {{ t('common.clear') }}
               </button>
@@ -621,9 +573,8 @@ const {
   nextMonth,
   goToToday,
   selectLast7Days,
-  selectLast30Days,
-  selectThisMonth,
-  selectLastMonth,
+  selectLast4Weeks,
+  selectLast3Months,
   setTimeRange,
   toggleCompteurActive,
   enableAllCompteurs,
@@ -640,6 +591,21 @@ const {
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
 const chartType = ref<'line' | 'bar'>('bar')
+
+// Period preset selector method
+function selectPreset(preset: string) {
+  switch (preset) {
+    case 'last7Days':
+      selectLast7Days()
+      break
+    case 'last4Weeks':
+      selectLast4Weeks()
+      break
+    case 'last3Months':
+      selectLast3Months()
+      break
+  }
+}
 
 function formatCell(v: any) {
   // Handle if v is an object with a value property
@@ -1270,15 +1236,8 @@ function onDragOver(dateStr: string | null) {
   // Get dates between start and current
   const draggedDates = getDatesBetween(dragStart.value, dateStr)
 
-  // Check if range exceeds 32 days
-  if (draggedDates.length > 32) {
-    console.warn(`[onDragOver] Selection would exceed 32 days (${draggedDates.length} days). Limiting to 32 days.`)
-    // Limit to first 32 days
-    selectedDates.value = draggedDates.slice(0, 32)
-  } else {
-    // Use continuous range (no gaps allowed in drag selection)
-    selectedDates.value = draggedDates
-  }
+  // Use continuous range (no gaps allowed in drag selection)
+  selectedDates.value = draggedDates
 }
 
 function endDrag() {

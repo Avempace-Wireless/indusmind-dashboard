@@ -588,6 +588,7 @@
     "calendar": {
       "title": "Calendrier",
       "daysSelected": "{count} jour sélectionné | {count} jours sélectionnés",
+      "maxReached": "Maximum 32 jours",
       "weekdays": {
         "mon": "Lun",
         "tue": "Mar",
@@ -600,9 +601,8 @@
       "periods": {
         "title": "Sélectionner une période:",
         "last7Days": "7 derniers jours",
-        "last30Days": "30 derniers jours",
-        "thisMonth": "Ce mois",
-        "lastMonth": "Mois dernier"
+        "last4Weeks": "4 dernières semaines",
+        "last3Months": "3 derniers mois"
       }
     },
     "characteristics": {
