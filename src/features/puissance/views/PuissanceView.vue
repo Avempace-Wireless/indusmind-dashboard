@@ -1186,8 +1186,9 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
       hourlyTimestamps = powerData.map((d: any) => d.ts)  // Keep raw timestamps
       hourlyLabels = powerData.map((d: any) => {
         const date = new Date(d.ts)
-        const hours = date.getHours().toString().padStart(2, '0')
-        const minutes = date.getMinutes().toString().padStart(2, '0')
+        // Use UTC hours to ensure 00h-23h display regardless of timezone
+        const hours = date.getUTCHours().toString().padStart(2, '0')
+        const minutes = date.getUTCMinutes().toString().padStart(2, '0')
         return `${hours}:${minutes}`
       })
 
