@@ -297,65 +297,21 @@ const showNoDataState = computed(() => {
 
 /**
  * Get current value based on mode with null safety
- * For 'jour' mode: validates API daily value against hourly data sum
- * If API value seems incorrect (too large), uses hourly data sum instead
+ * Values come from the Puissance API which calculates accurate differentials
+ * today = consumedToday (sum of hourly differentials from Puissance API)
+ * yesterday = consumedYesterday (daily differential from Puissance API)
  */
 const currentValue = computed(() => {
   const value = (() => {
     switch (currentMode.value) {
       case 'instantanée':
         return props.compteur.instantaneous ?? 0
-      case 'jour': {
-        // For daily mode, validate the API value against hourly data sum
-        const apiValue = props.compteur.today ?? 0
-        const todayReadings = todayHourlyReadings.value
-
-        if (todayReadings.length > 0) {
-          // Sum all hourly readings
-          const hourlySum = todayReadings.reduce((sum, reading) => {
-            const val = parseFloat(reading.value) || 0
-            return sum + val
-          }, 0)
-
-          // If API value is significantly larger than hourly sum, use hourly sum
-          // (this catches cases where API returns accumulated energy instead of differential)
-          if (apiValue > hourlySum * 1.5) {
-            console.warn(`[CompteurWidget] Daily value discrepancy detected for ${props.compteur.name}:`, {
-              apiValue: apiValue.toFixed(2),
-              hourlySumValue: hourlySum.toFixed(2),
-              usingHourlySum: true
-            })
-            return hourlySum
-          }
-        }
-
-        return apiValue
-      }
-      case 'hier': {
-        // For yesterday mode, validate the API value against hourly data sum
-        const apiValue = props.compteur.yesterday ?? 0
-        const yesterdayReadings = yesterdayHourlyReadings.value
-
-        if (yesterdayReadings.length > 0) {
-          // Sum all hourly readings
-          const hourlySum = yesterdayReadings.reduce((sum, reading) => {
-            const val = parseFloat(reading.value) || 0
-            return sum + val
-          }, 0)
-
-          // If API value is significantly larger than hourly sum, use hourly sum
-          if (apiValue > hourlySum * 1.5) {
-            console.warn(`[CompteurWidget] Yesterday value discrepancy detected for ${props.compteur.name}:`, {
-              apiValue: apiValue.toFixed(2),
-              hourlySumValue: hourlySum.toFixed(2),
-              usingHourlySum: true
-            })
-            return hourlySum
-          }
-        }
-
-        return apiValue
-      }
+      case 'jour':
+        // Use Puissance API's consumedToday directly (sum of hourly differentials)
+        return props.compteur.today ?? 0
+      case 'hier':
+        // Use Puissance API's consumedYesterday directly
+        return props.compteur.yesterday ?? 0
       default:
         return 0
     }
@@ -439,6 +395,8 @@ const timestamp = computed(() => {
  */
 const todayHourlyReadings = computed(() => {
   // Try to use real API data first
+  // NOTE: todayReadings from Puissance API are ALREADY differential consumption values (kWh per hour)
+  // They do NOT need further differential calculation - use values directly (same as yesterdayHourlyReadings)
   const apiReadings = props.compteur.todayReadings || []
   console.log('[CompteurWidget] todayHourlyReadings - API readings:', {
     name: props.compteur.name,
@@ -449,6 +407,7 @@ const todayHourlyReadings = computed(() => {
 
   if (apiReadings.length > 0) {
     // Group readings by hour of day (0-23) to ensure proper alignment
+    // Values are already differential consumption (kWh per hour) from the Puissance API
     const hourlyMap = new Map<number, number>()
 
     // Aggregate readings by hour using LOCAL time (not UTC)
@@ -464,61 +423,39 @@ const todayHourlyReadings = computed(() => {
       }
     })
 
-    // For differential: show bars for [23h-0h], [0h-1h], ..., [22h-23h] (24 bars)
-    // Need previous day's 23h value for first diff
+    console.log(`[CompteurWidget] Today - Processing ${apiReadings.length} API readings:`, {
+      name: props.compteur.name,
+      hoursWithData: Array.from(hourlyMap.entries()).sort((a, b) => a[0] - b[0]),
+      totalHours: hourlyMap.size
+    })
+
+    // Show bars for hours 0 to current hour
     const now = new Date()
     const currentHour = now.getHours()
-    // For today, show up to currentHour (i.e., if 10h, show 11 bars: 23h-0h, ..., 9h-10h)
-    const barCount = currentHour + 1
 
-    // Build array of values for hours -1 (23h of yesterday) to currentHour
-    // For each bar: diff = value at hour i - value at hour i-1
-    // Assume hourlyMap.get(-1) is yesterday's 23h, if available
-    // If not, set to 0
-    const values: number[] = []
-    for (let i = -1; i <= currentHour; i++) {
-      // For -1, try to get yesterday's 23h value if available
-      if (i === -1) {
-        // Try to get from yesterdayReadings if available
-        const yReadings = (props.compteur as any).yesterdayReadings || []
-        let y23 = 0
-        for (const r of yReadings) {
-          if (r.ts) {
-            const d = new Date(r.ts)
-            if (d.getHours() === 23) {
-              y23 = r.value || 0
-              break
-            }
-          }
-        }
-        values.push(y23)
-      } else {
-        values.push(hourlyMap.get(i) || 0)
+    // Create array with data for each hour 0 to currentHour
+    const hourlyData = Array.from({ length: currentHour + 1 }, (_, index) => {
+      const value = hourlyMap.get(index) || 0
+      return {
+        hour: index,
+        value: value,
+        hasData: hourlyMap.has(index)
       }
-    }
+    })
 
-    // Now, build bars for each diff: values[i] - values[i-1], for i=1..barCount
-    const bars = []
-    let maxValue = 1
-    for (let i = 1; i < values.length; i++) {
-      const diff = values[i] - values[i - 1]
-      bars.push({
-        hour: i - 1,
-        value: diff,
-        hasData: true // Assume always has data if present
-      })
-      if (diff > maxValue) maxValue = diff
-    }
+    // Find max value for scaling
+    const valuesWithData = hourlyData.filter(d => d.hasData).map(d => d.value)
+    const maxValue = valuesWithData.length > 0 ? Math.max(...valuesWithData) : 1
 
     // Transform to bar chart format
-    return bars.map((data: any) => {
-      const height = (data.value / maxValue) * 100
-      const hourLabel = `${(data.hour === 0 ? '0' : data.hour)}h`
+    return hourlyData.map((data: any) => {
+      const height = data.hasData ? (data.value / maxValue) * 100 : 0
+      const hourLabel = `${data.hour}h`
       return {
-        height: Math.max(5, height),
+        height: data.hasData ? Math.max(5, height) : 0,
         value: data.value.toFixed(1),
         label: hourLabel,
-        text: `${hourLabel}: ${data.value.toFixed(1)} kWh`,
+        text: data.hasData ? `${hourLabel}: ${data.value.toFixed(1)} kWh` : `${hourLabel}: no data`,
         hasData: data.hasData
       }
     })
