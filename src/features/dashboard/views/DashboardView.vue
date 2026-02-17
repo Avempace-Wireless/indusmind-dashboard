@@ -335,6 +335,7 @@ import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { useTelemetryDynamic } from '@/composables/useTelemetryDynamic'
+import { usePuissance } from '@/composables/usePuissance'
 import { DEFAULT_WIDGET_CONFIG, getTimeRange } from '@/config/telemetryConfig'
 import { useApiOnly } from '@/config/dataMode'
 import { isFeatureEnabled } from '@/config/featureFlags'
@@ -403,6 +404,9 @@ const {
   loading: telemetryLoading,
   error: telemetryError,
 } = useTelemetryDynamic()
+
+// Puissance composable for accurate consumption data (same as Puissance view)
+const { fetchPuissanceKPIs } = usePuissance()
 
 // Telemetry data cache for widgets - use reactive object instead of Map for Vue reactivity
 const telemetryCache = ref<Record<string, any>>({})
@@ -630,7 +634,16 @@ const gridLayoutClass = computed(() => {
 let timeInterval: number | null = null
 
 /**
- * Fetch telemetry data for selected compteurs using dynamic batch fetching
+ * Fetch telemetry data for selected compteurs using TWO strategies:
+ * 1. Batch API: For instantaneous readings (ActivePowerTotal chart, current power)
+ * 2. Puissance API: For consumption data (todayEnergy, yesterdayEnergy, hourly readings)
+ *
+ * The Puissance API uses the same proven approach as the Puissance view:
+ * - Fetches each hour individually (point-in-time, not interval aggregation)
+ * - Carries forward last known values for missing hours (no data gaps)
+ * - Calculates correct differentials with no gaps from 00h to now
+ * - Returns consumedToday as sum of hourly differentials
+ *
  * In API-only mode, shows "no data" if API fails - does NOT fall back to mock
  */
 async function fetchTelemetryData() {
@@ -643,7 +656,8 @@ async function fetchTelemetryData() {
   }
 
   telemetryFetchStatus.value = 'loading'
-  console.log('[DashboardView] Fetching telemetry for', compteursWithUUID.length, 'devices using DYNAMIC batch fetch')
+  console.log('[DashboardView] Fetching telemetry for', compteursWithUUID.length, 'devices')
+  console.log('[DashboardView] Strategy: Batch API (instantaneous) + Puissance API (consumption)')
   console.log('[DashboardView] API-only mode:', isApiOnlyMode.value)
 
   try {
@@ -652,37 +666,25 @@ async function fetchTelemetryData() {
 
     // Calculate time ranges
     const now = Date.now()
-    const { startTs: todayStart, endTs: todayEnd } = getTimeRange('today')
-    const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
-    const yesterdayEnd = todayStart - 1
 
-    // Build batch requests - fully dynamic from config
+    // ========================================================================
+    // STEP 1: Batch API for instantaneous readings only
+    // (ActivePowerTotal current value + chart data)
+    // ========================================================================
     const batchRequests = compteursWithUUID.flatMap(compteur => [
-      // Current value (latest single value) - need time range even with limit=1
+      // Current value (latest single value)
       {
         deviceUUID: compteur.deviceUUID!,
         config: {
           keys: [DEFAULT_WIDGET_CONFIG.instantaneous.key],
-          startTs: now - 24 * 60 * 60 * 1000, // Last 24 hours
+          startTs: now - 24 * 60 * 60 * 1000,
           endTs: now,
           limit: 1,
           agg: 'NONE' as const,
           orderBy: 'DESC' as const
         }
       },
-      // Today's cumulative energy - need time range
-      {
-        deviceUUID: compteur.deviceUUID!,
-        config: {
-          keys: [DEFAULT_WIDGET_CONFIG.daily.key],
-          startTs: todayStart,
-          endTs: todayEnd,
-          limit: 1,
-          agg: 'NONE' as const,
-          orderBy: 'DESC' as const
-        }
-      },
-      // Instantaneous readings (time-series chart data)
+      // Instantaneous readings (time-series chart data, 5-min intervals)
       {
         deviceUUID: compteur.deviceUUID!,
         config: {
@@ -695,235 +697,130 @@ async function fetchTelemetryData() {
       }
     ])
 
+    console.log(`[DashboardView] 🎯 Request breakdown:`)
+    console.log(`  - Batch API: ${batchRequests.length} requests (current power + instantaneous chart)`)
+    console.log(`  - Puissance API: ${compteursWithUUID.length} requests (1 per meter for consumption)`)
+
     // ========================================================================
-    // DIFFERENTIAL METHOD: Fetch today's AND yesterday's hourly readings
-    // using accumulated energy with interval-based aggregation
-    // Instead of 25 separate boundary requests, use 1 request with interval
-    // IMPORTANT: Start 1 interval BEFORE the period to capture the boundary point
+    // STEP 2: Execute BOTH in parallel
+    // - Batch API: instantaneous data
+    // - Puissance API: consumption data (same approach as Puissance view)
     // ========================================================================
+    const [batchResults, ...puissanceResults] = await Promise.all([
+      fetchBatchTelemetryOptimized(batchRequests),
+      ...compteursWithUUID.map(compteur =>
+        fetchPuissanceKPIs(compteur.deviceUUID!, { useCache: false })
+          .catch(err => {
+            console.error(`[DashboardView] Puissance API failed for ${compteur.name}:`, err)
+            return null
+          })
+      )
+    ])
 
-    const HOUR_INTERVAL = 60 * 60 * 1000 // 1 hour interval
+    console.log('[DashboardView] ✓ Both APIs returned data')
 
-    // Add today's accumulated energy request with hourly interval
-    // NOTE: Start from 1 hour before todayStart to ensure we capture the 00h boundary
-    batchRequests.push(
-      ...compteursWithUUID.map(compteur => ({
-        deviceUUID: compteur.deviceUUID!,
-        config: {
-          keys: ['AccumulatedActiveEnergyDelivered'],
-          startTs: todayStart - HOUR_INTERVAL,  // ← Include data BEFORE 00h to capture 00h point
-          endTs: todayEnd,
-          interval: HOUR_INTERVAL,
-          agg: 'MAX' as const,
-          calculateDifferential: true,
-          period: 'today' as const
-        }
-      }))
-    )
-
-    // Add yesterday's accumulated energy request with hourly interval
-    // NOTE: Start from 1 hour before yesterdayStart to ensure we capture the boundary
-    batchRequests.push(
-      ...compteursWithUUID.map(compteur => ({
-        deviceUUID: compteur.deviceUUID!,
-        config: {
-          keys: ['AccumulatedActiveEnergyDelivered'],
-          startTs: yesterdayStart - HOUR_INTERVAL,  // ← Include data BEFORE boundary
-          endTs: yesterdayEnd,
-          interval: HOUR_INTERVAL,
-          agg: 'MAX' as const,
-          calculateDifferential: true,
-          period: 'yesterday' as const
-        }
-      }))
-    )
-
-    console.log(`[DashboardView] 🎯 Batch requests breakdown:`)
-    console.log(`  - Static requests: 3 per meter (current, today energy, instantaneous)`)
-    console.log(`  - Today hourly: 1 request per meter (interval=1h)`)
-    console.log(`  - Yesterday hourly: 1 request per meter (interval=1h)`)
-    console.log(`  - Total: ${batchRequests.length} requests for ${compteursWithUUID.length} meters`)
-
-    console.log(`[DashboardView] ⚡ Fetching ${batchRequests.length} requests for ${compteursWithUUID.length} devices in 1 batch API call`)
-
-    // Execute optimized batch fetch (SINGLE backend call for everything)
-    const results = await fetchBatchTelemetryOptimized(batchRequests)
-
-    console.log('[DashboardView] ✓ Batch results received:', results)
-    console.log('[DashboardView] Results type:', typeof results, 'isMap:', results instanceof Map)
-
-    // Process results and update cache (yesterday data is already in the results!)
+    // ========================================================================
+    // STEP 3: Merge results from both APIs into telemetry cache
+    // ========================================================================
     let hasAnyData = false
-    compteursWithUUID.forEach(compteur => {
-      const deviceData = results.get(compteur.deviceUUID!) || []
+    compteursWithUUID.forEach((compteur, index) => {
+      const deviceData = batchResults.get(compteur.deviceUUID!) || []
+      const puissanceData = puissanceResults[index]
 
-      console.log(`[DashboardView] Processing ${compteur.name} (${compteur.deviceUUID}):`, {
-        deviceDataLength: deviceData.length,
-        deviceDataSample: deviceData.length > 0 ? deviceData.slice(0, 3) : 'empty',
-        allDeviceData: deviceData
-      })
-
-      if (deviceData.length > 0) {
+      if (deviceData.length > 0 || puissanceData?.success) {
         hasAnyData = true
       }
 
-      // Today's hourly readings - CALCULATE DIFFERENTIAL from interval-aggregated values
-      // API returns accumulated values at each hour, we need to calculate consumption deltas
-      // NOTE: Filter to todayStart onwards to exclude the pre-boundary data point
-      const todayAccumulatedRaw = deviceData
-        .filter(d => d.key === 'AccumulatedActiveEnergyDelivered' && d.ts >= todayStart - HOUR_INTERVAL && d.ts < todayEnd)
-        .sort((a, b) => a.ts - b.ts)
-
-      console.log(`[DashboardView] Today accumulated values for ${compteur.name}:`, {
-        count: todayAccumulatedRaw.length,
-        data: todayAccumulatedRaw.map(v => ({
-          ts: new Date(v.ts).toLocaleTimeString(),
-          value: v.value
-        }))
-      })
-
-      // Calculate hourly consumption from consecutive accumulated values
-      // Include all points starting from the pre-boundary point, then filter results to todayStart
-      const todayReadings: typeof deviceData = []
-      for (let i = 0; i < todayAccumulatedRaw.length - 1; i++) {
-        const current = todayAccumulatedRaw[i + 1]
-        const previous = todayAccumulatedRaw[i]
-        const currentValue = parseFloat(String(current.value))
-        const previousValue = parseFloat(String(previous.value))
-        const consumption = Math.max(0, currentValue - previousValue)
-
-        // Only include reading if the current point is within today's range
-        if (current.ts >= todayStart && current.ts < todayEnd) {
-          todayReadings.push({
-            ts: current.ts,
-            value: consumption,
-            key: 'AccumulatedActiveEnergyDelivered'
-          })
-        }
-      }
-
-      console.log(`[DashboardView] Today hourly readings (calculated differential) for ${compteur.name}:`, {
-        hoursProcessed: todayReadings.length,
-        data: todayReadings.map(d => ({
-          time: new Date(d.ts).toLocaleTimeString(),
-          value: d.value
-        }))
-      })
-
-      // Yesterday's hourly readings - CALCULATE DIFFERENTIAL from interval-aggregated values
-      // NOTE: Filter to include pre-boundary data for differential calculation
-      const yesterdayAccumulatedRaw = deviceData
-        .filter(d => d.key === 'AccumulatedActiveEnergyDelivered' && d.ts >= yesterdayStart - HOUR_INTERVAL && d.ts < todayStart)
-        .sort((a, b) => a.ts - b.ts)
-
-      console.log(`[DashboardView] Yesterday accumulated values for ${compteur.name}:`, {
-        count: yesterdayAccumulatedRaw.length,
-        data: yesterdayAccumulatedRaw.map(v => ({
-          ts: new Date(v.ts).toLocaleTimeString(),
-          value: v.value
-        }))
-      })
-
-      // Calculate hourly consumption from consecutive accumulated values
-      // Include all points starting from the pre-boundary point, then filter results to yesterdayStart-yesterdayEnd
-      const yesterdayReadings: typeof deviceData = []
-      for (let i = 0; i < yesterdayAccumulatedRaw.length - 1; i++) {
-        const current = yesterdayAccumulatedRaw[i + 1]
-        const previous = yesterdayAccumulatedRaw[i]
-        const currentValue = parseFloat(String(current.value))
-        const previousValue = parseFloat(String(previous.value))
-        const consumption = Math.max(0, currentValue - previousValue)
-
-        // Only include reading if the current point is within yesterday's range
-        if (current.ts >= yesterdayStart && current.ts < yesterdayEnd) {
-          yesterdayReadings.push({
-            ts: current.ts,
-            value: consumption,
-            key: 'AccumulatedActiveEnergyDelivered'
-          })
-        }
-      }
-
-      console.log(`[DashboardView] Yesterday hourly readings (calculated differential) for ${compteur.name}:`, {
-        hoursProcessed: yesterdayReadings.length,
-        data: yesterdayReadings.map(d => ({
-          time: new Date(d.ts).toLocaleTimeString(),
-          value: d.value
-        }))
-      })
-
-      // Instantaneous readings (last hour, 5-min intervals, ActivePowerTotal)
+      // From Batch API: Extract instantaneous readings and current power
       const instantReadings = deviceData
         .filter(d => instantConfig.keys.includes(d.key) && d.ts > now - instantConfig.timeRange)
         .sort((a, b) => a.ts - b.ts)
 
-      // Extract current power (latest ActivePowerTotal)
       const currentPowerData = deviceData
         .filter(d => d.key === 'ActivePowerTotal')
         .sort((a, b) => b.ts - a.ts)
         .slice(0, 1)
 
-      // Extract today's energy (latest AccumulatedActiveEnergyDelivered for today)
-      const todayEnergyData = deviceData
-        .filter(d => d.key === 'AccumulatedActiveEnergyDelivered' && d.ts >= todayStart && d.ts < todayEnd)
-        .sort((a, b) => b.ts - a.ts)
-        .slice(0, 1)
+      // From Puissance API: Extract consumption data (same proven approach as Puissance view)
+      // The Puissance API handles:
+      // - Hourly point-in-time fetches (no interval aggregation gaps)
+      // - Baseline from 23h previous day
+      // - Carry-forward for missing hours
+      // - Correct differential calculations from 00h to now
+      let todayEnergyTotal = 0
+      let yesterdayEnergyTotal = 0
+      let todayReadings: Array<{ ts: number; value: number; key: string }> = []
+      let yesterdayReadings: Array<{ ts: number; value: number; key: string }> = []
 
-      // Calculate total yesterday energy consumption
-      const yesterdayEnergyTotal = yesterdayReadings.length > 0
-        ? yesterdayReadings.reduce((sum, d) => sum + d.value, 0)
-        : 0
+      if (puissanceData?.success && puissanceData.data) {
+        // Use Puissance API values directly (same as Puissance view)
+        todayEnergyTotal = puissanceData.data.consumedToday ?? 0
+        yesterdayEnergyTotal = puissanceData.data.consumedYesterday ?? 0
+
+        // Convert hourlyData to todayReadings format for charts
+        // hourlyData contains today's hourly consumption (differential, from 00h to now)
+        if (puissanceData.data.hourlyData && puissanceData.data.hourlyData.length > 0) {
+          todayReadings = puissanceData.data.hourlyData.map((d: any) => ({
+            ts: d.ts,
+            value: d.value,
+            key: 'AccumulatedActiveEnergyDelivered'
+          }))
+        }
+
+        console.log(`[DashboardView] Puissance data for ${compteur.name}:`, {
+          consumedToday: todayEnergyTotal,
+          consumedYesterday: yesterdayEnergyTotal,
+          hourlyPoints: todayReadings.length,
+          hourlyData: todayReadings.map(d => ({
+            time: new Date(d.ts).toLocaleTimeString(),
+            value: d.value.toFixed(2)
+          })),
+          source: 'Puissance API (same as Puissance view)'
+        })
+      } else {
+        console.warn(`[DashboardView] ⚠️ Puissance API returned no data for ${compteur.name}`)
+      }
+
+      // Use Puissance API instantaneous power if batch didn't return it
+      const currentPower = currentPowerData.length > 0
+        ? currentPowerData[0].value
+        : (puissanceData?.data?.instantaneousPower ?? 0)
 
       console.log(`[DashboardView] Extracted data for ${compteur.name}:`, {
-        currentPowerKey: DEFAULT_WIDGET_CONFIG.instantaneous.key,
-        currentPowerDataCount: currentPowerData.length,
-        currentPowerValue: currentPowerData.length > 0 ? currentPowerData[0].value : 'NOT FOUND',
-        todayEnergyKey: DEFAULT_WIDGET_CONFIG.daily.key,
-        todayEnergyDataCount: todayEnergyData.length,
-        todayEnergyValue: todayEnergyData.length > 0 ? todayEnergyData[0].value : 'NOT FOUND',
-        yesterdayReadingsCount: yesterdayReadings.length,
-        yesterdayEnergyTotal: yesterdayEnergyTotal,
-        instantReadingsCount: instantReadings.length,
+        currentPower,
+        todayEnergyTotal,
+        todayEnergySource: 'Puissance API (sum of hourly differentials)',
+        yesterdayEnergyTotal,
         todayReadingsCount: todayReadings.length,
-        totalDataPoints: deviceData.length,
-        uniqueKeys: [...new Set(deviceData.map(d => d.key))],
-        timeRanges: {
-          todayStart: new Date(todayStart).toISOString(),
-          todayEnd: new Date(todayEnd).toISOString(),
-          yesterdayStart: new Date(yesterdayStart).toISOString(),
-          yesterdayEnd: new Date(yesterdayEnd).toISOString(),
-          now: new Date(now).toISOString()
-        }
+        instantReadingsCount: instantReadings.length
       })
 
       const telemetryData = {
         id: compteur.id,
-        currentPower: currentPowerData.length > 0 ? currentPowerData[0].value : 0,  // Already in kW
-        todayEnergy: todayEnergyData.length > 0 ? todayEnergyData[0].value : 0,
+        currentPower,
+        todayEnergy: todayEnergyTotal,
         yesterdayEnergy: yesterdayEnergyTotal,
         instantReadings,
         todayReadings,
         yesterdayReadings,
-        hasData: deviceData.length > 0
+        hasData: deviceData.length > 0 || (puissanceData?.success ?? false)
       }
 
       telemetryCache.value[compteur.id] = telemetryData
 
       console.log(`[DashboardView] ✓ Telemetry cached for ${compteur.name}:`, {
-        currentPower: telemetryData.currentPower.toFixed(2),
+        currentPower: typeof currentPower === 'number' ? currentPower.toFixed(2) : currentPower,
         todayEnergy: telemetryData.todayEnergy.toFixed(2),
         yesterdayEnergy: telemetryData.yesterdayEnergy.toFixed(2),
-        instantReadingsCount: instantReadings.length,
-        yesterdayReadingsCount: yesterdayReadings.length,
         todayReadingsCount: todayReadings.length,
-        hasData: hasAnyData,
-        fullTelemetryData: telemetryData
+        instantReadingsCount: instantReadings.length,
+        source: 'Puissance API + Batch API'
       })
     })
 
     // Set status based on whether we got any data
     telemetryFetchStatus.value = hasAnyData ? 'success' : 'no-data'
-    console.log('[DashboardView] ✓ Batch telemetry fetch complete, status:', telemetryFetchStatus.value)
+    console.log('[DashboardView] ✓ Telemetry fetch complete, status:', telemetryFetchStatus.value)
   } catch (error) {
     // In API-only mode, don't fall back - show error state
     if (isApiOnlyMode.value) {

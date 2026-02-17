@@ -186,7 +186,14 @@ export function useTelemetryDynamic() {
 
       const responseData = await response.json()
       const ms = Math.round(performance.now() - start)
-      console.log(`[useTelemetryDynamic] ✓ Batch succeeded in ${ms}ms for ${Object.keys(responseData).length} devices`)
+      console.log(`[useTelemetryDynamic] ✓ Batch succeeded in ${ms}ms for ${Object.keys(responseData).length} devices`, {
+        deviceCount: Object.keys(responseData).length,
+        responseSample: Object.entries(responseData).slice(0, 2).map(([uuid, data]: [string, any]) => ({
+          uuid: uuid.substring(0, 20),
+          keys: Object.keys(data),
+          totalPoints: Object.values(data).reduce((sum: number, v: any) => sum + (Array.isArray(v) ? v.length : 0), 0)
+        }))
+      })
 
       const results = new Map<string, TelemetryDataPoint[]>()
 
@@ -199,22 +206,54 @@ export function useTelemetryDynamic() {
             if (Array.isArray(values)) {
               for (const point of values) {
                 if (point && typeof point === 'object' && 'ts' in point && 'value' in point) {
+                  // Handle both string and number values
+                  let numValue: number
+                  if (typeof point.value === 'string') {
+                    numValue = parseFloat(point.value)
+                  } else if (typeof point.value === 'number') {
+                    numValue = point.value
+                  } else {
+                    console.warn(`[useTelemetryDynamic] Skipping invalid value type for ${key}:`, typeof point.value, point.value)
+                    continue
+                  }
+
+                  // Validate numeric value
+                  if (isNaN(numValue)) {
+                    console.warn(`[useTelemetryDynamic] Skipping NaN value for ${key}:`, point.value)
+                    continue
+                  }
+
                   dataPoints.push({
                     ts: point.ts as number,
-                    value: typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number),
-                    key
+                    value: numValue,
+                    key,
+                    // Preserve additional fields from differential calculations
+                    ...(point as any).date && { date: (point as any).date },
+                    ...(point as any).currentValue !== undefined && { currentValue: (point as any).currentValue },
+                    ...(point as any).previousValue !== undefined && { previousValue: (point as any).previousValue }
                   })
+                } else {
+                  if (!point || typeof point !== 'object') {
+                    console.warn(`[useTelemetryDynamic] Invalid point structure for key ${key}:`, point)
+                  }
                 }
               }
+            } else {
+              console.warn(`[useTelemetryDynamic] Key ${key} has non-array value:`, typeof values)
             }
           }
         }
+
         results.set(deviceUUID, dataPoints)
+        console.log(`[useTelemetryDynamic] Parsed ${deviceUUID}:`, {
+          totalPoints: dataPoints.length,
+          uniqueKeys: [...new Set(dataPoints.map(p => p.key))].length
+        })
       }
 
       return results
     } catch (err) {
-      console.error('[useTelemetryDynamic] Batch failed:', err)
+      console.error('[useTelemetryDynamic] Batch failed:', err instanceof Error ? err.message : String(err))
       throw err
     }
   }
