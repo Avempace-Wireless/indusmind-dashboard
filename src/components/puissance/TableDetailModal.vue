@@ -96,8 +96,8 @@
                         <!-- Icon for date/time columns -->
                         <span v-if="col.format === 'date'" class="material-symbols-outlined text-sm text-blue-500 dark:text-blue-400 flex-shrink-0">calendar_today</span>
                         <span v-else-if="col.format === 'time'" class="material-symbols-outlined text-sm text-purple-500 dark:text-purple-400 flex-shrink-0">schedule</span>
-                        <!-- Formatted value with tooltip showing original value -->
-                        <span :title="`${t('tableDetailModal.original')}: ${row[col.key]}`" class="cursor-help">
+                        <!-- Formatted value -->
+                        <span>
                           {{ formatCell(row[col.key], col.format) }}
                         </span>
                       </div>
@@ -157,14 +157,33 @@
           </div>
 
           <!-- Footer -->
-          <div class="px-8 py-4 border-t border-gray-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex justify-end gap-3">
-            <button
-              @click="exportTable"
-              class="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-slate-700 transition"
-            >
-              <span class="material-symbols-outlined inline mr-2 text-lg align-text-bottom">download</span>
-              {{ t('tableDetailModal.exportCsv') }}
-            </button>
+          <div class="px-8 py-4 border-t border-gray-200 dark:border-slate-700 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex justify-between items-center gap-3">
+            <div class="flex gap-2">
+              <button
+                @click="exportToCSV"
+                class="px-3 py-2 rounded-lg border border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition flex items-center gap-2"
+                title="Export CSV"
+              >
+                <span class="material-symbols-outlined text-lg">description</span>
+                <span class="text-sm">CSV</span>
+              </button>
+              <button
+                @click="exportToExcel"
+                class="px-3 py-2 rounded-lg border border-green-500 dark:border-green-600 text-green-700 dark:text-green-400 font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition flex items-center gap-2"
+                title="Export Excel"
+              >
+                <span class="material-symbols-outlined text-lg">table_chart</span>
+                <span class="text-sm">Excel</span>
+              </button>
+              <button
+                @click="exportToPDF"
+                class="px-3 py-2 rounded-lg border border-red-500 dark:border-red-600 text-red-700 dark:text-red-400 font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition flex items-center gap-2"
+                title="Export  PDF"
+              >
+                <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+                <span class="text-sm">PDF</span>
+              </button>
+            </div>
             <button
               @click="closeModal"
               class="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium hover:shadow-lg transition"
@@ -179,7 +198,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 interface TableColumn {
@@ -192,7 +211,6 @@ interface Props {
   isOpen: boolean
   tableTitle: string
   meterName: string
-  columns: TableColumn[]
   hourlyData: Record<string, any>[]
   dailyData: Record<string, any>[]
   monthlyData: Record<string, any>[]
@@ -214,6 +232,23 @@ const sortBy = ref<string | null>(null)
 const sortOrder = ref<'asc' | 'desc'>('asc')
 const itemsPerPage = 15
 
+// Watch for prop changes and update active period when modal opens
+watch(() => props.initialPeriod, (newPeriod) => {
+  if (newPeriod) {
+    activePeriod.value = newPeriod
+    currentPage.value = 1 // Reset to first page
+  }
+}, { immediate: true })
+
+// Reset when modal opens to ensure correct initial period display
+watch(() => props.isOpen, (isOpen) => {
+  if (isOpen && props.initialPeriod) {
+    activePeriod.value = props.initialPeriod
+    currentPage.value = 1
+    searchQuery.value = ''
+  }
+})
+
 const closeModal = () => {
   emit('close')
 }
@@ -227,6 +262,24 @@ const currentData = computed(() => {
     default:
       return props.hourlyData
   }
+})
+
+// Dynamic columns based on active period
+const columns = computed<TableColumn[]>(() => {
+  const timestampFormat = activePeriod.value === 'hourly' ? 'time' : 'date'
+
+  return [
+    {
+      key: 'timestamp',
+      label: t('puissance.tables.columns.timestamp'),
+      format: timestampFormat
+    },
+    {
+      key: 'power',
+      label: t('puissance.tables.columns.power'),
+      format: 'number'
+    },
+  ]
 })
 
 const filteredData = computed(() => {
@@ -343,13 +396,13 @@ const formatCell = (value: any, format?: string): string => {
     }
   }
 
-  // Helper to format date as YYYY-MM-DD
+  // Helper to format date as DD/MM/YYYY (more user-friendly for daily data)
   const formatDate = (date: Date): string => {
     try {
       const year = date.getFullYear()
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
+      return `${day}/${month}/${year}` // European format: DD/MM/YYYY
     } catch {
       return ''
     }
@@ -407,19 +460,180 @@ const formatCell = (value: any, format?: string): string => {
   return value ? String(value) : '—'
 }
 
-const exportTable = () => {
-  // Generate CSV
-  const headers = props.columns.map((c) => c.label).join(',')
-  const rows = filteredData.value.map((row) =>
-    props.columns.map((col) => formatCell(row[col.key], col.format)).join(',')
-  )
-  const csv = [headers, ...rows].join('\n')
+const exportToCSV = () => {
+  // Helper to escape CSV values properly
+  const escapeCSV = (value: string): string => {
+    const str = value ?? ''
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return `"${str.replace(/"/g, '""')}"`
+    }
+    return str
+  }
 
-  // Download
+  // Generate CSV
+  const headers = columns.value.map((c) => escapeCSV(c.label)).join(',')
+  const rows = filteredData.value.map((row) =>
+    columns.value.map((col) => escapeCSV(formatCell(row[col.key], col.format))).join(',')
+  )
+  const csv = [headers, ...rows].join('\r\n')
+
+  // Add UTF-8 BOM
+  const BOM = '\uFEFF'
+  const csvWithBOM = BOM + csv
+
+  // Download CSV file
+  const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
-  link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+  link.href = URL.createObjectURL(blob)
   link.download = `${props.tableTitle}-${activePeriod.value}.csv`
   link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+const exportToExcel = () => {
+  // Generate Excel XML (SpreadsheetML format)
+  const escapeXML = (str: string): string => {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;')
+  }
+
+  // Build Excel XML
+  let excelXML = `<?xml version="1.0" encoding="UTF-8"?>\n`
+  excelXML += `<?mso-application progid="Excel.Sheet"?>\n`
+  excelXML += `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n`
+  excelXML += `  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n`
+  excelXML += `  <Worksheet ss:Name="${escapeXML(activePeriod.value)}">\n`
+  excelXML += `    <Table>\n`
+
+  // Header row
+  excelXML += `      <Row>\n`
+  columns.value.forEach(col => {
+    excelXML += `        <Cell><Data ss:Type="String">${escapeXML(col.label)}</Data></Cell>\n`
+  })
+  excelXML += `      </Row>\n`
+
+  // Data rows
+  filteredData.value.forEach(row => {
+    excelXML += `      <Row>\n`
+    columns.value.forEach(col => {
+      const value = formatCell(row[col.key], col.format)
+      const type = col.format === 'number' ? 'Number' : 'String'
+      excelXML += `        <Cell><Data ss:Type="${type}">${escapeXML(value)}</Data></Cell>\n`
+    })
+    excelXML += `      </Row>\n`
+  })
+
+  excelXML += `    </Table>\n`
+  excelXML += `  </Worksheet>\n`
+  excelXML += `</Workbook>`
+
+  // Download Excel file
+  const blob = new Blob([excelXML], { type: 'application/vnd.ms-excel' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `${props.tableTitle}-${activePeriod.value}.xls`
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+const exportToPDF = () => {
+  // Create a printable HTML document
+  const printWindow = window.open('', '', 'width=800,height=600')
+  if (!printWindow) return
+
+  const tableHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${props.tableTitle}</title>
+      <style>
+        @media print {
+          @page { margin: 1cm; }
+        }
+        body {
+          font-family: Arial, sans-serif;
+          padding: 20px;
+          color: #1f2937;
+        }
+        h1 {
+          font-size: 24px;
+          margin-bottom: 8px;
+          color: #111827;
+        }
+        .subtitle {
+          font-size: 14px;
+          color: #6b7280;
+          margin-bottom: 20px;
+        }
+        .info {
+          font-size: 12px;
+          color: #9ca3af;
+          margin-bottom: 20px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        th, td {
+          border: 1px solid #e5e7eb;
+          padding: 12px;
+          text-align: left;
+        }
+        th {
+          background-color: #f9fafb;
+          font-weight: 600;
+          color: #374151;
+        }
+        tr:nth-child(even) {
+          background-color: #f9fafb;
+        }
+        .footer {
+          margin-top: 20px;
+          font-size: 11px;
+          color: #9ca3af;
+          text-align: center;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>${props.tableTitle}</h1>
+      <div class="subtitle">${props.meterName}</div>
+      <div class="info">Period: ${activePeriod.value.toUpperCase()} | Generated: ${new Date().toLocaleString()}</div>
+      <table>
+        <thead>
+          <tr>
+            ${columns.value.map(col => `<th>${col.label}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${filteredData.value.map(row => `
+            <tr>
+              ${columns.value.map(col => `<td>${formatCell(row[col.key], col.format)}</td>`).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="footer">
+        ${filteredData.value.length} records | Exported from Indusmind Dashboard
+      </div>
+    </body>
+    </html>
+  `
+
+  printWindow.document.write(tableHTML)
+  printWindow.document.close()
+
+  // Wait for content to load, then print
+  printWindow.onload = () => {
+    printWindow.print()
+    // Close window after printing (user can cancel)
+    printWindow.onafterprint = () => printWindow.close()
+  }
 }
 </script>
 

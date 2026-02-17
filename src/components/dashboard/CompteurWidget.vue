@@ -297,16 +297,65 @@ const showNoDataState = computed(() => {
 
 /**
  * Get current value based on mode with null safety
+ * For 'jour' mode: validates API daily value against hourly data sum
+ * If API value seems incorrect (too large), uses hourly data sum instead
  */
 const currentValue = computed(() => {
   const value = (() => {
     switch (currentMode.value) {
       case 'instantanée':
         return props.compteur.instantaneous ?? 0
-      case 'jour':
-        return props.compteur.today ?? 0
-      case 'hier':
-        return props.compteur.yesterday ?? 0
+      case 'jour': {
+        // For daily mode, validate the API value against hourly data sum
+        const apiValue = props.compteur.today ?? 0
+        const todayReadings = todayHourlyReadings.value
+
+        if (todayReadings.length > 0) {
+          // Sum all hourly readings
+          const hourlySum = todayReadings.reduce((sum, reading) => {
+            const val = parseFloat(reading.value) || 0
+            return sum + val
+          }, 0)
+
+          // If API value is significantly larger than hourly sum, use hourly sum
+          // (this catches cases where API returns accumulated energy instead of differential)
+          if (apiValue > hourlySum * 1.5) {
+            console.warn(`[CompteurWidget] Daily value discrepancy detected for ${props.compteur.name}:`, {
+              apiValue: apiValue.toFixed(2),
+              hourlySumValue: hourlySum.toFixed(2),
+              usingHourlySum: true
+            })
+            return hourlySum
+          }
+        }
+
+        return apiValue
+      }
+      case 'hier': {
+        // For yesterday mode, validate the API value against hourly data sum
+        const apiValue = props.compteur.yesterday ?? 0
+        const yesterdayReadings = yesterdayHourlyReadings.value
+
+        if (yesterdayReadings.length > 0) {
+          // Sum all hourly readings
+          const hourlySum = yesterdayReadings.reduce((sum, reading) => {
+            const val = parseFloat(reading.value) || 0
+            return sum + val
+          }, 0)
+
+          // If API value is significantly larger than hourly sum, use hourly sum
+          if (apiValue > hourlySum * 1.5) {
+            console.warn(`[CompteurWidget] Yesterday value discrepancy detected for ${props.compteur.name}:`, {
+              apiValue: apiValue.toFixed(2),
+              hourlySumValue: hourlySum.toFixed(2),
+              usingHourlySum: true
+            })
+            return hourlySum
+          }
+        }
+
+        return apiValue
+      }
       default:
         return 0
     }
@@ -415,46 +464,61 @@ const todayHourlyReadings = computed(() => {
       }
     })
 
-    // For today's data, only show hours up to current hour (not future hours)
+    // For differential: show bars for [23h-0h], [0h-1h], ..., [22h-23h] (24 bars)
+    // Need previous day's 23h value for first diff
     const now = new Date()
     const currentHour = now.getHours()
+    // For today, show up to currentHour (i.e., if 10h, show 11 bars: 23h-0h, ..., 9h-10h)
+    const barCount = currentHour + 1
 
-    // Create array with data for each hour 0 to currentHour (not all 24 hours)
-    const hourlyData = Array.from({ length: currentHour + 1 }, (_, index) => {
-      const value = hourlyMap.get(index) || 0
-      return {
-        hour: index,
-        value: value,
-        ts: new Date().setUTCHours(index, 0, 0, 0),
-        hasData: hourlyMap.has(index)
+    // Build array of values for hours -1 (23h of yesterday) to currentHour
+    // For each bar: diff = value at hour i - value at hour i-1
+    // Assume hourlyMap.get(-1) is yesterday's 23h, if available
+    // If not, set to 0
+    const values: number[] = []
+    for (let i = -1; i <= currentHour; i++) {
+      // For -1, try to get yesterday's 23h value if available
+      if (i === -1) {
+        // Try to get from yesterdayReadings if available
+        const yReadings = (props.compteur as any).yesterdayReadings || []
+        let y23 = 0
+        for (const r of yReadings) {
+          if (r.ts) {
+            const d = new Date(r.ts)
+            if (d.getHours() === 23) {
+              y23 = r.value || 0
+              break
+            }
+          }
+        }
+        values.push(y23)
+      } else {
+        values.push(hourlyMap.get(i) || 0)
       }
-    })
+    }
 
-    // Find max value for scaling (only from hours with actual data)
-    const valuesWithData = hourlyData.filter(d => d.hasData).map(d => d.value)
-    const maxValue = valuesWithData.length > 0 ? Math.max(...valuesWithData) : 1
+    // Now, build bars for each diff: values[i] - values[i-1], for i=1..barCount
+    const bars = []
+    let maxValue = 1
+    for (let i = 1; i < values.length; i++) {
+      const diff = values[i] - values[i - 1]
+      bars.push({
+        hour: i - 1,
+        value: diff,
+        hasData: true // Assume always has data if present
+      })
+      if (diff > maxValue) maxValue = diff
+    }
 
-    console.log('[CompteurWidget] Processing hourly readings:', {
-      name: props.compteur.name,
-      hourlyDataLength: hourlyData.length,
-      hoursWithData: Array.from(hourlyMap.entries()).sort((a, b) => a[0] - b[0]),
-      maxValue,
-      firstDataHour: hourlyMap.size > 0 ? Math.min(...Array.from(hourlyMap.keys())) : 'none',
-      lastDataHour: hourlyMap.size > 0 ? Math.max(...Array.from(hourlyMap.keys())) : 'none'
-    })
-
-    // Transform to bar chart format - show all 24 hours for alignment with full chart
-    // For hours without data, show minimal bar (0) to maintain grid alignment
-    return hourlyData.map((data: any) => {
-      const height = data.hasData ? (data.value / maxValue) * 100 : 0
-      const hourLabel = `${data.hour}h`
-
+    // Transform to bar chart format
+    return bars.map((data: any) => {
+      const height = (data.value / maxValue) * 100
+      const hourLabel = `${(data.hour === 0 ? '0' : data.hour)}h`
       return {
-        height: data.hasData ? Math.max(5, height) : 0, // Only show bar if data exists
+        height: Math.max(5, height),
         value: data.value.toFixed(1),
         label: hourLabel,
-        text: data.hasData ? `${hourLabel}: ${data.value.toFixed(1)} kWh` : `${hourLabel}: no data`,
-        ts: data.ts,
+        text: `${hourLabel}: ${data.value.toFixed(1)} kWh`,
         hasData: data.hasData
       }
     })

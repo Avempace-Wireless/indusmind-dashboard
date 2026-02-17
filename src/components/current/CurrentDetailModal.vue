@@ -135,6 +135,7 @@ interface Props {
   meterColor: string
   data: (number | null)[]
   labels: string[]
+  initialPeriod?: 'hour' | 'day' | 'week' | 'month' | 'year'
   hourlyData?: { labels: string[]; values: (number | null)[] }
   dailyData?: { labels: string[]; values: (number | null)[] }
   weeklyData?: { labels: string[]; values: (number | null)[] }
@@ -148,7 +149,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const selectedPeriod = ref<'hour' | 'day' | 'week' | 'month' | 'year'>('day')
+const selectedPeriod = ref<'hour' | 'day' | 'week' | 'month' | 'year'>(props.initialPeriod || 'day')
 const { t, locale } = useI18n()
 const detailChartRef = ref<HTMLCanvasElement | null>(null)
 let detailChartInstance: ChartJS | null = null
@@ -381,9 +382,23 @@ watch(
   () => props.isOpen,
   (newVal) => {
     if (newVal) {
+      // Reset to initial period when modal opens
+      selectedPeriod.value = props.initialPeriod || 'day'
       setTimeout(() => {
         initDetailChart()
       }, 100)
+    }
+  }
+)
+
+// Watch for initialPeriod changes
+watch(
+  () => props.initialPeriod,
+  (newPeriod) => {
+    if (newPeriod && props.isOpen) {
+      selectedPeriod.value = newPeriod
+      xStart.value = 0
+      xEnd.value = Math.max(0, periodData.value.labels.length - 1)
     }
   }
 )
@@ -427,6 +442,9 @@ watch([xStart, xEnd], () => {
 watch(
   () => selectedPeriod.value,
   () => {
+    // Reset slider to show full range of new period
+    xStart.value = 0
+    xEnd.value = Math.max(0, periodData.value.labels.length - 1)
     if (!detailChartInstance) return
     detailChartInstance.data.datasets[0].label = dynamicChartTitle.value
     detailChartInstance.data.labels = visibleLabels.value as any
