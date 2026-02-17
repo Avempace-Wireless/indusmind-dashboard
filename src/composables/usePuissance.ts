@@ -86,6 +86,9 @@ export function usePuissance() {
       // Build query string
       const params = new URLSearchParams()
       if (options?.debug) params.append('debug', 'true')
+      // Send client timezone offset so backend calculates day boundaries in user's local timezone
+      // getTimezoneOffset() returns minutes, e.g., -60 for UTC+1
+      params.append('timezoneOffset', String(new Date().getTimezoneOffset()))
 
       // Fetch from new API endpoint (note: no /api prefix, backend routes are mounted directly)
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
