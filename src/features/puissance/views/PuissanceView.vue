@@ -826,7 +826,9 @@ async function loadCurrentMeterDataSilently() {
 
     // Direct API call without triggering composable's isLoading
     const apiBaseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4000'
-    const endpoint = `${apiBaseUrl}/telemetry/${meter.deviceUUID}/puissance`
+    const params = new URLSearchParams()
+    params.append('timezoneOffset', String(new Date().getTimezoneOffset()))
+    const endpoint = `${apiBaseUrl}/telemetry/${meter.deviceUUID}/puissance?${params.toString()}`
 
     const response = await fetch(endpoint)
 
@@ -1186,9 +1188,9 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
       hourlyTimestamps = powerData.map((d: any) => d.ts)  // Keep raw timestamps
       hourlyLabels = powerData.map((d: any) => {
         const date = new Date(d.ts)
-        // Use UTC hours to ensure 00h-23h display regardless of timezone
-        const hours = date.getUTCHours().toString().padStart(2, '0')
-        const minutes = date.getUTCMinutes().toString().padStart(2, '0')
+        // Use local hours since backend now computes day boundaries in client's timezone
+        const hours = date.getHours().toString().padStart(2, '0')
+        const minutes = date.getMinutes().toString().padStart(2, '0')
         return `${hours}:${minutes}`
       })
 
