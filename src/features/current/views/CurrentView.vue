@@ -434,12 +434,25 @@
         <!-- Day Period Table -->
         <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-          <div>
-            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-              <span class="material-symbols-outlined text-indigo-500 text-lg sm:text-xl">schedule</span>
-              <span class="truncate">Données Horaires (Aujourd'hui)</span>
-            </h3>
-            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Mesures de courant par heure</p>
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
+                <span class="material-symbols-outlined text-indigo-500 text-lg sm:text-xl">schedule</span>
+                <span class="truncate">Données Horaires (Aujourd'hui)</span>
+              </h3>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Mesures de courant par heure</p>
+            </div>
+            <div class="flex gap-1.5">
+              <button @click="exportTableToCSV('day')" class="p-2 rounded-lg border border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" title="Export CSV">
+                <span class="material-symbols-outlined text-lg">description</span>
+              </button>
+              <button @click="exportTableToExcel('day')" class="p-2 rounded-lg border border-green-500 dark:border-green-600 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition" title="Export Excel">
+                <span class="material-symbols-outlined text-lg">table_chart</span>
+              </button>
+              <button @click="exportTableToPDF('day')" class="p-2 rounded-lg border border-red-500 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Export PDF">
+                <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="p-3 sm:p-6">
@@ -503,12 +516,25 @@
       <!-- Week Period Table -->
       <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-          <div>
-            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-              <span class="material-symbols-outlined text-purple-500 text-lg sm:text-xl">date_range</span>
-              <span class="truncate">Données Hebdomadaires (7 Derniers Jours)</span>
-            </h3>
-            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Mesures de courant par jour</p>
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
+                <span class="material-symbols-outlined text-purple-500 text-lg sm:text-xl">date_range</span>
+                <span class="truncate">Données Hebdomadaires (7 Derniers Jours)</span>
+              </h3>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Mesures de courant par jour</p>
+            </div>
+            <div class="flex gap-1.5">
+              <button @click="exportTableToCSV('week')" class="p-2 rounded-lg border border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition" title="Export CSV">
+                <span class="material-symbols-outlined text-lg">description</span>
+              </button>
+              <button @click="exportTableToExcel('week')" class="p-2 rounded-lg border border-green-500 dark:border-green-600 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition" title="Export Excel">
+                <span class="material-symbols-outlined text-lg">table_chart</span>
+              </button>
+              <button @click="exportTableToPDF('week')" class="p-2 rounded-lg border border-red-500 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition" title="Export PDF">
+                <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="p-3 sm:p-6">
@@ -572,12 +598,25 @@
       <!-- Month Period Table -->
       <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-          <div>
-            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-              <span class="material-symbols-outlined text-green-500 text-lg sm:text-xl">calendar_month</span>
-              <span class="truncate">Données Mensuelles (30 Derniers Jours)</span>
-            </h3>
-            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Mesures de courant par jour</p>
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
+                <span class="material-symbols-outlined text-green-500 text-lg sm:text-xl">calendar_month</span>
+                <span class="truncate">Données Mensuelles (30 Derniers Jours)</span>
+              </h3>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Mesures de courant par jour</p>
+            </div>
+            <div class="flex gap-1.5">
+              <button @click="exportTableToCSV('month')" class="p-2 rounded-lg border border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition flex items-center" title="Export CSV">
+                <span class="material-symbols-outlined text-lg">description</span>
+              </button>
+              <button @click="exportTableToExcel('month')" class="p-2 rounded-lg border border-green-500 dark:border-green-600 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition flex items-center" title="Export Excel">
+                <span class="material-symbols-outlined text-lg">table_chart</span>
+              </button>
+              <button @click="exportTableToPDF('month')" class="p-2 rounded-lg border border-red-500 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition flex items-center" title="Export PDF">
+                <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="p-3 sm:p-6">
@@ -634,12 +673,25 @@
       <!-- Year Period Table -->
       <div class="bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-          <div>
-            <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
-              <span class="material-symbols-outlined text-orange-500 text-lg sm:text-xl">calendar_today</span>
-              <span class="truncate">Données Annuelles (12 Derniers Mois)</span>
-            </h3>
-            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Mesures de courant par mois</p>
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-1">
+                <span class="material-symbols-outlined text-orange-500 text-lg sm:text-xl">calendar_today</span>
+                <span class="truncate">Données Annuelles (12 Derniers Mois)</span>
+              </h3>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Mesures de courant par mois</p>
+            </div>
+            <div class="flex gap-1.5">
+              <button @click="exportTableToCSV('year')" class="p-2 rounded-lg border border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition flex items-center" title="Export CSV">
+                <span class="material-symbols-outlined text-lg">description</span>
+              </button>
+              <button @click="exportTableToExcel('year')" class="p-2 rounded-lg border border-green-500 dark:border-green-600 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition flex items-center" title="Export Excel">
+                <span class="material-symbols-outlined text-lg">table_chart</span>
+              </button>
+              <button @click="exportTableToPDF('year')" class="p-2 rounded-lg border border-red-500 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition flex items-center" title="Export PDF">
+                <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="p-3 sm:p-6">
@@ -715,6 +767,7 @@
       :is-open="chartModalOpen"
       :chart-title="chartModalData.title"
       :chart-subtitle="chartModalData.subtitle"
+      :initial-period="chartModalData.initialPeriod"
       :meter-name="getMeterName(currentMeterId)"
       :meter-color="metersStore.getMeterColor(currentMeterId)"
       :data="chartModalData.data"
@@ -784,6 +837,7 @@ const chartModalOpen = ref(false)
 const chartModalData = ref({
   title: '',
   subtitle: '',
+  initialPeriod: 'day' as 'hour' | 'day' | 'week' | 'month' | 'year',
   data: [] as number[],
   labels: [] as string[],
   hourlyData: { labels: [] as string[], values: [] as number[] },
@@ -1116,6 +1170,262 @@ const getTableStats = computed(() => {
 
   return { min, max, avg }
 })
+
+// Export functions for tables
+const exportTableToCSV = (period: 'day' | 'week' | 'month' | 'year') => {
+  let data: any[] = []
+  let title = ''
+
+  switch (period) {
+    case 'day':
+      data = getDayTableData.value
+      title = 'Données Horaires (Aujourdhui)'
+      break
+    case 'week':
+      data = getWeekTableData.value
+      title = 'Données Hebdomadaires (7 Derniers Jours)'
+      break
+    case 'month':
+      data = getMonthTableData.value
+      title = 'Données Mensuelles (30 Derniers Jours)'
+      break
+    case 'year':
+      data = getYearTableData.value
+      title = 'Données Annuelles (12 Derniers Mois)'
+      break
+  }
+
+  if (data.length === 0) return
+
+  // Helper to escape CSV values
+  const escapeCSV = (value: string): string => {
+    const str = value ?? ''
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      return `"${str.replace(/"/g, '""')}"`
+    }
+    return str
+  }
+
+  // Generate CSV
+  const headers = period === 'day' ? 'Heure,Courant (A)' : period === 'year' ? 'Mois,Courant (A)' : 'Date,Courant (A)'
+  const rows = data.map((row) => {
+    const timestamp = escapeCSV(row.timestamp)
+    const current = row.current !== null && row.current !== undefined ? row.current.toFixed(2) : '—'
+    return `${timestamp},${current}`
+  })
+  const csv = [headers, ...rows].join('\r\n')
+
+  // Add UTF-8 BOM
+  const BOM = '\uFEFF'
+  const csvWithBOM = BOM + csv
+
+  // Download CSV file
+  const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `${title}.csv`
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+const exportTableToExcel = (period: 'day' | 'week' | 'month' | 'year') => {
+  let data: any[] = []
+  let title = ''
+
+  switch (period) {
+    case 'day':
+      data = getDayTableData.value
+      title = 'Données Horaires (Aujourdhui)'
+      break
+    case 'week':
+      data = getWeekTableData.value
+      title = 'Données Hebdomadaires (7 Derniers Jours)'
+      break
+    case 'month':
+      data = getMonthTableData.value
+      title = 'Données Mensuelles (30 Derniers Jours)'
+      break
+    case 'year':
+      data = getYearTableData.value
+      title = 'Données Annuelles (12 Derniers Mois)'
+      break
+  }
+
+  if (data.length === 0) return
+
+  // Generate Excel XML
+  const escapeXML = (str: string): string => {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;')
+  }
+
+  let excelXML = `<?xml version="1.0" encoding="UTF-8"?>\n`
+  excelXML += `<?mso-application progid="Excel.Sheet"?>\n`
+  excelXML += `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n`
+  excelXML += `  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n`
+  excelXML += `  <Worksheet ss:Name="Data">\n`
+  excelXML += `    <Table>\n`
+
+  // Header row
+  const headerLabel = period === 'day' ? 'Heure' : period === 'year' ? 'Mois' : 'Date'
+  excelXML += `      <Row>\n`
+  excelXML += `        <Cell><Data ss:Type="String">${escapeXML(headerLabel)}</Data></Cell>\n`
+  excelXML += `        <Cell><Data ss:Type="String">Courant (A)</Data></Cell>\n`
+  excelXML += `      </Row>\n`
+
+  // Data rows
+  data.forEach(row => {
+    excelXML += `      <Row>\n`
+    excelXML += `        <Cell><Data ss:Type="String">${escapeXML(row.timestamp)}</Data></Cell>\n`
+    const current = row.current !== null && row.current !== undefined ? row.current.toFixed(2) : '—'
+    excelXML += `        <Cell><Data ss:Type="Number">${escapeXML(current)}</Data></Cell>\n`
+    excelXML += `      </Row>\n`
+  })
+
+  excelXML += `    </Table>\n`
+  excelXML += `  </Worksheet>\n`
+  excelXML += `</Workbook>`
+
+  // Download Excel file
+  const blob = new Blob([excelXML], { type: 'application/vnd.ms-excel' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `${title}.xls`
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+const exportTableToPDF = (period: 'day' | 'week' | 'month' | 'year') => {
+  let data: any[] = []
+  let title = ''
+  let subtitle = ''
+
+  switch (period) {
+    case 'day':
+      data = getDayTableData.value
+      title = 'Données Horaires (Aujourdhui)'
+      subtitle = 'Mesures de courant par heure'
+      break
+    case 'week':
+      data = getWeekTableData.value
+      title = 'Données Hebdomadaires (7 Derniers Jours)'
+      subtitle = 'Mesures de courant par jour'
+      break
+    case 'month':
+      data = getMonthTableData.value
+      title = 'Données Mensuelles (30 Derniers Jours)'
+      subtitle = 'Mesures de courant par jour'
+      break
+    case 'year':
+      data = getYearTableData.value
+      title = 'Données Annuelles (12 Derniers Mois)'
+      subtitle = 'Mesures de courant par mois'
+      break
+  }
+
+  if (data.length === 0) return
+
+  const printWindow = window.open('', '', 'width=800,height=600')
+  if (!printWindow) return
+
+  const headerLabel = period === 'day' ? 'Heure' : period === 'year' ? 'Mois' : 'Date'
+
+  const tableHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${title}</title>
+      <style>
+        @media print {
+          @page { margin: 1cm; }
+        }
+        body {
+          font-family: Arial, sans-serif;
+          padding: 20px;
+          color: #1f2937;
+        }
+        h1 {
+          font-size: 24px;
+          margin-bottom: 8px;
+          color: #111827;
+        }
+        .subtitle {
+          font-size: 14px;
+          color: #6b7280;
+          margin-bottom: 20px;
+        }
+        .info {
+          font-size: 12px;
+          color: #9ca3af;
+          margin-bottom: 20px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        th, td {
+          border: 1px solid #e5e7eb;
+          padding: 12px;
+          text-align: left;
+        }
+        th {
+          background-color: #f9fafb;
+          font-weight: 600;
+          color: #374151;
+        }
+        tr:nth-child(even) {
+          background-color: #f9fafb;
+        }
+        .footer {
+          margin-top: 20px;
+          font-size: 11px;
+          color: #9ca3af;
+          text-align: center;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>${title}</h1>
+      <div class="subtitle">${subtitle}</div>
+      <div class="info">Généré: ${new Date().toLocaleString('fr-FR')}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>${headerLabel}</th>
+            <th>Courant (A)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(row => `
+            <tr>
+              <td>${row.timestamp}</td>
+              <td>${row.current !== null && row.current !== undefined ? row.current.toFixed(2) : '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="footer">
+        ${data.length} enregistrements | Exporté depuis Indusmind Dashboard
+      </div>
+    </body>
+    </html>
+  `
+
+  printWindow.document.write(tableHTML)
+  printWindow.document.close()
+
+  // Wait for content to load, then print
+  printWindow.onload = () => {
+    printWindow.print()
+    // Close window after printing
+    printWindow.onafterprint = () => printWindow.close()
+  }
+}
 
 const selectMeter = (index: number) => {
   currentMeterIndex.value = index
@@ -2534,24 +2844,29 @@ const showChartModal = async (chartType: 'day' | 'week' | 'month' | 'year') => {
 
   let title = ''
   let subtitle = ''
+  let initialPeriod: 'hour' | 'day' | 'week' | 'month' | 'year' = 'day'
 
   // Set title and subtitle based on chart type
   switch (chartType) {
     case 'day':
       title = t('current.chart24h')
       subtitle = t('current.chart24hDescription')
+      initialPeriod = 'hour'
       break
     case 'week':
       title = t('current.chartWeekly')
       subtitle = t('current.chartWeeklyDescription')
+      initialPeriod = 'day'
       break
     case 'month':
       title = t('current.chartDaily')
       subtitle = t('current.chartDailyDescription')
+      initialPeriod = 'day'
       break
     case 'year':
       title = t('current.chartYearly')
       subtitle = t('current.chartYearlyDescription')
+      initialPeriod = 'month'
       break
   }
 
@@ -2564,6 +2879,7 @@ const showChartModal = async (chartType: 'day' | 'week' | 'month' | 'year') => {
   chartModalData.value = {
     title,
     subtitle,
+    initialPeriod,
     data: [],
     labels: [],
     hourlyData: {
@@ -2611,7 +2927,7 @@ onUnmounted(() => {
   chartDaily?.destroy()
   chartWeekly?.destroy()
   chartYearly?.destroy()
-  
+
   // Clean up auto-refresh interval
   if (telemetryRefreshInterval) {
     clearInterval(telemetryRefreshInterval)

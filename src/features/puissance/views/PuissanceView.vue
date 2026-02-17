@@ -526,7 +526,6 @@
       :is-open="tableModalOpen"
       :table-title="tableModalData.title"
       :meter-name="currentMeterData.name"
-      :columns="tableModalData.columns"
       :hourly-data="currentMeterData.hourlyTableData"
       :daily-data="currentMeterData.dailyTableData"
       :monthly-data="currentMeterData.dailyAverageData"
@@ -927,7 +926,6 @@ const chartModalData = ref({
 
 const tableModalData = ref({
   title: '',
-  columns: [] as any[],
   initialPeriod: 'hourly' as 'hourly' | 'daily' | 'monthly',
 })
 
@@ -1154,23 +1152,24 @@ function transformMeterData(meterId: string): TransformedMeterData | null {
         .filter((d: any) => d.key === 'AccumulatedActiveEnergyDelivered')
         .sort((a: any, b: any) => a.ts - b.ts)  // Ensure chronological order
 
-      // Filter out zero values (future hours) and detect outliers
-      const nonZeroData = powerData.filter((d: any) => d.value > 0)
+      // Keep all data points including zeros to show full 24-hour timeline starting from 00h
+      // Only filter out future hours (timestamps beyond now)
+      const now = Date.now()
+      powerData = powerData.filter((d: any) => d.ts <= now)
 
-      // Detect and remove outliers (values > 10x the median)
-      if (nonZeroData.length > 2) {
-        const values = nonZeroData.map((d: any) => d.value).sort((a: number, b: number) => a - b)
+      // Detect and remove outliers (values > 10x the median, excluding zeros)
+      const nonZeroValues = powerData.filter((d: any) => d.value > 0)
+      if (nonZeroValues.length > 2) {
+        const values = nonZeroValues.map((d: any) => d.value).sort((a: number, b: number) => a - b)
         const median = values[Math.floor(values.length / 2)]
         const threshold = median * 10  // Outlier if > 10x median
 
-        const beforeFilter = nonZeroData.length
-        powerData = nonZeroData.filter((d: any) => d.value <= threshold)
+        const beforeFilter = powerData.length
+        powerData = powerData.filter((d: any) => d.value === 0 || d.value <= threshold)
 
         if (beforeFilter > powerData.length) {
           console.log(`[Puissance] Removed ${beforeFilter - powerData.length} outlier(s) from hourly data (threshold: ${threshold.toFixed(2)} kWh)`)
         }
-      } else {
-        powerData = nonZeroData
       }
 
       console.log(`[Puissance] DIFFERENTIAL hourly data after filtering:`, {
@@ -1782,29 +1781,20 @@ const showTableModal = (tableType: 'hourly' | 'daily' | 'monthly') => {
   if (!currentMeterData.value) return
 
   let title = ''
-  let format: 'time' | 'date' | 'datetime' | 'number' | 'default' = 'time'
 
   switch (tableType) {
     case 'hourly':
       title = t('puissance.tables.hourlyPower', { meter: currentMeterData.value.name })
-      format = 'time'
       break
     case 'daily':
       title = t('puissance.tables.dailyTotal')
-      format = 'date'
       break
     case 'monthly':
       title = t('puissance.tables.dailyAverage')
-      format = 'date'
       break
   }
 
-  const columns = [
-    { key: 'timestamp', label: t('puissance.tables.columns.timestamp'), format },
-    { key: 'power', label: t('puissance.tables.columns.power'), format: 'number' as const },
-  ]
-
-  tableModalData.value = { title, columns, initialPeriod: tableType }
+  tableModalData.value = { title, initialPeriod: tableType }
   tableModalOpen.value = true
 }
 </script>
