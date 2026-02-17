@@ -729,6 +729,7 @@ const sensorsStore = useSensorsStore()
 
 // Thermal API state
 const isFetchingThermal = ref(true)
+let thermalAutoRefreshInterval: ReturnType<typeof setInterval> | null = null
 const thermalError = ref<string | null>(null)
 
 // Chart data state
@@ -769,6 +770,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (typeof window === 'undefined') return
   window.removeEventListener('resize', handleResize)
+  // Clear auto-refresh interval
+  if (thermalAutoRefreshInterval) {
+    clearInterval(thermalAutoRefreshInterval)
+    thermalAutoRefreshInterval = null
+  }
 })
 
 interface Zone {
@@ -2399,7 +2405,7 @@ function buildZonesFromThermalAPI(thermalData: any) {
 }
 
 /**
- * Refresh thermal data from API
+ * Refresh thermal data from API (manual, shows loader)
  */
 async function refreshThermalData() {
   try {
@@ -2428,12 +2434,36 @@ async function refreshThermalData() {
 }
 
 /**
+ * Silent auto-refresh: fetches latest thermal data without showing loader
+ * Called every 15 seconds to keep sensor readings up-to-date
+ */
+async function silentRefreshThermalData() {
+  if (dataMode !== 'api') return
+  // Skip if a manual refresh is already in progress
+  if (isFetchingThermal.value) return
+
+  try {
+    const thermalData = await fetchThermalDashboardData(false)
+
+    if (thermalData.status === 'success' && thermalData.sensors.length > 0) {
+      buildZonesFromThermalAPI(thermalData)
+      await loadChartData()
+    }
+  } catch (error) {
+    // Silent refresh — don't show errors to user
+    console.warn('[ThermalView] Silent refresh failed:', error instanceof Error ? error.message : String(error))
+  }
+}
+
+/**
  * Load aggregated temperature chart data for all displayed zones
  * Uses 12-hour window with 2-minute intervals
  */
-async function loadChartData() {
+async function loadChartData(showLoader = true) {
   try {
-    isFetchingChartData.value = true
+    if (showLoader && chartDataMap.value.size === 0) {
+      isFetchingChartData.value = true
+    }
     console.log('[ThermalView] Loading temperature chart data...')
 
     // Get sensor IDs from displayed zones
@@ -2515,6 +2545,9 @@ onMounted(async () => {
   } finally {
     isFetchingThermal.value = false
   }
+
+  // Set up silent auto-refresh every 15 seconds (no loader)
+  thermalAutoRefreshInterval = setInterval(silentRefreshThermalData, 15000)
 })
 
 const sensorDisplayKey = computed(() => sensorsForDisplay.value.map((s) => s.id).join('|'))
