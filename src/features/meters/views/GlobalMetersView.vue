@@ -229,7 +229,7 @@ const {
   initialize: initializeCompteurSelection,
 } = useCompteurSelection()
 
-const { dashboardStore, initializeRealtimeData, stopRealtimeData } = useRealtimeData()
+const { dashboardStore } = useRealtimeData()
 
 const { fetchGlobalMeters, fetchTemperatureChart, loading: globalMetersLoading, error: globalMetersError } = useGlobalMeters()
 
@@ -240,32 +240,30 @@ const isConnected = computed(() => dashboardStore.isConnected)
 let clockInterval: number | null = null
 let refreshInterval: number | null = null
 
-onMounted(() => {
+onMounted(async () => {
   // Initialize meter selection
   initializeCompteurSelection()
 
-  // Initialize real-time data
-  initializeRealtimeData()
+  // Load compteurs list from API
+  try {
+    await dashboardStore.loadCompteurs()
+    console.log('[GlobalMetersView] Loaded compteurs:', dashboardStore.compteurs.length)
+  } catch (error) {
+    console.error('[GlobalMetersView] Failed to load compteurs:', error)
+  }
 
   // Update clock
   clockInterval = setInterval(() => {
     currentTime.value = new Date()
   }, 1000)
 
-  // Refresh global meters data every 10 seconds when meters are selected and initial load is complete
-/*   refreshInterval = setInterval(() => {
-    if (selectedCompteurs.value.length > 0 && !isFirstLoad.value) {
-      fetchGlobalMetersData(false)
-    }
-  }, 10000) */
+  // Perform initial load with loading indicators
+  await performInitialLoad()
 
-  // Initial fetch if meters are already selected
-  if (selectedCompteurs.value.length > 0) {
-    fetchGlobalMetersData()
-  }
-
-  // Fetch temperature data on mount
-  fetchTemperatureData()
+  // Start silent refresh interval AFTER initial load completes
+  refreshInterval = setInterval(() => {
+    silentRefresh()
+  }, 15000) // 15 seconds
 })
 
 onUnmounted(() => {
@@ -275,14 +273,26 @@ onUnmounted(() => {
   if (refreshInterval) {
     clearInterval(refreshInterval)
   }
-  stopRealtimeData()
 })
 
 // Watch for compteur selection changes and fetch API data
+// For user-initiated selection changes, we show a brief loading state
 watch(selectedCompteurs, async (newCompteurs, oldCompteurs) => {
   console.log('[GlobalMetersView] Selection changed:', newCompteurs.length, 'meters')
+
+  // Skip if this is the first load (handled by performInitialLoad)
+  if (isFirstLoad.value) {
+    return
+  }
+
   if (newCompteurs.length > 0) {
-    await fetchGlobalMetersData()
+    // User changed selection - show loading briefly
+    isLoadingAPI.value = true
+    try {
+      await fetchGlobalMetersData(false) // Don't use internal loader since we're managing it here
+    } finally {
+      isLoadingAPI.value = false
+    }
   } else {
     globalMetersList.value = []
   }
@@ -344,6 +354,110 @@ async function fetchTemperatureData() {
     temperatureChartData.value = []
   } finally {
     isLoadingTemperature.value = false
+  }
+}
+
+/**
+ * Perform initial data load with loading indicators
+ * Shows loaders during first-time data fetch
+ */
+async function performInitialLoad() {
+  try {
+    // Fetch all required data in parallel
+    const promises: Promise<any>[] = []
+
+    // Only fetch global meters if compteurs are selected
+    if (selectedCompteurs.value.length > 0) {
+      promises.push(fetchGlobalMetersData(true))
+    }
+
+    // Always fetch temperature data
+    promises.push(fetchTemperatureData())
+
+    // Wait for all initial data to load
+    await Promise.all(promises)
+
+    console.log('[GlobalMetersView] Initial load completed')
+  } catch (error) {
+    console.error('[GlobalMetersView] Error during initial load:', error)
+  } finally {
+    // Mark initial load as complete
+    isFirstLoad.value = false
+  }
+}
+
+/**
+ * Silent refresh - fetches all data without showing loaders
+ * Updates state atomically only if all APIs succeed
+ * Keeps old data on failure to maintain UX consistency
+ */
+async function silentRefresh() {
+  try {
+    console.log('[GlobalMetersView] Starting silent refresh...')
+
+    const deviceUUIDs = selectedCompteurs.value
+      .filter((c) => c.deviceUUID)
+      .map((c) => c.deviceUUID!)
+
+    // Prepare all API calls
+    const apiCalls: Promise<any>[] = []
+
+    // Fetch global meters data if there are selected compteurs
+    let globalMetersPromise: Promise<any> | null = null
+    if (deviceUUIDs.length > 0) {
+      globalMetersPromise = fetchGlobalMeters(deviceUUIDs, false)
+      apiCalls.push(globalMetersPromise)
+    }
+
+    // Fetch temperature chart data
+    const temperaturePromise = fetchTemperatureChart()
+    apiCalls.push(temperaturePromise)
+
+    // Wait for all APIs to complete in parallel
+    const results = await Promise.all(apiCalls)
+
+    // Validate all responses
+    let allSuccess = true
+    let globalMetersResponse = null
+    let temperatureResponse = null
+
+    if (globalMetersPromise && deviceUUIDs.length > 0) {
+      globalMetersResponse = results[0]
+      if (!globalMetersResponse || !globalMetersResponse.success) {
+        allSuccess = false
+        console.error('[GlobalMetersView] Silent refresh: Global meters API failed')
+      }
+      temperatureResponse = results[1]
+    } else {
+      temperatureResponse = results[0]
+    }
+
+    if (!temperatureResponse || !temperatureResponse.success) {
+      allSuccess = false
+      console.error('[GlobalMetersView] Silent refresh: Temperature API failed')
+    }
+
+    // Atomic update: only update state if ALL APIs succeeded
+    if (allSuccess) {
+      // Update global meters data
+      if (globalMetersResponse && globalMetersResponse.success) {
+        globalMetersList.value = globalMetersResponse.data
+      }
+
+      // Update temperature data
+      if (temperatureResponse && temperatureResponse.success) {
+        temperatureChartData.value = temperatureResponse.data.sensors
+      }
+
+      console.log('[GlobalMetersView] Silent refresh completed successfully')
+    } else {
+      // Keep old data on failure - do not update state
+      console.warn('[GlobalMetersView] Silent refresh: One or more APIs failed, keeping existing data')
+    }
+  } catch (error) {
+    // Silent error logging - do not interrupt user interaction
+    console.error('[GlobalMetersView] Silent refresh error:', error)
+    // Keep existing data - no state changes
   }
 }
 
