@@ -731,6 +731,10 @@ function formatNumericValue(value: number | null | undefined): string {
   if (value === null || value === undefined) {
     return '0'
   }
+  // Display 0 if value is negative
+  if (value < 0) {
+    return '0'
+  }
   // Return just the number with appropriate decimal places
   const config = keyConfig.value
   const decimals = (config as any)?.decimals || 1

@@ -362,6 +362,7 @@ console.log('[DashboardView] Using new widget system:', useNewWidgetSystem.value
 const { t } = useI18n()
 
 const currentTime = ref(new Date())
+const lastDataUpdateTime = ref(new Date())
 const energyChartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('today')
 const temperatureChartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('today')
 
@@ -440,11 +441,13 @@ const equipmentSortDirection = ref<'asc' | 'desc'>('asc')
 // ============================================================================
 
 const lastUpdateTime = computed(() => {
-  const hours = currentTime.value.getHours().toString().padStart(2, '0')
-  const minutes = currentTime.value.getMinutes().toString().padStart(2, '0')
-  const seconds = currentTime.value.getSeconds().toString().padStart(2, '0')
-  const date = currentTime.value.toLocaleDateString('fr-FR')
-  return `${date}, ${hours}:${minutes}:${seconds}`
+  const hours = lastDataUpdateTime.value.getHours().toString().padStart(2, '0')
+  const minutes = lastDataUpdateTime.value.getMinutes().toString().padStart(2, '0')
+  const seconds = lastDataUpdateTime.value.getSeconds().toString().padStart(2, '0')
+  const day = lastDataUpdateTime.value.getDate().toString().padStart(2, '0')
+  const month = (lastDataUpdateTime.value.getMonth() + 1).toString().padStart(2, '0')
+  const year = lastDataUpdateTime.value.getFullYear().toString().slice(-2)
+  return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`
 })
 
 const metrics = computed(() => dashboardStore.metrics)
@@ -821,11 +824,15 @@ async function fetchTelemetryData() {
     // Set status based on whether we got any data
     telemetryFetchStatus.value = hasAnyData ? 'success' : 'no-data'
     console.log('[DashboardView] ✓ Telemetry fetch complete, status:', telemetryFetchStatus.value)
+
+    // Update last data refresh timestamp
+    lastDataUpdateTime.value = new Date()
   } catch (error) {
     // In API-only mode, don't fall back - show error state
     if (isApiOnlyMode.value) {
       console.error('[DashboardView] API-only mode: Failed to fetch telemetry data (no fallback):', error)
       telemetryFetchStatus.value = 'no-data'
+      lastDataUpdateTime.value = new Date()
 
       // Clear cache when in API-only mode and API fails
       telemetryCache.value = {}
