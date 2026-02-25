@@ -235,6 +235,7 @@
                 v-else
                 :sensors="filteredTemperatureChartData"
                 :loading="isLoadingTemperature"
+                :sensor-colors="sensorColorMap"
               />
             </div>
           </div>
@@ -274,7 +275,6 @@
               :style="{
                 borderColor: getSensorColor(index),
                 boxShadow: `0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 0 0 2px ${getSensorColor(index)}15`,
-                minHeight: 'clamp(200px, 40vh, 350px)',
                 ...getSensorCardGridSpan(index, enrichedThermalSensors.length)
               }"
             >
@@ -367,21 +367,22 @@
                 :loading="isLoadingTemperature"
                 :show-legend="true"
                 :chart-label="$t('globalMeters.temperature24h', '24h Temperature')"
+                :sensor-colors="sensorColorMap"
               />
             </div>
           </div>
 
           <!-- Monthly Temperature Chart -->
-          <div class="overflow-hidden rounded-lg md:rounded-xl border border-indigo-300 md:border-2 dark:border-indigo-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
-            <div class="border-b border-indigo-300 md:border-b-2 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
-              <div class="flex items-center gap-1 md:gap-2">
+          <div class="overflow-hidden bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0 rounded-lg md:rounded-xl border border-indigo-300 md:border-2 dark:border-indigo-800">
+            <div class="border-b border-indigo-300 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 flex-shrink-0 px-1.5 md:px-3 2xl:px-2 py-1 md:py-1.5 2xl:py-1 md:border-b-2">
+              <div class="flex items-center gap-1 md:gap-2 2xl:gap-1">
                 <div class="h-1 w-1 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500"></div>
-                <h3 class="text-xs md:text-xs font-bold text-gray-900 dark:text-white">
+                <h3 class="text-xs md:text-xs 2xl:text-[10px] font-bold text-gray-900 dark:text-white">
                   {{ $t('globalMeters.temperatureMonthly', 'Monthly Temperature') }} (°C)
                 </h3>
               </div>
             </div>
-            <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
+            <div class="flex-1 flex flex-col bg-white dark:bg-gray-800 min-h-0 p-0.5 md:p-1.5 2xl:p-1">
               <div v-if="filteredMonthlyChartData.length === 0 && !isLoadingMonthlyChart" class="w-full h-full flex items-center justify-center">
                 <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
               </div>
@@ -390,6 +391,7 @@
                 :sensors="filteredMonthlyChartData"
                 :available-sensors="availableMonthlySensors"
                 :loading="isLoadingMonthlyChart"
+                :loading-more="isLoadingMoreMonthly"
                 :selected-sensor-id="selectedMonthlySensorId"
                 @sensor-selected="handleMonthlySensorSelected"
               />
@@ -440,10 +442,21 @@ const temperatureChartData = ref<any[]>([])
 const monthlyChartData = ref<any[]>([])
 const isLoadingTemperature = ref(false)
 const isLoadingMonthlyChart = ref(false)
+const isLoadingMoreMonthly = ref(false)  // True while fetching additional weeks after first response
 const isLoadingThermal = ref(false)
 const thermalZones = ref<ThermalSensorData[]>([])
 const thermalSummary = ref<ThermalDashboardData['summary'] | null>(null)
 const selectedMonthlySensorId = ref<string>('')
+
+// Get combined grid styles for meters
+const getMetersGridCombinedStyle = computed(() => {
+  return getMetersGridStyle()
+})
+
+// Get combined grid styles for sensors
+const getSensorsGridCombinedStyle = computed(() => {
+  return getSensorsGridStyle()
+})
 
 // Available sensors for monthly chart selector
 const availableMonthlySensors = computed(() => {
@@ -624,6 +637,7 @@ async function fetchMonthlyTemperatureData(sensorId?: string) {
 
   // Show loading indicator and clear previous data
   isLoadingMonthlyChart.value = true
+  isLoadingMoreMonthly.value = true
   monthlyChartData.value = []
 
   let isFirstCallback = true
@@ -643,10 +657,13 @@ async function fetchMonthlyTemperatureData(sensorId?: string) {
       }
       console.log('[GlobalMetersView] monthlyChartData updated, length:', monthlyChartData.value.length, 'data points:', monthlyChartData.value[0]?.data?.length)
     }, sensorIds)
+    // Fully loaded - hide loading more indicator
+    isLoadingMoreMonthly.value = false
     console.log('[GlobalMetersView] Monthly temperature chart fully loaded:', monthlyChartData.value.length, 'sensors')
   } catch (error) {
     console.error('[GlobalMetersView] Error fetching monthly temperature data:', error)
     isLoadingMonthlyChart.value = false
+    isLoadingMoreMonthly.value = false
     monthlyChartData.value = []
   }
 }
@@ -878,13 +895,29 @@ const filteredMonthlyChartData = computed(() => {
   return monthlyChartData.value.filter(s => selectedSensorUUIDs.value.has(s.deviceUUID))
 })
 
-// Sensor color palette (match thermal-management)
+// Sensor color palette - modern, accessible, diverse colors for temperature visualization
+// Designed for high contrast in both light and dark themes
 const SENSOR_COLORS = [
-  '#8b5cf6', '#a855f7', '#7c3aed', '#6d28d9',
-  '#c084fc', '#d946ef', '#a78bfa', '#9333ea'
+  '#0891b2', // Cyan 600 - cool blue-green
+  '#f59e0b', // Amber 500 - warm orange
+  '#10b981', // Emerald 500 - healthy green
+  '#3b82f6', // Blue 500 - classic blue
+  '#8b5cf6', // Violet 500 - purple accent
+  '#ec4899', // Pink 500 - warm pink
+  '#14b8a6', // Teal 500 - blue-green
+  '#6366f1'  // Indigo 500 - deep blue
 ]
 
 const getSensorColor = (index: number) => SENSOR_COLORS[index % SENSOR_COLORS.length]
+
+// Generate sensor color map for chart consistency
+const sensorColorMap = computed(() => {
+  const colorMap: Record<string, string> = {}
+  enrichedThermalSensors.value.forEach((sensor, index) => {
+    colorMap[sensor.deviceUUID] = getSensorColor(index)
+  })
+  return colorMap
+})
 
 // Sensor grid style — identical approach to energy meters (getMetersGridStyle)
 const getSensorsGridStyle = () => {

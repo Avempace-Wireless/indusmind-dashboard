@@ -62,6 +62,7 @@ interface SensorData {
 const props = defineProps<{
   sensors: SensorData[]
   loading: boolean
+  sensorColors?: Record<string, string>  // Map of deviceUUID -> color hex
 }>()
 
 // Filter sensors that have temperature data
@@ -69,21 +70,47 @@ const sensorsWithData = computed(() => {
   return props.sensors.filter(s => s.data && s.data.length > 0)
 })
 
-// Color palette for sensors using dashboard colors
-const getSensorColor = (index: number, label?: string, name?: string) => {
-  const colorConfig = getMeterColorByName(label || name, index)
-  // Convert hex to rgba with transparency for fill
+// Color palette for sensors - use passed colors or fall back to defaults
+const DEFAULT_SENSOR_COLORS = [
+  '#0891b2', // Cyan 600
+  '#f59e0b', // Amber 500
+  '#10b981', // Emerald 500
+  '#3b82f6', // Blue 500
+  '#8b5cf6', // Violet 500
+  '#ec4899', // Pink 500
+  '#14b8a6', // Teal 500
+  '#6366f1'  // Indigo 500
+]
+
+const getSensorColor = (index: number, deviceUUID?: string, label?: string, name?: string) => {
+  // If parent passed custom colors, use them for matching deviceUUID
+  if (props.sensorColors && deviceUUID && props.sensorColors[deviceUUID]) {
+    const hex = props.sensorColors[deviceUUID]
+    const hexToRgba = (hex: string, alpha: number) => {
+      const r = parseInt(hex.slice(1, 3), 16)
+      const g = parseInt(hex.slice(3, 5), 16)
+      const b = parseInt(hex.slice(5, 7), 16)
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`
+    }
+    return {
+      bg: hexToRgba(hex, 0.1),
+      border: hex,
+      point: hex
+    }
+  }
+
+  // Fallback to default palette
+  const hex = DEFAULT_SENSOR_COLORS[index % DEFAULT_SENSOR_COLORS.length]
   const hexToRgba = (hex: string, alpha: number) => {
     const r = parseInt(hex.slice(1, 3), 16)
     const g = parseInt(hex.slice(3, 5), 16)
     const b = parseInt(hex.slice(5, 7), 16)
     return `rgba(${r}, ${g}, ${b}, ${alpha})`
   }
-
   return {
-    bg: hexToRgba(colorConfig.hex, 0.08),
-    border: colorConfig.hex,
-    point: colorConfig.hex
+    bg: hexToRgba(hex, 0.1),
+    border: hex,
+    point: hex
   }
 }
 
@@ -110,7 +137,7 @@ const chartData = computed(() => {
 
   // Create datasets for each sensor
   const datasets = sensorsWithData.value.map((sensor, index) => {
-    const colors = getSensorColor(index, sensor.sensorLabel, sensor.sensorName)
+    const colors = getSensorColor(index, sensor.deviceUUID, sensor.sensorLabel, sensor.sensorName)
     const data = sensor.data.map(point => point.value)
 
     return {

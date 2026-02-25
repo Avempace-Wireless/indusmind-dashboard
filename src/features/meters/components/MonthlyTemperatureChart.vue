@@ -28,8 +28,14 @@
       <div class="flex-1 min-h-0">
         <LineChart :data="chartData" :options="chartOptions" />
       </div>
-      <div class="mt-1 text-center text-xs text-slate-600 dark:text-slate-400 flex-shrink-0">
+      <div class="mt-1 text-center text-xs text-slate-600 dark:text-slate-400 flex-shrink-0 flex items-center justify-center gap-2">
         <p>{{ $t('globalMeters.temperatureMonthlyInfo', 'Min/Max temperature over last 30 days') }}</p>
+        <!-- Loading more indicator -->
+        <div v-if="loadingMore" class="flex items-center gap-1">
+          <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" style="animation-delay: 0ms"></div>
+          <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" style="animation-delay: 150ms"></div>
+          <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" style="animation-delay: 300ms"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -79,6 +85,7 @@ const props = defineProps<{
   sensors: SensorData[]  // Currently loaded sensor data
   availableSensors: SensorOption[]  // All available sensors for dropdown
   loading: boolean
+  loadingMore?: boolean  // True while fetching additional data after first response
   selectedSensorId?: string  // Controlled from parent
 }>()
 
@@ -191,7 +198,9 @@ const chartOptions = computed(() => {
         padding: 12,
         callbacks: {
           title: (ctx: any) => {
-            return selectedSensor.value?.sensorLabel || ''
+            const sensorName = selectedSensor.value?.sensorLabel || ''
+            const dateLabel = ctx[0]?.label || ''
+            return [sensorName, dateLabel]
           },
           label: (ctx: any) => {
             const label = ctx.dataset.label || ''
