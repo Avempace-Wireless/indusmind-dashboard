@@ -3,14 +3,54 @@
     <div class="w-full flex flex-col gap-0 px-1 py-1 global-meters-view">
       <div class="border-b border-slate-200 dark:border-border-dark pb-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
-          <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">Vue Compteurs Globaux</h1>
-          <button
-            @click="showCompteurSelector = true"
-            class="flex w-full sm:w-auto items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm self-start"
-          >
-            <span class="material-symbols-outlined text-base">tune</span>
-            {{ $t('dashboard.manageMeters') }}
-          </button>
+          <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">{{ $t('globalMeters.pageTitle') }}</h1>
+          <div class="flex flex-wrap items-center gap-2 xs:gap-3">
+            <!-- Energy / Temperature Toggle Switch -->
+            <div class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 p-0.5 shadow-sm">
+              <button
+                @click="viewMode = 'energy'"
+                :class="[
+                  'flex items-center gap-1.5 rounded-md px-2 py-1.5 xs:px-3 text-xs xs:text-sm font-medium transition-all duration-200',
+                  viewMode === 'energy'
+                    ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                ]"
+              >
+                <span class="material-symbols-outlined text-base">bolt</span>
+                <span class="hidden xs:inline">{{ $t('dashboard.viewMode.energy') }}</span>
+              </button>
+              <button
+                @click="viewMode = 'temperature'"
+                :class="[
+                  'flex items-center gap-1.5 rounded-md px-2 py-1.5 xs:px-3 text-xs xs:text-sm font-medium transition-all duration-200',
+                  viewMode === 'temperature'
+                    ? 'bg-white dark:bg-slate-700 text-purple-700 dark:text-purple-300 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                ]"
+              >
+                <span class="material-symbols-outlined text-base">thermostat</span>
+                <span class="hidden xs:inline">{{ $t('dashboard.viewMode.temperature') }}</span>
+              </button>
+            </div>
+
+            <!-- Context-sensitive manage button -->
+            <button
+              v-if="viewMode === 'energy'"
+              @click="showCompteurSelector = true"
+              class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-2 py-1.5 xs:px-3 xs:py-2 text-xs xs:text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors shadow-sm"
+            >
+              <span class="material-symbols-outlined text-base">tune</span>
+              <span class="whitespace-nowrap">{{ $t('dashboard.manageMeters') }}</span>
+            </button>
+            <button
+              v-else
+              @click="showCapteurSelector = true"
+              class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-2 py-1.5 xs:px-3 xs:py-2 text-xs xs:text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors shadow-sm"
+            >
+              <span class="material-symbols-outlined text-base">sensors</span>
+              <span class="whitespace-nowrap">{{ $t('globalMeters.manageSensors') }}</span>
+            </button>
+          </div>
         </div>
 
       </div>
@@ -22,6 +62,15 @@
         :selected-ids="selectedCompteurIds"
         @apply="handleCompteurSelection"
         @close="showCompteurSelector = false"
+      />
+
+      <!-- CapteurSelector Modal -->
+      <CapteurSelector
+        :is-open="showCapteurSelector"
+        :all-capteurs="sensorsStore.availableSensors"
+        :selected-ids="sensorsStore.selectedSensorIds"
+        @close="showCapteurSelector = false"
+        @apply="handleCapteurSelection"
       />
 
       <!-- Main Content: Full responsive layout -->
@@ -49,9 +98,9 @@
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
               <span class="material-symbols-outlined text-blue-600 dark:text-cyan-400 text-lg">cloud_download</span>
-              <h3 class="text-sm font-semibold text-blue-900 dark:text-cyan-100">{{ $t('common.loading') || 'Chargement des données...' }}</h3>
+              <h3 class="text-sm font-semibold text-blue-900 dark:text-cyan-100">{{ $t('common.loading') }}</h3>
             </div>
-            <p class="text-xs text-blue-700 dark:text-cyan-300">{{ $t('globalMeters.fetchingMeterData') || 'Récupération des données des compteurs...' }}</p>
+            <p class="text-xs text-blue-700 dark:text-cyan-300">{{ $t('globalMeters.fetchingMeterData') }}</p>
           </div>
           <div class="flex-shrink-0">
             <div class="flex items-center gap-1">
@@ -63,8 +112,9 @@
         </div>
       </div>
 
+      <!-- ===== ENERGY VIEW ===== -->
       <!-- Content Grid: 2/3 (Left - Cards) + 1/3 (Right - Charts) - Responsive -->
-      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:h-[calc(100vh-110px)] h-auto">
+      <div v-if="viewMode === 'energy'" class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:h-[calc(100vh-110px)] h-auto">
         <!-- Left Panel: Meter Cards (2/3 width on lg, full width below lg) -->
         <div class="col-span-1 lg:col-span-2 flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 min-h-0 lg:overflow-y-auto">
           <!-- Deterministic Grid: Adapts based on meter count -->
@@ -178,13 +228,170 @@
               </div>
             </div>
             <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
-              <div v-if="temperatureChartData.length === 0" class="w-full h-full flex items-center justify-center">
+              <div v-if="filteredTemperatureChartData.length === 0" class="w-full h-full flex items-center justify-center">
                 <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
               </div>
               <TemperatureChart
                 v-else
-                :sensors="temperatureChartData"
+                :sensors="filteredTemperatureChartData"
                 :loading="isLoadingTemperature"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TEMPERATURE VIEW ===== -->
+      <!-- Same 2/3 + 1/3 layout as energy view -->
+      <div v-else-if="viewMode === 'temperature'" class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:h-[calc(100vh-110px)] h-auto">
+        <!-- Left Panel: Sensor Cards (2/3 width on lg) -->
+        <div class="col-span-1 lg:col-span-2 flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 min-h-0 lg:overflow-y-auto">
+          <!-- Loading State -->
+          <div v-if="isLoadingThermal && enrichedThermalSensors.length === 0" class="flex-1 flex items-center justify-center">
+            <div class="text-center">
+              <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 dark:border-slate-700 border-t-purple-600 dark:border-t-purple-400 mx-auto mb-4"></div>
+              <p class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ $t('common.loading') }}</p>
+            </div>
+          </div>
+          <!-- Empty State -->
+          <div v-else-if="enrichedThermalSensors.length === 0" class="flex-1 flex items-center justify-center p-8">
+            <div class="text-center">
+              <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-5xl mb-4">thermostat</span>
+              <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">{{ $t('globalMeters.noSensorsSelected.title', 'No sensors selected') }}</p>
+              <p class="text-gray-600 dark:text-text-muted text-sm mb-6">{{ $t('globalMeters.noSensorsSelected.description', 'Select sensors to view temperature data') }}</p>
+              <button @click="showCapteurSelector = true" class="inline-flex items-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-700 px-4 py-3 text-sm font-bold text-white transition-colors shadow-lg">
+                <span class="material-symbols-outlined text-lg">add</span>
+                {{ $t('globalMeters.addSensors', 'Add Sensors') }}
+              </button>
+            </div>
+          </div>
+          <!-- Sensor Cards Grid (same structure as energy meter cards) -->
+          <div v-else class="grid gap-1 md:gap-2 flex-1 min-h-0 p-0.5 md:p-1 auto-rows-fr" :style="getSensorsGridStyle()">
+            <div
+              v-for="(sensor, index) in enrichedThermalSensors"
+              :key="sensor.id"
+              class="rounded-xl bg-white dark:bg-slate-900 shadow-xl hover:shadow-2xl transition-all overflow-hidden relative border-2 flex flex-col"
+              :style="{
+                borderColor: getSensorColor(index),
+                boxShadow: `0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 0 0 2px ${getSensorColor(index)}15`,
+                minHeight: 'clamp(200px, 40vh, 350px)',
+                ...getSensorCardGridSpan(index, enrichedThermalSensors.length)
+              }"
+            >
+              <!-- Top accent line -->
+              <div class="absolute top-0 left-0 right-0 h-1" :style="{ backgroundColor: getSensorColor(index) }"></div>
+
+              <!-- Card Header -->
+              <div class="px-4 py-1.5 flex-shrink-0 border-b-2 relative group/header flex items-start justify-between gap-2 overflow-hidden"
+                :style="{ borderColor: getSensorColor(index), backgroundColor: `${getSensorColor(index)}08`, minHeight: '90px' }">
+                <div class="flex-1 min-w-0 overflow-hidden">
+                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight break-words pt-1">{{ sensor.label }}</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">{{ sensor.name }}</p>
+                  <!-- Mode Badge -->
+                  <span v-if="sensor.mode" :class="[
+                    'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold mt-1',
+                    sensor.mode === 'manuel' || sensor.mode === 'manual'
+                      ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                      : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                  ]">
+                    {{ sensor.mode === 'manuel' || sensor.mode === 'manual' ? $t('globalMeters.modeManuel') : $t('globalMeters.modeAuto') }}
+                  </span>
+                </div>
+                <span :class="[
+                  'inline-flex h-1.5 w-1.5 rounded-full flex-shrink-0 mt-2',
+                  sensor.powerStatus !== false
+                    ? 'bg-green-500 animate-pulse shadow-[0_0_3px_rgba(34,197,94,0.5)]'
+                    : 'bg-red-500 shadow-[0_0_3px_rgba(239,68,68,0.5)]'
+                ]"></span>
+              </div>
+
+              <!-- Card Content (mirroring energy card layout) -->
+              <div class="px-0.5 md:px-1 py-0 flex-1 flex flex-col justify-center gap-0 min-h-0">
+                <!-- Current Temperature (like Instantaneous Power) -->
+                <div class="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-lg p-0 border border-slate-200 dark:border-slate-700 flex-1 flex flex-col justify-center items-center relative">
+                  <div>
+                    <span class="font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">
+                      {{ $t('thermal.currentTemp', 'Current Temperature') }}
+                    </span>
+                  </div>
+                  <div class="flex items-baseline justify-center gap-0.5 mt-0.25">
+                    <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getSensorColor(index) }">
+                      {{ formatTemp(sensor.temperature) }}
+                    </span>
+                    <span class="font-bold text-slate-900 dark:text-slate-100" style="font-size: clamp(8px, 1vmin, 12px);">°C</span>
+                  </div>
+                  <!-- Daily Min / Max (based on 24h data) -->
+                  <div class="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col items-end mt-3 gap-0">
+                    <div class="flex items-center gap-0">
+                      <span class="material-symbols-outlined text-red-500 dark:text-red-400" style="font-size: clamp(10px, 1.5vmin, 14px);">arrow_upward</span>
+                      <span class="font-bold text-slate-700 dark:text-slate-300 w-10 text-right -ml-4" style="font-size: clamp(9px, 1.3vmin, 12px);">{{ formatTemp(getDailyMinMax(sensor.deviceUUID).max) }}°</span>
+                    </div>
+                    <div class="flex items-center gap-0">
+                      <span class="material-symbols-outlined text-blue-500 dark:text-blue-400" style="font-size: clamp(10px, 1.5vmin, 14px);">arrow_downward</span>
+                      <span class="font-bold text-slate-700 dark:text-slate-300 w-10 text-right -ml-4" style="font-size: clamp(9px, 1.3vmin, 12px);">{{ formatTemp(getDailyMinMax(sensor.deviceUUID).min) }}°</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Humidity -->
+                <div class="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 rounded-lg border border-purple-200 dark:border-purple-900/30 flex-1 flex items-center justify-center gap-1 px-2">
+                  <span class="material-symbols-outlined text-purple-600 dark:text-purple-400" style="font-size: clamp(14px, 2vmin, 20px);">water_drop</span>
+                  <p class="text-purple-800 dark:text-purple-300 font-extrabold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">{{ $t('thermal.humidity', 'Humidity') }}</p>
+                  <p class="text-purple-900 dark:text-purple-200 font-bold leading-tight" style="font-size: clamp(16px, 3vmin, 28px); line-height: 1;">{{ formatTemp(sensor.humidity) }}</p>
+                  <p class="text-purple-800 dark:text-purple-300 font-bold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Temperature Charts (1/3 width on lg) -->
+        <div class="col-span-1 flex flex-col gap-1 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 lg:overflow-y-auto">
+          <!-- 24-Hour Temperature Chart -->
+          <div class="overflow-hidden rounded-lg md:rounded-xl border border-purple-300 md:border-2 dark:border-purple-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
+            <div class="border-b border-purple-300 md:border-b-2 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
+              <div class="flex items-center gap-1 md:gap-2">
+                <div class="h-1 w-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                <h3 class="text-xs md:text-xs font-bold text-gray-900 dark:text-white">
+                  {{ $t('globalMeters.temperature24h', '24h Temperature') }} (°C)
+                </h3>
+              </div>
+            </div>
+            <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
+              <div v-if="filteredTemperatureChartData.length === 0 && !isLoadingTemperature" class="w-full h-full flex items-center justify-center">
+                <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
+              </div>
+              <TemperatureChart
+                v-else
+                :sensors="filteredTemperatureChartData"
+                :loading="isLoadingTemperature"
+                :show-legend="true"
+                :chart-label="$t('globalMeters.temperature24h', '24h Temperature')"
+              />
+            </div>
+          </div>
+
+          <!-- Monthly Temperature Chart -->
+          <div class="overflow-hidden rounded-lg md:rounded-xl border border-indigo-300 md:border-2 dark:border-indigo-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
+            <div class="border-b border-indigo-300 md:border-b-2 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
+              <div class="flex items-center gap-1 md:gap-2">
+                <div class="h-1 w-1 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500"></div>
+                <h3 class="text-xs md:text-xs font-bold text-gray-900 dark:text-white">
+                  {{ $t('globalMeters.temperatureMonthly', 'Monthly Temperature') }} (°C)
+                </h3>
+              </div>
+            </div>
+            <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
+              <div v-if="filteredMonthlyChartData.length === 0 && !isLoadingMonthlyChart" class="w-full h-full flex items-center justify-center">
+                <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
+              </div>
+              <MonthlyTemperatureChart
+                v-else
+                :sensors="filteredMonthlyChartData"
+                :available-sensors="availableMonthlySensors"
+                :loading="isLoadingMonthlyChart"
+                :selected-sensor-id="selectedMonthlySensorId"
+                @sensor-selected="handleMonthlySensorSelected"
               />
             </div>
           </div>
@@ -197,29 +404,70 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useViewLifecycle } from '@/composables/useViewLifecycle'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
+import CapteurSelector from '@/components/dashboard/CapteurSelector.vue'
 import EnergyConsumptionChart from '@/features/meters/components/EnergyConsumptionChart.vue'
 import TemperatureChart from '@/features/meters/components/TemperatureChart.vue'
+import MonthlyTemperatureChart from '@/features/meters/components/MonthlyTemperatureChart.vue'
 import { getMeterColorByName } from '@/utils/meterColors'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useGlobalMeters, type GlobalMeterData } from '@/composables/useGlobalMeters'
 import { useMetersStore } from '@/stores/useMetersStore'
+import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
+import { fetchThermalDashboardData, fetchTemperatureChart24h, fetchTemperatureChartMonthly, type ThermalSensorData, type ThermalDashboardData } from '@/services/thermalTelemetryAPI'
 
 const { t } = useI18n()
 
 // Stores
 const metersStore = useMetersStore()
+const sensorsStore = useSensorsStore()
 
 // State
+const viewMode = ref<'energy' | 'temperature'>(
+  (localStorage.getItem('globalMeters:viewMode') as 'energy' | 'temperature') || 'energy'
+)
+watch(viewMode, (val) => localStorage.setItem('globalMeters:viewMode', val))
 const showCompteurSelector = ref(false)
+const showCapteurSelector = ref(false)
 const currentTime = ref(new Date())
 const globalMetersList = ref<GlobalMeterData[]>([])
 const isLoadingAPI = ref(false)
 const isFirstLoad = ref(true)
 const temperatureChartData = ref<any[]>([])
+const monthlyChartData = ref<any[]>([])
 const isLoadingTemperature = ref(false)
+const isLoadingMonthlyChart = ref(false)
+const isLoadingThermal = ref(false)
+const thermalZones = ref<ThermalSensorData[]>([])
+const thermalSummary = ref<ThermalDashboardData['summary'] | null>(null)
+const selectedMonthlySensorId = ref<string>('')
+
+// Available sensors for monthly chart selector
+const availableMonthlySensors = computed(() => {
+  const allSensors = sensorsStore.availableSensors
+  return allSensors.map(s => ({
+    deviceUUID: s.deviceUUID,
+    sensorLabel: s.label || s.name
+  }))
+})
+
+// Auto-select first sensor and fetch monthly data when sensors become available
+watch(availableMonthlySensors, (sensors) => {
+  console.log('[GlobalMetersView] availableMonthlySensors watcher fired - sensors:', sensors.length, 'selectedMonthlySensorId:', selectedMonthlySensorId.value)
+  if (sensors.length > 0 && !selectedMonthlySensorId.value) {
+    const firstSensorId = sensors[0].deviceUUID
+    console.log('[GlobalMetersView] Auto-selecting first sensor:', firstSensorId)
+    selectedMonthlySensorId.value = firstSensorId
+    fetchMonthlyTemperatureData(firstSensorId)
+  } else if (sensors.length === 0) {
+    console.log('[GlobalMetersView] No sensors available yet')
+  } else {
+    console.log('[GlobalMetersView] Sensor already selected, skipping auto-select')
+  }
+}, { immediate: true })
 
 // Initialize composables (same as DashboardView)
 const {
@@ -231,10 +479,11 @@ const {
 
 const { dashboardStore } = useRealtimeData()
 
-const { fetchGlobalMeters, fetchTemperatureChart, loading: globalMetersLoading, error: globalMetersError } = useGlobalMeters()
+const { fetchGlobalMeters, loading: globalMetersLoading, error: globalMetersError } = useGlobalMeters()
 
 // Track connection status
 const isConnected = computed(() => dashboardStore.isConnected)
+const { isActive, guard } = useViewLifecycle()
 
 // Update time every second for status display
 let clockInterval: number | null = null
@@ -252,6 +501,14 @@ onMounted(async () => {
     console.error('[GlobalMetersView] Failed to load compteurs:', error)
   }
 
+  // Load sensors list from API (temperature sensors)
+  try {
+    await sensorsStore.fetchSensors()
+    console.log('[GlobalMetersView] Loaded sensors:', sensorsStore.availableSensors.length)
+  } catch (error) {
+    console.error('[GlobalMetersView] Failed to load sensors:', error)
+  }
+
   // Update clock
   clockInterval = setInterval(() => {
     currentTime.value = new Date()
@@ -259,9 +516,11 @@ onMounted(async () => {
 
   // Perform initial load with loading indicators
   await performInitialLoad()
+  if (!guard()) return // Component unmounted during initial load
 
   // Start silent refresh interval AFTER initial load completes
   refreshInterval = setInterval(() => {
+    if (!isActive.value) return // Skip if component unmounted
     silentRefresh()
   }, 15000) // 15 seconds
 })
@@ -336,24 +595,103 @@ async function fetchGlobalMetersData(showLoader = true) {
   }
 }
 
-// Fetch temperature chart data
+// Fetch temperature chart data (24h)
 async function fetchTemperatureData() {
   try {
     isLoadingTemperature.value = true
-    const response = await fetchTemperatureChart()
+    const response = await fetchTemperatureChart24h()
 
     if (response && response.success) {
       temperatureChartData.value = response.data.sensors
-      console.log('[GlobalMetersView] Updated temperature chart data:', temperatureChartData.value)
+      console.log('[GlobalMetersView] Updated 24h temperature chart data:', temperatureChartData.value.length, 'sensors')
     } else {
-      console.error('[GlobalMetersView] Temperature API response not successful:', response)
+      console.error('[GlobalMetersView] 24h Temperature API response not successful')
       temperatureChartData.value = []
     }
   } catch (error) {
-    console.error('[GlobalMetersView] Error fetching temperature data:', error)
+    console.error('[GlobalMetersView] Error fetching 24h temperature data:', error)
     temperatureChartData.value = []
   } finally {
     isLoadingTemperature.value = false
+  }
+}
+
+// Fetch monthly temperature chart data progressively (week-by-week)
+// Each week's data is displayed on the chart as it arrives
+async function fetchMonthlyTemperatureData(sensorId?: string) {
+  const sensorIds = sensorId ? [sensorId] : undefined
+  console.log('[GlobalMetersView] fetchMonthlyTemperatureData called with sensorId:', sensorId)
+
+  // Show loading indicator and clear previous data
+  isLoadingMonthlyChart.value = true
+  monthlyChartData.value = []
+
+  let isFirstCallback = true
+  try {
+    await fetchTemperatureChartMonthly((sensors) => {
+      // Called after each week loads — update chart progressively
+      // Deep clone to ensure Vue reactivity detects changes
+      console.log('[GlobalMetersView] onWeekReady callback - received', sensors.length, 'sensors with', sensors.reduce((n, s) => n + s.data.length, 0), 'total points')
+      monthlyChartData.value = sensors.map(s => ({
+        ...s,
+        data: [...s.data]
+      }))
+      // Hide loading after first week data arrives
+      if (isFirstCallback) {
+        isLoadingMonthlyChart.value = false
+        isFirstCallback = false
+      }
+      console.log('[GlobalMetersView] monthlyChartData updated, length:', monthlyChartData.value.length, 'data points:', monthlyChartData.value[0]?.data?.length)
+    }, sensorIds)
+    console.log('[GlobalMetersView] Monthly temperature chart fully loaded:', monthlyChartData.value.length, 'sensors')
+  } catch (error) {
+    console.error('[GlobalMetersView] Error fetching monthly temperature data:', error)
+    isLoadingMonthlyChart.value = false
+    monthlyChartData.value = []
+  }
+}
+
+/**
+ * Handle sensor selection change from MonthlyTemperatureChart
+ */
+function handleMonthlySensorSelected(sensorId: string) {
+  console.log('[GlobalMetersView] Monthly sensor selected:', sensorId, 'current:', selectedMonthlySensorId.value)
+  if (sensorId && sensorId !== selectedMonthlySensorId.value) {
+    selectedMonthlySensorId.value = sensorId
+    // Refetch data for only this sensor
+    console.log('[GlobalMetersView] Fetching monthly data for sensor:', sensorId)
+    fetchMonthlyTemperatureData(sensorId)
+  } else {
+    console.log('[GlobalMetersView] Sensor already selected or invalid, skipping fetch')
+  }
+}
+
+/**
+ * Fetch thermal sensor data from backend API (same approach as ThermalManagementView)
+ * Uses GET /api/telemetry/thermal to get all sensor readings
+ */
+async function fetchThermalSensorData(showLoader = true) {
+  try {
+    if (showLoader) isLoadingThermal.value = true
+
+    console.log('[GlobalMetersView] Fetching thermal sensor data from API...')
+    const thermalData = await fetchThermalDashboardData(false)
+
+    if (thermalData.status === 'success' && thermalData.sensors.length > 0) {
+      thermalZones.value = thermalData.sensors
+      thermalSummary.value = thermalData.summary
+      console.log(`[GlobalMetersView] Loaded ${thermalData.sensors.length} thermal sensors from API`)
+    } else if (thermalData.status === 'partial' && thermalData.sensors.length > 0) {
+      thermalZones.value = thermalData.sensors
+      thermalSummary.value = thermalData.summary
+      console.warn('[GlobalMetersView] Partial thermal data:', thermalData.message)
+    } else {
+      console.warn('[GlobalMetersView] Thermal API returned no data:', thermalData.message)
+    }
+  } catch (error) {
+    console.error('[GlobalMetersView] Error fetching thermal data:', error)
+  } finally {
+    if (showLoader) isLoadingThermal.value = false
   }
 }
 
@@ -371,8 +709,11 @@ async function performInitialLoad() {
       promises.push(fetchGlobalMetersData(true))
     }
 
-    // Always fetch temperature data
+    // Always fetch temperature chart data (24h only - monthly waits for sensor selection)
     promises.push(fetchTemperatureData())
+
+    // Always fetch thermal sensor data (for temperature view)
+    promises.push(fetchThermalSensorData(true))
 
     // Wait for all initial data to load
     await Promise.all(promises)
@@ -400,6 +741,7 @@ async function silentRefresh() {
       .map((c) => c.deviceUUID!)
 
     // Prepare all API calls
+    // NOTE: chart-data and chart-monthly are NOT refreshed — they are heavy and cached on the backend
     const apiCalls: Promise<any>[] = []
 
     // Fetch global meters data if there are selected compteurs
@@ -409,51 +751,35 @@ async function silentRefresh() {
       apiCalls.push(globalMetersPromise)
     }
 
-    // Fetch temperature chart data
-    const temperaturePromise = fetchTemperatureChart()
-    apiCalls.push(temperaturePromise)
+    // Fetch thermal sensor data (silent, no loader)
+    const thermalPromise = fetchThermalDashboardData(false)
+    apiCalls.push(thermalPromise)
 
     // Wait for all APIs to complete in parallel
     const results = await Promise.all(apiCalls)
 
-    // Validate all responses
-    let allSuccess = true
+    // Parse results based on what was requested
+    let idx = 0
     let globalMetersResponse = null
-    let temperatureResponse = null
+    let thermalResponse = null
 
     if (globalMetersPromise && deviceUUIDs.length > 0) {
-      globalMetersResponse = results[0]
-      if (!globalMetersResponse || !globalMetersResponse.success) {
-        allSuccess = false
-        console.error('[GlobalMetersView] Silent refresh: Global meters API failed')
-      }
-      temperatureResponse = results[1]
-    } else {
-      temperatureResponse = results[0]
+      globalMetersResponse = results[idx++]
+    }
+    thermalResponse = results[idx++]
+
+    // Update energy data atomically
+    if (globalMetersResponse && globalMetersResponse.success) {
+      globalMetersList.value = globalMetersResponse.data
     }
 
-    if (!temperatureResponse || !temperatureResponse.success) {
-      allSuccess = false
-      console.error('[GlobalMetersView] Silent refresh: Temperature API failed')
+    // Update thermal sensor data
+    if (thermalResponse && thermalResponse.status === 'success' && thermalResponse.sensors?.length > 0) {
+      thermalZones.value = thermalResponse.sensors
+      thermalSummary.value = thermalResponse.summary
     }
 
-    // Atomic update: only update state if ALL APIs succeeded
-    if (allSuccess) {
-      // Update global meters data
-      if (globalMetersResponse && globalMetersResponse.success) {
-        globalMetersList.value = globalMetersResponse.data
-      }
-
-      // Update temperature data
-      if (temperatureResponse && temperatureResponse.success) {
-        temperatureChartData.value = temperatureResponse.data.sensors
-      }
-
-      console.log('[GlobalMetersView] Silent refresh completed successfully')
-    } else {
-      // Keep old data on failure - do not update state
-      console.warn('[GlobalMetersView] Silent refresh: One or more APIs failed, keeping existing data')
-    }
+    console.log('[GlobalMetersView] Silent refresh completed')
   } catch (error) {
     // Silent error logging - do not interrupt user interaction
     console.error('[GlobalMetersView] Silent refresh error:', error)
@@ -475,6 +801,141 @@ const handleCompteurSelection = (selectedIds: string[]) => {
   metersStore.setSelectedMeters(selectedIds)
   showCompteurSelector.value = false
   // The watch on selectedCompteurs will trigger API fetch
+}
+
+const handleCapteurSelection = (selectedIds: string[]) => {
+  // Update the sensorsStore with the selected IDs
+  sensorsStore.setSelectedSensors(selectedIds)
+  showCapteurSelector.value = false
+}
+
+/**
+ * Get enriched thermal sensor data by merging store sensors with API thermal data
+ * Same approach as ThermalManagementView.buildZonesFromThermalAPI
+ */
+const enrichedThermalSensors = computed(() => {
+  const sensors = sensorsStore.selectedSensors
+  if (sensors.length === 0) return []
+
+  return sensors.map((sensor, index) => {
+    // Find matching thermal API data by deviceUUID
+    const thermalData = thermalZones.value.find(
+      (tz) => tz.deviceUUID === sensor.deviceUUID
+    )
+
+    return {
+      ...sensor,
+      // Override with live API data if available
+      temperature: thermalData?.temperature ?? null,
+      humidity: thermalData?.humidity ?? null,
+      dewPoint: thermalData?.dewPoint ?? null,
+      mode: thermalData?.mode ?? sensor.mode ?? null,
+      minTemp: thermalData?.minTemp ?? sensor.minTemp,
+      maxTemp: thermalData?.maxTemp ?? sensor.maxTemp,
+      active: thermalData?.active ?? null,
+      powerStatus: thermalData?.powerStatus ?? null,
+      relay: thermalData?.relay ?? null,
+      sensorLabel: thermalData?.label || thermalData?.displayName || sensor.label || sensor.name,
+    }
+  })
+})
+
+// Filtered chart data: only show selected sensors
+const selectedSensorUUIDs = computed(() => {
+  const sensors = sensorsStore.selectedSensors
+  return new Set(sensors.map(s => s.deviceUUID))
+})
+
+const filteredTemperatureChartData = computed(() => {
+  if (selectedSensorUUIDs.value.size === 0) return temperatureChartData.value
+  return temperatureChartData.value.filter(s => selectedSensorUUIDs.value.has(s.deviceUUID))
+})
+
+const dailyMinMaxBySensor = computed(() => {
+  const map = new Map<string, { min: number | null; max: number | null }>()
+  for (const sensor of temperatureChartData.value) {
+    const values = (sensor.data || [])
+      .map((point: any) => point?.value)
+      .filter((value: any) => typeof value === 'number') as number[]
+    if (values.length === 0) {
+      map.set(sensor.deviceUUID, { min: null, max: null })
+      continue
+    }
+    map.set(sensor.deviceUUID, {
+      min: Math.min(...values),
+      max: Math.max(...values),
+    })
+  }
+  return map
+})
+
+function getDailyMinMax(sensorUUID: string): { min: number | null; max: number | null } {
+  return dailyMinMaxBySensor.value.get(sensorUUID) ?? { min: null, max: null }
+}
+
+const filteredMonthlyChartData = computed(() => {
+  if (selectedSensorUUIDs.value.size === 0) return monthlyChartData.value
+  return monthlyChartData.value.filter(s => selectedSensorUUIDs.value.has(s.deviceUUID))
+})
+
+// Sensor color palette (match thermal-management)
+const SENSOR_COLORS = [
+  '#8b5cf6', '#a855f7', '#7c3aed', '#6d28d9',
+  '#c084fc', '#d946ef', '#a78bfa', '#9333ea'
+]
+
+const getSensorColor = (index: number) => SENSOR_COLORS[index % SENSOR_COLORS.length]
+
+// Sensor grid style — identical approach to energy meters (getMetersGridStyle)
+const getSensorsGridStyle = () => {
+  const count = enrichedThermalSensors.value.length
+
+  if (window.innerWidth < 768) {
+    return 'grid-template-columns: 1fr; grid-auto-rows: minmax(180px, auto);'
+  }
+
+  switch (count) {
+    case 1:
+      return 'grid-template-columns: 1fr; grid-auto-rows: 1fr;'
+    case 2:
+      return 'grid-template-columns: 1fr; grid-auto-rows: 1fr;'
+    case 3:
+      return 'grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr;'
+    case 4:
+      return 'grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr;'
+    case 5:
+      return 'grid-template-columns: repeat(6, 1fr); grid-auto-rows: 1fr;'
+    case 6:
+      return 'grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr;'
+    case 7:
+      return 'grid-template-columns: repeat(12, 1fr); grid-auto-rows: 1fr;'
+    case 8:
+      return 'grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr;'
+    default:
+      return 'grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); grid-auto-rows: 1fr;'
+  }
+}
+
+// Sensor card grid span — identical approach to energy meters (getCardGridSpan)
+const getSensorCardGridSpan = (index: number, totalCount: number): Record<string, any> => {
+  // 5 sensors: first row (0-2) at 33% each, second row (3-4) at 50% each
+  if (totalCount === 5) {
+    if (index <= 2) return { gridColumn: 'span 2' }
+    if (index >= 3) return { gridColumn: 'span 3' }
+  }
+  // 7 sensors: first row (0-3) at 25% each, second row (4-6) at 33.33% each
+  if (totalCount === 7) {
+    if (index <= 3) return { gridColumn: 'span 3' }
+    if (index >= 4) return { gridColumn: 'span 4' }
+  }
+  // 3 sensors: last item spans full width
+  if (totalCount === 3 && index === 2) return { gridColumn: '1 / -1' }
+  return {}
+}
+
+const formatTemp = (val: number | null | undefined): string => {
+  if (val === null || val === undefined) return '—'
+  return val.toFixed(1)
 }
 
 // Enrich selected compteurs with API data only (no mock data)
