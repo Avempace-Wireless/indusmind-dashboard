@@ -218,6 +218,11 @@
       "lastUpdate": "Last update: "
     },
     "manageMeters": "Manage Meters",
+    "manageSensors": "Manage Sensors",
+    "viewMode": {
+      "energy": "Energy",
+      "temperature": "Temperature"
+    },
     "noMetersSelected": {
       "title": "No meters selected",
       "description": "Select meters to display energy consumption data",
@@ -331,6 +336,18 @@
     "realTimeCost": "Real-Time Cost",
     "totalPower": "Total Power",
     "target": "Target"
+  },
+  "capteur": {
+    "selector": {
+      "title": "Select Sensors",
+      "search": "Search sensors...",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "selected": "{count} selected",
+      "noResults": "No sensors found",
+      "maxSelectionWarning": "Maximum selection of 8 sensors reached. Deselect a sensor to add another.",
+      "typeSensor": "Sensor"
+    }
   },
   "temperature": {
     "zones": {
@@ -769,6 +786,7 @@
     },
     "zone": "Zone {number}",
     "currentTemp": "Temperature",
+    "humidity": "Humidity",
     "maxTemp": "Max Temp",
     "minTemp": "Min Temp",
     "manuel": "Manual",
@@ -1020,6 +1038,26 @@
     "autoRefresh": "Auto-refreshing every 5 seconds",
     "tvDisplayMode": "Factory Display Mode",
     "noTemperatureSensors": "No temperature sensors available",
-    "temperature24Hours": "Temperature over 24 hours (Hourly Averages)"
+    "temperature24Hours": "Temperature over 24 hours (Hourly Averages)",
+    "currentTemp": "Current Temperature",
+    "humidity": "Humidity",
+    "dewPoint": "Dew Point",
+    "sensorActive": "Active",
+    "sensorInactive": "Inactive",
+    "targetRange": "Target Range",
+    "modeManuel": "Manual",
+    "modeAuto": "Auto",
+    "noMode": "Not configured",
+    "addSensors": "Add Sensors",
+    "manageSensors": "Manage Sensors",
+    "temperature24h": "24h Temperature",
+    "temperatureMonthlyInfo": "Min/Max temperature over last 30 days",
+    "temperatureMonthly": "Monthly Temperature",
+    "noSensorsSelected": {
+      "title": "No sensors selected",
+      "description": "Select sensors to display temperature data",
+      "action": "Add sensors"
+    },
+    "loadingTemperature": "Loading thermal data..."
   }
 }

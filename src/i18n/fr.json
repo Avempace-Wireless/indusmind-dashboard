@@ -216,6 +216,11 @@
       "lastUpdate": "Dernière mise à jour: "
     },
     "manageMeters": "Gérer les compteurs",
+    "manageSensors": "Gérer les capteurs",
+    "viewMode": {
+      "energy": "Énergie",
+      "temperature": "Température"
+    },
     "noMetersSelected": {
       "title": "Aucun compteur sélectionné",
       "description": "Sélectionnez des compteurs pour afficher les données de consommation",
@@ -329,6 +334,18 @@
     "realTimeCost": "Coût en Temps Réel",
     "totalPower": "Puissance Totale",
     "target": "Objectif"
+  },
+  "capteur": {
+    "selector": {
+      "title": "Sélectionner les capteurs",
+      "search": "Rechercher des capteurs...",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "selected": "{count} sélectionné(s)",
+      "noResults": "Aucun capteur trouvé",
+      "maxSelectionWarning": "Sélection maximale de 8 capteurs atteinte. Désélectionnez un capteur pour en ajouter un autre.",
+      "typeSensor": "Capteur"
+    }
   },
   "temperature": {
     "zones": {
@@ -773,6 +790,7 @@
     },
     "zone": "Zone {number}",
     "currentTemp": "Température",
+    "humidity": "Humidité",
     "maxTemp": "Temp. Max",
     "minTemp": "Temp. Min",
     "manuel": "Manuel",
@@ -1025,6 +1043,26 @@
     "autoRefresh": "Actualisation automatique toutes les 5 secondes",
     "tvDisplayMode": "Mode d'affichage Usine",
     "noTemperatureSensors": "Aucun capteur de température disponible",
-    "temperature24Hours": "Température sur 24 heures (Moyennes horaires)"
+    "temperature24Hours": "Température sur 24 heures (Moyennes horaires)",
+    "currentTemp": "Température actuelle",
+    "humidity": "Humidité",
+    "dewPoint": "Point de rosée",
+    "sensorActive": "Actif",
+    "sensorInactive": "Inactif",
+    "targetRange": "Plage cible",
+    "modeManuel": "Manuel",
+    "modeAuto": "Auto",
+    "noMode": "Non configuré",
+    "addSensors": "Ajouter des capteurs",
+    "manageSensors": "Gérer les capteurs",
+    "temperature24h": "Température 24h",
+    "temperatureMonthlyInfo": "Température min/max sur les 30 derniers jours",
+    "temperatureMonthly": "Température mensuelle",
+    "noSensorsSelected": {
+      "title": "Aucun capteur sélectionné",
+      "description": "Sélectionnez des capteurs pour afficher les données de température",
+      "action": "Ajouter des capteurs"
+    },
+    "loadingTemperature": "Chargement des données thermiques..."
   }
 }
