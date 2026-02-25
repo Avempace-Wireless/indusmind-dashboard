@@ -9,13 +9,53 @@
         <div class="border-b border-slate-200 dark:border-border-dark pb-6">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
             <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">{{ $t('dashboard.title') }}</h1>
-            <button
-              @click="showCompteurSelector = true"
-              class="flex w-full sm:w-auto items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors whitespace-nowrap shadow-sm self-start"
-            >
-              <span class="material-symbols-outlined text-base">tune</span>
-              {{ $t('dashboard.manageMeters') }}
-            </button>
+            <div class="flex flex-wrap items-center gap-2 xs:gap-3">
+              <!-- Energy / Temperature Toggle Switch -->
+              <div class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 p-0.5 shadow-sm">
+                <button
+                  @click="dashboardViewMode = 'energy'"
+                  :class="[
+                    'flex items-center gap-1.5 rounded-md px-2 py-1.5 xs:px-3 text-xs xs:text-sm font-medium transition-all duration-200',
+                    dashboardViewMode === 'energy'
+                      ? 'bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  ]"
+                >
+                  <span class="material-symbols-outlined text-base">bolt</span>
+                  <span class="hidden xs:inline">{{ $t('dashboard.viewMode.energy') }}</span>
+                </button>
+                <button
+                  @click="dashboardViewMode = 'temperature'"
+                  :class="[
+                    'flex items-center gap-1.5 rounded-md px-2 py-1.5 xs:px-3 text-xs xs:text-sm font-medium transition-all duration-200',
+                    dashboardViewMode === 'temperature'
+                      ? 'bg-white dark:bg-slate-700 text-purple-700 dark:text-purple-300 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                  ]"
+                >
+                  <span class="material-symbols-outlined text-base">thermostat</span>
+                  <span class="hidden xs:inline">{{ $t('dashboard.viewMode.temperature') }}</span>
+                </button>
+              </div>
+
+              <!-- Context-sensitive manage button -->
+              <button
+                v-if="dashboardViewMode === 'energy'"
+                @click="showCompteurSelector = true"
+                class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-2 py-1.5 xs:px-3 xs:py-2 text-xs xs:text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors shadow-sm"
+              >
+                <span class="material-symbols-outlined text-base">tune</span>
+                <span class="whitespace-nowrap">{{ $t('dashboard.manageMeters') }}</span>
+              </button>
+              <button
+                v-else
+                @click="showCapteurSelector = true"
+                class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-white px-2 py-1.5 xs:px-3 xs:py-2 text-xs xs:text-sm font-medium text-slate-700 dark:text-slate-700 hover:bg-slate-50 dark:hover:bg-slate-100 transition-colors shadow-sm"
+              >
+                <span class="material-symbols-outlined text-base">sensors</span>
+                <span class="whitespace-nowrap">{{ $t('globalMeters.manageSensors') }}</span>
+              </button>
+            </div>
           </div>
           <div class="flex items-center gap-3">
             <span :class="[
@@ -38,99 +78,262 @@
         @close="showCompteurSelector = false"
       />
 
-      <!-- Meter Widgets Grid (Dynamic, responsive) -->
-      <div v-if="dashboardLoading" class="w-full h-96 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex flex-col items-center justify-center text-slate-600 dark:text-slate-300 gap-4">
-        <p class="text-lg font-medium">{{ $t('common.loading') }}</p>
-      </div>
-      <div v-else :class="[
-        'grid gap-6',
-        gridLayoutClass
-      ]">
-        <div v-if="selectedCompteurs.length === 0" class="col-span-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#0f1419] p-12 text-center">
-          <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-5xl mb-4">
-            dashboard
-          </span>
-          <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">{{ $t('dashboard.noMetersSelected.title') }}</p>
-          <p class="text-gray-600 dark:text-text-muted text-sm mb-6">{{ $t('dashboard.noMetersSelected.description') }}</p>
-<button
-  @click="showCompteurSelector = true"
-  class="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-3 text-sm font-bold text-white transition-colors shadow-lg"
->
-  <span class="material-symbols-outlined text-lg">add</span>
-  {{ $t('dashboard.noMetersSelected.action') }}
-</button>
+      <!-- CapteurSelector Modal -->
+      <CapteurSelector
+        :is-open="showCapteurSelector"
+        :all-capteurs="sensorsStore.availableSensors"
+        :selected-ids="sensorsStore.selectedSensorIds"
+        @close="showCapteurSelector = false"
+        @apply="handleCapteurSelection"
+      />
+
+      <!-- ===== ENERGY VIEW ===== -->
+      <template v-if="dashboardViewMode === 'energy'">
+        <!-- Meter Widgets Grid (Dynamic, responsive) -->
+        <div v-if="dashboardLoading" class="w-full h-96 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex flex-col items-center justify-center text-slate-600 dark:text-slate-300 gap-4">
+          <p class="text-lg font-medium">{{ $t('common.loading') }}</p>
+        </div>
+        <div v-else :class="[
+          'grid gap-6',
+          gridLayoutClass
+        ]">
+          <div v-if="selectedCompteurs.length === 0" class="col-span-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#0f1419] p-12 text-center">
+            <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-5xl mb-4">
+              dashboard
+            </span>
+            <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">{{ $t('dashboard.noMetersSelected.title') }}</p>
+            <p class="text-gray-600 dark:text-text-muted text-sm mb-6">{{ $t('dashboard.noMetersSelected.description') }}</p>
+  <button
+    @click="showCompteurSelector = true"
+    class="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-3 text-sm font-bold text-white transition-colors shadow-lg"
+  >
+    <span class="material-symbols-outlined text-lg">add</span>
+    {{ $t('dashboard.noMetersSelected.action') }}
+  </button>
+          </div>
+
+          <!-- New Widget System (V2) - Feature Flagged -->
+          <CompteurWidgetV2
+            v-if="useNewWidgetSystem"
+            v-for="(compteur, index) in enrichedCompteurs"
+            :key="`v2-${compteur.id}`"
+            :compteur="compteur"
+            :color-index="index"
+            :current-mode="widgetModes[compteur.id]"
+            @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
+          />
+
+          <!-- Legacy Widget System (V1) -->
+          <CompteurWidget
+            v-else
+            v-for="(compteur, index) in enrichedCompteurs"
+            :key="`v1-${compteur.id}`"
+            :compteur="compteur"
+            :color-index="index"
+            :current-mode="widgetModes[compteur.id]"
+            :is-loading="telemetryLoading"
+            @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
+          />
+
+          <!-- Skeleton loaders while loading -->
+          <CompteurWidgetSkeleton v-if="dashboardLoading" />
+          <CompteurWidgetSkeleton v-if="dashboardLoading && selectedCompteurs.length > 1" />
         </div>
 
-        <!-- New Widget System (V2) - Feature Flagged -->
-        <CompteurWidgetV2
-          v-if="useNewWidgetSystem"
-          v-for="(compteur, index) in enrichedCompteurs"
-          :key="`v2-${compteur.id}`"
-          :compteur="compteur"
-          :color-index="index"
-          :current-mode="widgetModes[compteur.id]"
-          @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
-        />
+        <!-- Energy and Temperature Charts Side by Side -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <!-- Energy Chart (Left) -->
+          <div>
+            <Suspense>
+              <template #default>
+                <UnifiedChart
+                  mode="energy"
+                  :period="energyChartPeriod"
+                  :subtitle="$t('dashboard.unifiedChart.energy')"
+                  :selected-compteurs="enrichedCompteurs"
+                  @update:period="energyChartPeriod = $event"
+                />
+              </template>
+              <template #fallback>
+                <ChartSkeleton />
+              </template>
+            </Suspense>
+          </div>
 
-        <!-- Legacy Widget System (V1) -->
-        <CompteurWidget
-          v-else
-          v-for="(compteur, index) in enrichedCompteurs"
-          :key="`v1-${compteur.id}`"
-          :compteur="compteur"
-          :color-index="index"
-          :current-mode="widgetModes[compteur.id]"
-          :is-loading="telemetryLoading"
-          @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
-        />
+          <!-- Temperature Chart (Right) -->
+          <div>
+            <Suspense>
+              <template #default>
+                <UnifiedChart
+                  mode="temperature"
+                  :period="temperatureChartPeriod"
+                  :subtitle="$t('dashboard.unifiedChart.temperature')"
+                  :selected-compteurs="enrichedCompteurs"
+                  @update:period="temperatureChartPeriod = $event"
+                  is-temperature-api
+                />
+              </template>
+              <template #fallback>
+                <ChartSkeleton />
+              </template>
+            </Suspense>
+          </div>
+        </div>
+      </template>
 
-        <!-- Skeleton loaders while loading -->
-        <CompteurWidgetSkeleton v-if="dashboardLoading" />
-        <CompteurWidgetSkeleton v-if="dashboardLoading && selectedCompteurs.length > 1" />
-      </div>
+      <!-- ===== TEMPERATURE VIEW ===== -->
+      <template v-else-if="dashboardViewMode === 'temperature'">
+        <!-- Loading State -->
+        <div v-if="isLoadingThermal && enrichedThermalSensors.length === 0" class="w-full h-96 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex flex-col items-center justify-center text-slate-600 dark:text-slate-300 gap-4">
+          <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 dark:border-slate-700 border-t-purple-600 dark:border-t-purple-400"></div>
+          <p class="text-lg font-medium">{{ $t('common.loading') }}</p>
+        </div>
 
-      <!-- Energy and Temperature Charts Side by Side -->
-      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <!-- Energy Chart (Left) -->
-        <div>
-          <Suspense>
-            <template #default>
-              <UnifiedChart
-                mode="energy"
-                :period="energyChartPeriod"
-                :subtitle="$t('dashboard.unifiedChart.energy')"
-                :selected-compteurs="enrichedCompteurs"
-                @update:period="energyChartPeriod = $event"
+        <!-- Sensor Widget Grid (matches energy CompteurWidget layout) -->
+        <div v-else :class="['grid gap-6', thermalGridLayoutClass]">
+          <!-- Empty State -->
+          <div v-if="enrichedThermalSensors.length === 0" class="col-span-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#0f1419] p-12 text-center">
+            <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-5xl mb-4">thermostat</span>
+            <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">{{ $t('globalMeters.noSensorsSelected.title', 'No sensors selected') }}</p>
+            <p class="text-gray-600 dark:text-text-muted text-sm mb-6">{{ $t('globalMeters.noSensorsSelected.description', 'Select sensors to view temperature data') }}</p>
+            <button
+              @click="showCapteurSelector = true"
+              class="inline-flex items-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-700 px-4 py-3 text-sm font-bold text-white transition-colors shadow-lg"
+            >
+              <span class="material-symbols-outlined text-lg">add</span>
+              {{ $t('globalMeters.addSensors', 'Add Sensors') }}
+            </button>
+          </div>
+
+          <!-- Temperature Sensor Widget Cards (CompteurWidget style) -->
+          <div
+            v-for="(sensor, index) in enrichedThermalSensors"
+            :key="sensor.id"
+            class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
+          >
+            <!-- Widget Header with color accent (matches CompteurWidget) -->
+            <div class="px-4 py-3 border-b-2" :style="{ borderColor: getThermalSensorColor(index) }">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="material-symbols-outlined text-xl" :style="{ color: getThermalSensorColor(index) }">thermostat</span>
+                <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ sensor.name }}</h3>
+                <!-- Status dot -->
+                <span :class="[
+                  'inline-flex h-2 w-2 rounded-full flex-shrink-0 ml-auto',
+                  sensor.powerStatus !== false
+                    ? 'bg-green-500 animate-pulse shadow-[0_0_4px_rgba(34,197,94,0.5)]'
+                    : 'bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]'
+                ]"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <p class="text-xs text-slate-600 dark:text-slate-400">{{ sensor.label }}</p>
+                <!-- Mode Badge -->
+                <span v-if="sensor.mode" :class="[
+                  'px-2 py-0.5 rounded-full text-[10px] font-bold',
+                  sensor.mode === 'manuel' || sensor.mode === 'manual'
+                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+                    : 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                ]">
+                  {{ sensor.mode === 'manuel' || sensor.mode === 'manual' ? 'Manuel' : 'Auto' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Main KPI Display (matches CompteurWidget main value) -->
+            <div class="px-4 py-6">
+              <div class="flex items-baseline justify-between mb-3">
+                <span class="text-xs font-medium text-slate-600 dark:text-slate-400">{{ $t('thermal.currentTemp', 'Current Temperature') }}</span>
+                <span class="text-xs text-slate-500 dark:text-slate-500">{{ $t('common.justNow') }}</span>
+              </div>
+              <div class="flex items-end justify-between mb-4">
+                <div class="flex items-baseline gap-2">
+                  <span class="text-4xl font-bold" :style="{ color: getThermalSensorColor(index) }">
+                    {{ formatThermalTemp(sensor.temperature) }}
+                  </span>
+                  <span class="text-2xl font-medium text-slate-900 dark:text-slate-100">°C</span>
+                </div>
+                <!-- Daily Min / Max (based on 24h data) -->
+                <div class="flex flex-col items-end gap-0.5">
+                  <div class="flex items-center gap-0">
+                    <span class="material-symbols-outlined text-red-500 dark:text-red-400" style="font-size: 14px;">arrow_upward</span>
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 w-12 text-right">{{ formatThermalTemp(getDailyMinMax(sensor.deviceUUID).max) }}°C</span>
+                  </div>
+                  <div class="flex items-center gap-0">
+                    <span class="material-symbols-outlined text-blue-500 dark:text-blue-400" style="font-size: 14px;">arrow_downward</span>
+                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 w-12 text-right">{{ formatThermalTemp(getDailyMinMax(sensor.deviceUUID).min) }}°C</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Humidity KPI -->
+              <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <div class="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 rounded-lg p-4 border border-purple-200 dark:border-purple-900/30">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-purple-600 dark:text-purple-400" style="font-size: 20px;">water_drop</span>
+                      <span class="text-sm font-semibold text-purple-800 dark:text-purple-300">{{ $t('thermal.humidity', 'Humidity') }}</span>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                      <span class="text-2xl font-bold text-purple-900 dark:text-purple-200">{{ formatThermalTemp(sensor.humidity) }}</span>
+                      <span class="text-base font-semibold text-purple-700 dark:text-purple-300">%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Temperature Charts (below widgets, like energy charts) -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <!-- 24h Temperature Chart -->
+          <div class="rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex flex-col">
+            <div class="px-4 py-3 border-b border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <div class="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ $t('dashboard.temperature.chart24h', '24 Hour Temperature') }} (°C)</h3>
+              </div>
+            </div>
+            <div class="flex-1 p-4 min-h-[250px]">
+              <div v-if="filteredTemperatureChartData.length === 0 && !isLoadingTemperatureChart" class="w-full h-full flex items-center justify-center">
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ $t('common.noData', 'No data available') }}</p>
+              </div>
+              <TemperatureChart
+                v-else
+                :sensors="filteredTemperatureChartData"
+                :loading="isLoadingTemperatureChart"
+                :show-legend="true"
+                :chart-label="$t('dashboard.temperature.chart24h', '24 Hour Temperature')"
               />
-            </template>
-            <template #fallback>
-              <ChartSkeleton />
-            </template>
-          </Suspense>
-        </div>
+            </div>
+          </div>
 
-        <!-- Temperature Chart (Right) -->
-        <div>
-          <Suspense>
-            <template #default>
-              <UnifiedChart
-                mode="temperature"
-                :period="temperatureChartPeriod"
-                :subtitle="$t('dashboard.unifiedChart.temperature')"
-                :selected-compteurs="enrichedCompteurs"
-                @update:period="temperatureChartPeriod = $event"
-                is-temperature-api
+          <!-- 30-day Temperature Chart -->
+          <div class="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex flex-col">
+            <div class="px-4 py-3 border-b border-indigo-200 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <div class="h-2 w-2 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500"></div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ $t('dashboard.temperature.chart30d', '30 Day Temperature') }} (°C)</h3>
+              </div>
+            </div>
+            <div class="flex-1 p-4 min-h-[250px]">
+              <div v-if="filteredMonthlyChartData.length === 0 && !isLoadingMonthlyChart" class="w-full h-full flex items-center justify-center">
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ $t('common.noData', 'No data available') }}</p>
+              </div>
+              <MonthlyTemperatureChart
+                v-else
+                :sensors="filteredMonthlyChartData"
+                :available-sensors="availableMonthlySensors"
+                :loading="isLoadingMonthlyChart"
+                :selected-sensor-id="selectedMonthlySensorId"
+                @sensor-selected="handleMonthlySensorSelected"
               />
-            </template>
-            <template #fallback>
-              <ChartSkeleton />
-            </template>
-          </Suspense>
+            </div>
+          </div>
         </div>
-      </div>
+      </template>
 
-      <!-- Equipment Status Table -->
-      <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <!-- Equipment Status Table (Always visible) -->
+      <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 overflow-hidden mt-6">
         <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ $t('dashboard.equipment.title') }}</h3>
@@ -321,8 +524,10 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, defineAsyncComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { useViewLifecycle } from '@/composables/useViewLifecycle'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
+import CapteurSelector from '@/components/dashboard/CapteurSelector.vue'
 import CompteurWidget from '@/components/dashboard/CompteurWidget.vue'
 import CompteurWidgetV2 from '@/components/dashboard/CompteurWidgetV2.vue'
 import CompteurWidgetSkeleton from '@/components/skeletons/CompteurWidgetSkeleton.vue'
@@ -334,6 +539,7 @@ const UnifiedChart = defineAsyncComponent(() => import('@/components/dashboard/U
 import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
 import { useMetersStore } from '@/stores/useMetersStore'
+import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
 import { useTelemetryDynamic } from '@/composables/useTelemetryDynamic'
 import { usePuissance } from '@/composables/usePuissance'
 import { DEFAULT_WIDGET_CONFIG, getTimeRange } from '@/config/telemetryConfig'
@@ -341,6 +547,9 @@ import { useApiOnly } from '@/config/dataMode'
 import { isFeatureEnabled } from '@/config/featureFlags'
 import { watch } from 'vue'
 import { getAllIndusmindCustomerDevices, type Device } from '@/services/deviceAPI'
+import { fetchThermalDashboardData, fetchTemperatureChart24h, fetchTemperatureChartMonthly, type ThermalSensorData, type ThermalDashboardData } from '@/services/thermalTelemetryAPI'
+import TemperatureChart from '@/features/meters/components/TemperatureChart.vue'
+import MonthlyTemperatureChart from '@/features/meters/components/MonthlyTemperatureChart.vue'
 import {
   fetchAllDevicesLatestTelemetry,
   formatTelemetryValue,
@@ -360,6 +569,7 @@ console.log('[DashboardView] Using new widget system:', useNewWidgetSystem.value
 // ============================================================================
 
 const { t } = useI18n()
+const { isActive, guard } = useViewLifecycle()
 
 const currentTime = ref(new Date())
 const lastDataUpdateTime = ref(new Date())
@@ -374,11 +584,53 @@ let equipmentTelemetryInterval: ReturnType<typeof setInterval> | null = null
 // Auto-refresh intervals
 let telemetryRefreshInterval: ReturnType<typeof setInterval> | null = null
 
+// Thermal sensor data (from thermalTelemetryAPI - same approach as ThermalManagementView)
+const thermalZones = ref<ThermalSensorData[]>([])
+const thermalSummary = ref<ThermalDashboardData['summary'] | null>(null)
+const isLoadingThermal = ref(false)
+
+// Temperature chart data
+const temperatureChartData = ref<any[]>([])
+const monthlyChartData = ref<any[]>([])
+const isLoadingTemperatureChart = ref(false)
+const isLoadingMonthlyChart = ref(false)
+const selectedMonthlySensorId = ref<string>('')
+
+// Get stores for syncing selections (must be before computed that use them)
+const metersStore = useMetersStore()
+const sensorsStore = useSensorsStore()
+
+// Available sensors for monthly chart selector
+const availableMonthlySensors = computed(() => {
+  const allSensors = sensorsStore.availableSensors
+  return allSensors.map(s => ({
+    deviceUUID: s.deviceUUID,
+    sensorLabel: s.label || s.name
+  }))
+})
+
+// Auto-select first sensor and fetch monthly data when sensors become available
+watch(availableMonthlySensors, (sensors) => {
+  console.log('[DashboardView] availableMonthlySensors watcher fired - sensors:', sensors.length, 'selectedMonthlySensorId:', selectedMonthlySensorId.value)
+  if (sensors.length > 0 && !selectedMonthlySensorId.value) {
+    const firstSensorId = sensors[0].deviceUUID
+    console.log('[DashboardView] Auto-selecting first sensor:', firstSensorId)
+    selectedMonthlySensorId.value = firstSensorId
+    fetchMonthlyTemperatureData(firstSensorId)
+  } else if (sensors.length === 0) {
+    console.log('[DashboardView] No sensors available yet')
+  } else {
+    console.log('[DashboardView] Sensor already selected, skipping auto-select')
+  }
+}, { immediate: true })
+
 // ✅ HANDLE MODAL VISIBILITY WITH LOCAL STATE
 const showCompteurSelector = ref(false)
-
-// Get metersStore for syncing selections
-const metersStore = useMetersStore()
+const showCapteurSelector = ref(false)
+const dashboardViewMode = ref<'energy' | 'temperature'>(
+  (localStorage.getItem('dashboard:viewMode') as 'energy' | 'temperature') || 'energy'
+)
+watch(dashboardViewMode, (val) => localStorage.setItem('dashboard:viewMode', val))
 
 const { dashboardStore, equipmentStore, alertsStore, initializeRealtimeData, stopRealtimeData } =
   useRealtimeData()
@@ -630,6 +882,110 @@ const gridLayoutClass = computed(() => {
   return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
 })
 
+/**
+ * Enriched thermal sensors - merges store selectedSensors with thermalZones API data
+ * Same approach as GlobalMetersView and ThermalManagementView
+ */
+const enrichedThermalSensors = computed(() => {
+  const selectedSensors = sensorsStore.selectedSensors
+  if (selectedSensors.length === 0) return []
+
+  return selectedSensors.map(sensor => {
+    // Find matching thermal data by deviceUUID
+    const thermalData = thermalZones.value.find(tz =>
+      tz.deviceUUID === sensor.deviceUUID ||
+      String(tz.id) === String(sensor.id) ||
+      tz.name === sensor.name
+    )
+
+    return {
+      id: sensor.id,
+      name: sensor.name,
+      label: sensor.label,
+      deviceUUID: sensor.deviceUUID,
+      sensorLabel: thermalData?.displayName || thermalData?.label || sensor.label || sensor.name,
+      temperature: thermalData?.temperature ?? null,
+      humidity: thermalData?.humidity ?? null,
+      dewPoint: thermalData?.dewPoint ?? null,
+      mode: thermalData?.mode || (sensor as any).mode || null,
+      minTemp: thermalData?.minTemp ?? (sensor as any).minTemp ?? null,
+      maxTemp: thermalData?.maxTemp ?? (sensor as any).maxTemp ?? null,
+      powerStatus: thermalData?.powerStatus ?? thermalData?.active ?? null,
+      active: thermalData?.active ?? true,
+      zone: thermalData?.zone || (sensor as any).zone || null
+    }
+  })
+})
+
+/**
+ * Temperature grid layout class based on sensor count (mirrors gridLayoutClass for energy)
+ */
+// Filtered chart data: only show selected sensors
+const selectedSensorUUIDs = computed(() => {
+  const sensors = sensorsStore.selectedSensors
+  return new Set(sensors.map(s => s.deviceUUID))
+})
+
+const filteredTemperatureChartData = computed(() => {
+  if (selectedSensorUUIDs.value.size === 0) return temperatureChartData.value
+  return temperatureChartData.value.filter(s => selectedSensorUUIDs.value.has(s.deviceUUID))
+})
+
+const dailyMinMaxBySensor = computed(() => {
+  const map = new Map<string, { min: number | null; max: number | null }>()
+  for (const sensor of temperatureChartData.value) {
+    const values = (sensor.data || [])
+      .map((point: any) => point?.value)
+      .filter((value: any) => typeof value === 'number') as number[]
+    if (values.length === 0) {
+      map.set(sensor.deviceUUID, { min: null, max: null })
+      continue
+    }
+    map.set(sensor.deviceUUID, {
+      min: Math.min(...values),
+      max: Math.max(...values),
+    })
+  }
+  return map
+})
+
+function getDailyMinMax(sensorUUID: string): { min: number | null; max: number | null } {
+  return dailyMinMaxBySensor.value.get(sensorUUID) ?? { min: null, max: null }
+}
+
+const filteredMonthlyChartData = computed(() => {
+  if (selectedSensorUUIDs.value.size === 0) return monthlyChartData.value
+  return monthlyChartData.value.filter(s => selectedSensorUUIDs.value.has(s.deviceUUID))
+})
+
+const thermalGridLayoutClass = computed(() => {
+  const count = enrichedThermalSensors.value.length
+  if (count === 0) return 'grid-cols-1'
+  if (count === 1) return 'grid-cols-1 md:grid-cols-1'
+  if (count === 2) return 'grid-cols-1 md:grid-cols-2'
+  if (count === 3) return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+  return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+})
+
+/**
+ * Color palette for thermal sensor cards (purple theme)
+ */
+function getThermalSensorColor(index: number): string {
+  const colors = [
+    '#7c3aed', '#a855f7', '#6366f1', '#8b5cf6',
+    '#c084fc', '#818cf8', '#a78bfa', '#d946ef'
+  ]
+  return colors[index % colors.length]
+}
+
+/**
+ * Format temperature value
+ */
+function formatThermalTemp(val: number | null | undefined): string {
+  if (val === null || val === undefined || isNaN(val)) return '—'
+  return val.toFixed(1)
+}
+
 // ============================================================================
 // LIFECYCLE HOOKS
 // ============================================================================
@@ -859,89 +1215,96 @@ async function fetchTelemetryData() {
 }
 
 /**
- * Fetch temperature telemetry data for temperature zones
- * NOTE: Currently temperature sensors are not available in the API
- * This function is ready for when the API includes Indusmind_T_Sensor devices
+ * Fetch 24h temperature chart data from thermal API
  */
 async function fetchTemperatureData() {
-  console.log('[DashboardView] Temperature sensors not yet available in API')
-  console.log('[DashboardView] Temperature zones will use mock data until API is updated')
-
-  // Clear cache in API-only mode since sensors aren't in API yet
-  if (isApiOnlyMode.value) {
-    temperatureTelemetryCache.value.clear()
-    console.log('[DashboardView] API-only mode: No temperature sensors available')
-    return
-  }
-
-  // When temperature sensors are added to the API, uncomment this code:
-  /*
+  isLoadingTemperatureChart.value = true
   try {
-    // Build batch requests for temperature sensors
-    const batchRequests = Object.entries(TEMPERATURE_ZONE_DEVICES).map(([zoneId, device]) => ({
-      deviceUUID: device.deviceUUID,
-      config: {
-        keys: ['temperature'],
-        limit: 1,
-        agg: 'NONE' as const
-      }
-    }))
-
-    console.log(`[DashboardView] Batch fetching ${batchRequests.length} temperature requests`)
-
-    // Execute batch fetch
-    const results = await fetchBatchTelemetry(batchRequests)
-
-    // Process results and update temperature cache
-    let hasAnyData = false
-    Object.entries(TEMPERATURE_ZONE_DEVICES).forEach(([zoneId, device]) => {
-      const deviceData = results.get(device.deviceUUID) || []
-
-      if (deviceData.length > 0) {
-        hasAnyData = true
-      }
-
-      // Extract temperature value
-      const tempData = deviceData.filter(d => d.key === 'temperature')
-      const tempValue = tempData.length > 0 ? tempData[0].value : null
-
-      // Determine status based on temperature thresholds
-      let status = 'Normal'
-      if (tempValue !== null) {
-        if (tempValue < 0 || tempValue > 40) {
-          status = t('dashboard.equipment.status.alert')
-        }
-      } else {
-        status = t('common.noData')
-      }
-
-      const temperatureData = {
-        zoneId,
-        value: tempValue ?? 0,
-        status,
-        lastUpdate: deviceData.length > 0 ? t('common.justNow') : t('common.noData'),
-        hasData: deviceData.length > 0
-      }
-
-      temperatureTelemetryCache.value.set(zoneId, temperatureData)
-
-      console.log(`[DashboardView] ✓ Temperature cached for ${zoneId}:`, {
-        value: temperatureData.value,
-        status: temperatureData.status,
-        hasData: temperatureData.hasData
-      })
-    })
-
-    console.log('[DashboardView] ✓ Temperature fetch complete, has data:', hasAnyData)
-  } catch (error) {
-    console.error('[DashboardView] Failed to fetch temperature data:', error)
-
-    if (isApiOnlyMode.value) {
-      // In API-only mode, clear cache and show no data
-      temperatureTelemetryCache.value.clear()
+    const response = await fetchTemperatureChart24h()
+    if (response && response.success && response.data?.sensors) {
+      temperatureChartData.value = response.data.sensors
+      console.log('[DashboardView] 24h temperature chart loaded:', response.data.sensors.length, 'sensors')
+    } else {
+      temperatureChartData.value = []
     }
+  } catch (error) {
+    console.error('[DashboardView] Failed to fetch 24h temperature chart:', error)
+    temperatureChartData.value = []
+  } finally {
+    isLoadingTemperatureChart.value = false
   }
-  */
+}
+
+/**
+ * Fetch monthly temperature chart data progressively (week-by-week) for selected sensor.
+ * Each week's data is displayed on the chart as soon as it arrives.
+ */
+async function fetchMonthlyTemperatureData(sensorId?: string) {
+  const sensorIds = sensorId ? [sensorId] : undefined
+  console.log('[DashboardView] fetchMonthlyTemperatureData called with sensorId:', sensorId)
+
+  // Show loading indicator and clear previous data
+  isLoadingMonthlyChart.value = true
+  monthlyChartData.value = []
+
+  let isFirstCallback = true
+  try {
+    await fetchTemperatureChartMonthly((sensors) => {
+      // Called after each week loads — update chart progressively
+      // Deep clone to ensure Vue reactivity detects changes
+      console.log('[DashboardView] onWeekReady callback - received', sensors.length, 'sensors with', sensors.reduce((n, s) => n + s.data.length, 0), 'total points')
+      monthlyChartData.value = sensors.map(s => ({
+        ...s,
+        data: [...s.data]
+      }))
+      // Hide loading after first week data arrives
+      if (isFirstCallback) {
+        isLoadingMonthlyChart.value = false
+        isFirstCallback = false
+      }
+      console.log('[DashboardView] monthlyChartData updated, length:', monthlyChartData.value.length, 'data points:', monthlyChartData.value[0]?.data?.length)
+    }, sensorIds)
+    console.log('[DashboardView] Monthly temperature chart fully loaded:', monthlyChartData.value.length, 'sensors')
+  } catch (error) {
+    console.error('[DashboardView] Failed to fetch monthly temperature chart:', error)
+    isLoadingMonthlyChart.value = false
+  }
+}
+
+/**
+ * Handle sensor selection change from MonthlyTemperatureChart
+ */
+function handleMonthlySensorSelected(sensorId: string) {
+  console.log('[DashboardView] Monthly sensor selected:', sensorId, 'current:', selectedMonthlySensorId.value)
+  if (sensorId && sensorId !== selectedMonthlySensorId.value) {
+    selectedMonthlySensorId.value = sensorId
+    // Refetch data for only this sensor
+    console.log('[DashboardView] Fetching monthly data for sensor:', sensorId)
+    fetchMonthlyTemperatureData(sensorId)
+  } else {
+    console.log('[DashboardView] Sensor already selected or invalid, skipping fetch')
+  }
+}
+
+/**
+ * Fetch thermal sensor data using thermalTelemetryAPI (same approach as ThermalManagementView)
+ */
+async function fetchThermalSensorData(showLoader = false) {
+  if (showLoader) isLoadingThermal.value = true
+  try {
+    const thermalData = await fetchThermalDashboardData(false)
+    if (thermalData && thermalData.sensors) {
+      thermalZones.value = thermalData.sensors
+      if (thermalData.summary) {
+        thermalSummary.value = thermalData.summary
+      }
+      console.log('[DashboardView] Thermal data loaded:', thermalData.sensors.length, 'sensors')
+    }
+  } catch (error) {
+    console.error('[DashboardView] Failed to fetch thermal data:', error)
+  } finally {
+    if (showLoader) isLoadingThermal.value = false
+  }
 }
 
 onMounted(async () => {
@@ -955,6 +1318,14 @@ onMounted(async () => {
     console.log('Compteur IDs:', dashboardStore.compteurs.map(c => c.id))
   } catch (error) {
     console.error('Failed to load compteurs:', error)
+  }
+
+  // Load sensors list from API (temperature sensors)
+  try {
+    await sensorsStore.fetchSensors()
+    console.log('[DashboardView] Loaded sensors:', sensorsStore.availableSensors.length)
+  } catch (error) {
+    console.error('[DashboardView] Failed to load sensors:', error)
   }
 
   // Validate and clean up invalid localStorage selection
@@ -975,12 +1346,19 @@ onMounted(async () => {
 
   // Fetch initial telemetry data
   await fetchTelemetryData()
+  if (!guard()) return // Component unmounted during fetch
 
-  // Fetch initial temperature data
+  // Fetch initial thermal sensor data (same approach as ThermalManagementView)
+  await fetchThermalSensorData(true)
+  if (!guard()) return
+
+  // Fetch temperature charts (24h chart only - monthly waits for sensor selection)
   await fetchTemperatureData()
+  if (!guard()) return
 
   // Fetch equipment devices and telemetry for table
   await fetchEquipmentDevices()
+  if (!guard()) return
 
   // Update time display every second (no API calls)
   timeInterval = window.setInterval(() => {
@@ -988,11 +1366,15 @@ onMounted(async () => {
   }, 1000)
 
   // Set up auto-refresh for telemetry data every 20 seconds (silent, no loader)
+  // NOTE: chart-data and chart-monthly are NOT refreshed — they are heavy and cached on the backend
   telemetryRefreshInterval = window.setInterval(() => {
+    if (!isActive.value) return // Skip if component unmounted
     if (selectedCompteurs.value.length > 0) {
       console.log('[DashboardView] Silent telemetry refresh (20s interval)')
       fetchTelemetryData()
     }
+    // Only refresh live thermal sensor data (not chart endpoints)
+    fetchThermalSensorData(false)
   }, 20000)
 })
 
@@ -1300,6 +1682,14 @@ function handleCompteurSelection(selectedIds: string[]) {
   // Update the metersStore with the selected IDs
   metersStore.setSelectedMeters(selectedIds)
   showCompteurSelector.value = false
+}
+
+/**
+ * Handle sensor selection from CapteurSelector modal
+ */
+function handleCapteurSelection(selectedIds: string[]) {
+  sensorsStore.setSelectedSensors(selectedIds)
+  showCapteurSelector.value = false
 }
 
 /**
