@@ -710,6 +710,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useViewLifecycle } from '@/composables/useViewLifecycle'
 import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
 import { dataMode } from '@/config/dataMode'
 import { fetchThermalDashboardData, updateSensorMode } from '@/services/thermalTelemetryAPI'
@@ -725,6 +726,7 @@ import VueApexCharts from 'vue3-apexcharts'
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 
 const { t } = useI18n()
+const { isActive, guard } = useViewLifecycle()
 const sensorsStore = useSensorsStore()
 
 // Thermal API state
@@ -2447,7 +2449,7 @@ async function silentRefreshThermalData() {
 
     if (thermalData.status === 'success' && thermalData.sensors.length > 0) {
       buildZonesFromThermalAPI(thermalData)
-      await loadChartData()
+      // NOTE: chart data is NOT refreshed during silent refresh — it's heavy and cached on the backend
     }
   } catch (error) {
     // Silent refresh — don't show errors to user
@@ -2546,8 +2548,13 @@ onMounted(async () => {
     isFetchingThermal.value = false
   }
 
+  if (!guard()) return // Component unmounted during fetch
+
   // Set up silent auto-refresh every 15 seconds (no loader)
-  thermalAutoRefreshInterval = setInterval(silentRefreshThermalData, 15000)
+  thermalAutoRefreshInterval = setInterval(() => {
+    if (!isActive.value) return // Skip if component unmounted
+    silentRefreshThermalData()
+  }, 15000)
 })
 
 const sensorDisplayKey = computed(() => sensorsForDisplay.value.map((s) => s.id).join('|'))

@@ -785,6 +785,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useViewLifecycle } from '@/composables/useViewLifecycle'
 import { useMetersStore } from '@/stores/useMetersStore'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
@@ -796,6 +797,7 @@ import { useApiData } from '@/config/dataMode'
 import Chart from 'chart.js/auto'
 
 const { t } = useI18n()
+const { isActive, guard } = useViewLifecycle()
 const metersStore = useMetersStore()
 const isApiMode = useApiData()
 
@@ -2816,11 +2818,13 @@ onMounted(async () => {
   if (metersToUse.length > 0) {
     currentMeterIndex.value = 0
     await loadCurrentMeterData()
+    if (!guard()) return // Component unmounted during fetch
   }
 
   // Start 20-second silent refresh interval for telemetry data
   if (isApiMode) {
     telemetryRefreshInterval = setInterval(() => {
+      if (!isActive.value) return // Skip if component unmounted
       if (validSelectedMeterIds.value.length > 0 && currentDeviceUUID.value) {
         console.log('[Current] Silent refresh triggered (20s interval)')
         loadCurrentMeterDataSilently()
