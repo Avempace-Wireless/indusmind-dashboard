@@ -382,9 +382,9 @@ const timestamp = computed(() => {
     case 'instantanée':
       return t('compteur.time.now')
     case 'jour':
-      return '10m ago'
+      return t('compteur.time.today', 'Aujourd\'hui')
     case 'hier':
-      return '1d ago'
+      return t('compteur.time.yesterday', 'Hier')
   }
 })
 

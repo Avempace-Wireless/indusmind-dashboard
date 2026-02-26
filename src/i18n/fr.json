@@ -230,10 +230,12 @@
       "title": "Énergie & Température",
       "subtitle": "{count} compteur(s) sélectionné(s)",
       "energy": "Consommation Énergétique",
+      "energyToday": "Consommation Énergétique d'aujourd'hui",
+      "energyYesterday": "Consommation Énergétique d'hier",
       "temperature": "Gestion Thermique"
     },
     "energy": "Énergie",
-    "temperature": "Température",
+    "temperatureMode": "Température",
     "period": {
       "today": "Aujourd'hui",
       "yesterday": "Hier",
@@ -285,6 +287,10 @@
       "title": "Derniers Événements",
       "viewAll": "Voir tout",
       "noEvents": "Aucun événement récent"
+    },
+    "temperature": {
+      "chart24h": "Température 24 Heures",
+      "chart30d": "Température 30 Jours"
     }
   },
   "compteur": {
@@ -316,6 +322,8 @@
     },
     "time": {
       "now": "Maintenant",
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
       "min30": "-30min",
       "min15": "-15min",
       "h0": "0h",
@@ -882,7 +890,6 @@
       "updating": "Mise à jour en cours...",
       "updateSuccess": "Mode mis à jour avec succès",
       "updateError": "Impossible de mettre à jour le mode",
-      "updateError": "Impossible de mettre à jour le mode",
       "updateErrorRetry": "Impossible de mettre à jour le mode. Veuillez réessayer.",
       "updateErrorBrief": "Échec de la mise à jour"
     },
@@ -999,6 +1006,8 @@
     }
   },
   "globalMeters": {
+    "barChart": "Histogramme",
+    "lineChart": "Courbe",
     "pageTitle": "Vue Compteurs Globaux",
     "subtitle": "Aperçu consolidé de plusieurs compteurs et analyse de consommation",
     "selectMeters": "Sélectionner des Compteurs",
@@ -1006,6 +1015,8 @@
     "powerTrend": "Tendance de Puissance",
     "energyTrend": "Tendance d'Énergie",
     "energyConsumption": "Consommation d'Énergie",
+    "todayConsumption": "Consommation d'aujourd'hui",
+    "monthlyConsumption": "Consommation mensuelle",
     "yearlyEnergyConsumption": "Consommation d'Énergie Annuelle",
     "dailyAverage": "Moyenne Quotidienne",
     "energyOverTime": "Consommation d'énergie dans le temps",
@@ -1057,7 +1068,7 @@
     "manageSensors": "Gérer les capteurs",
     "temperature24h": "Température 24h",
     "temperatureMonthlyInfo": "Température min/max sur les 30 derniers jours",
-    "temperatureMonthly": "Température mensuelle",
+    "temperatureMonthly": "Température 30 jours",
     "noSensorsSelected": {
       "title": "Aucun capteur sélectionné",
       "description": "Sélectionnez des capteurs pour afficher les données de température",

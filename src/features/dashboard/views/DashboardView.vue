@@ -140,18 +140,18 @@
           <CompteurWidgetSkeleton v-if="dashboardLoading && selectedCompteurs.length > 1" />
         </div>
 
-        <!-- Energy and Temperature Charts Side by Side -->
+        <!-- Energy Charts Side by Side -->
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <!-- Energy Chart (Left) -->
+          <!-- Consommation Énergétique d'aujourd'hui -->
           <div>
             <Suspense>
               <template #default>
                 <UnifiedChart
                   mode="energy"
-                  :period="energyChartPeriod"
-                  :subtitle="$t('dashboard.unifiedChart.energy')"
+                  period="today"
+                  :subtitle="$t('dashboard.unifiedChart.energyToday', 'Consommation Énergétique d\'aujourd\'hui')"
                   :selected-compteurs="enrichedCompteurs"
-                  @update:period="energyChartPeriod = $event"
+                  hide-period-selector
                 />
               </template>
               <template #fallback>
@@ -160,17 +160,16 @@
             </Suspense>
           </div>
 
-          <!-- Temperature Chart (Right) -->
+          <!-- Consommation Énergétique d'hier -->
           <div>
             <Suspense>
               <template #default>
                 <UnifiedChart
-                  mode="temperature"
-                  :period="temperatureChartPeriod"
-                  :subtitle="$t('dashboard.unifiedChart.temperature')"
+                  mode="energy"
+                  period="yesterday"
+                  :subtitle="$t('dashboard.unifiedChart.energyYesterday')"
                   :selected-compteurs="enrichedCompteurs"
-                  @update:period="temperatureChartPeriod = $event"
-                  is-temperature-api
+                  :hide-period-selector="true"
                 />
               </template>
               <template #fallback>
@@ -214,8 +213,8 @@
             <!-- Widget Header with color accent (matches CompteurWidget) -->
             <div class="px-4 py-3 border-b-2" :style="{ borderColor: getThermalSensorColor(index) }">
               <div class="flex items-center gap-2 mb-1">
-                <span class="material-symbols-outlined text-xl" :style="{ color: getThermalSensorColor(index) }">thermostat</span>
-                <h3 class="text-base font-bold text-slate-900 dark:text-slate-100">{{ sensor.name }}</h3>
+                <span class="material-symbols-outlined text-xl flex-shrink-0" :style="{ color: getThermalSensorColor(index) }">thermostat</span>
+                <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 truncate overflow-hidden flex-1 min-w-0" :title="sensor.name">{{ sensor.name }}</h3>
                 <!-- Status dot -->
                 <span :class="[
                   'inline-flex h-2 w-2 rounded-full flex-shrink-0 ml-auto',
@@ -225,7 +224,7 @@
                 ]"></span>
               </div>
               <div class="flex items-center gap-2">
-                <p class="text-xs text-slate-600 dark:text-slate-400">{{ sensor.label }}</p>
+                <p class="text-xs text-slate-600 dark:text-slate-400 truncate overflow-hidden flex-1 min-w-0" :title="sensor.label">{{ sensor.label }}</p>
                 <!-- Mode Badge -->
                 <span v-if="sensor.mode" :class="[
                   'px-2 py-0.5 rounded-full text-[10px] font-bold',
@@ -288,9 +287,38 @@
           <!-- 24h Temperature Chart -->
           <div class="rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex flex-col">
             <div class="px-4 py-3 border-b border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 flex-shrink-0">
-              <div class="flex items-center gap-2">
-                <div class="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"></div>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ $t('dashboard.temperature.chart24h', '24 Hour Temperature') }} (°C)</h3>
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <div class="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ $t('dashboard.temperature.chart24h', '24 Hour Temperature') }} (°C)</h3>
+                </div>
+                <!-- Chart Type Toggle -->
+                <div class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-700 rounded p-0.5">
+                  <button
+                    @click="dashboard24hTemperatureChartType = 'bar'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      dashboard24hTemperatureChartType === 'bar'
+                        ? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-purple-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.barChart', 'Bar Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">bar_chart</span>
+                  </button>
+                  <button
+                    @click="dashboard24hTemperatureChartType = 'line'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      dashboard24hTemperatureChartType === 'line'
+                        ? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-purple-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.lineChart', 'Line Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">show_chart</span>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="flex-1 p-4 min-h-[250px]">
@@ -303,6 +331,7 @@
                 :loading="isLoadingTemperatureChart"
                 :show-legend="true"
                 :chart-label="$t('dashboard.temperature.chart24h', '24 Hour Temperature')"
+                :chart-type="dashboard24hTemperatureChartType"
               />
             </div>
           </div>
@@ -310,9 +339,38 @@
           <!-- 30-day Temperature Chart -->
           <div class="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex flex-col">
             <div class="px-4 py-3 border-b border-indigo-200 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 flex-shrink-0">
-              <div class="flex items-center gap-2">
-                <div class="h-2 w-2 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500"></div>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ $t('dashboard.temperature.chart30d', '30 Day Temperature') }} (°C)</h3>
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <div class="h-2 w-2 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500"></div>
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{ $t('dashboard.temperature.chart30d', '30 Day Temperature') }} (°C)</h3>
+                </div>
+                <!-- Chart Type Toggle -->
+                <div class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-700 rounded p-0.5">
+                  <button
+                    @click="dashboardMonthlyTemperatureChartType = 'bar'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      dashboardMonthlyTemperatureChartType === 'bar'
+                        ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.barChart', 'Bar Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">bar_chart</span>
+                  </button>
+                  <button
+                    @click="dashboardMonthlyTemperatureChartType = 'line'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      dashboardMonthlyTemperatureChartType === 'line'
+                        ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.lineChart', 'Line Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">show_chart</span>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="flex-1 p-4 min-h-[250px]">
@@ -325,6 +383,7 @@
                 :available-sensors="availableMonthlySensors"
                 :loading="isLoadingMonthlyChart"
                 :selected-sensor-id="selectedMonthlySensorId"
+                :chart-type="dashboardMonthlyTemperatureChartType"
                 @sensor-selected="handleMonthlySensorSelected"
               />
             </div>
@@ -595,6 +654,10 @@ const monthlyChartData = ref<any[]>([])
 const isLoadingTemperatureChart = ref(false)
 const isLoadingMonthlyChart = ref(false)
 const selectedMonthlySensorId = ref<string>('')
+
+// Chart type state for temperature charts
+const dashboard24hTemperatureChartType = ref<'bar' | 'line'>('line')
+const dashboardMonthlyTemperatureChartType = ref<'bar' | 'line'>('line')
 
 // Get stores for syncing selections (must be before computed that use them)
 const metersStore = useMetersStore()

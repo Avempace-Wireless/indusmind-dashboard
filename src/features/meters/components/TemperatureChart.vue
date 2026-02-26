@@ -15,7 +15,12 @@
     <div v-else class="w-full overflow-visible h-full flex flex-col">
       <!-- Chart.js Line Chart -->
       <div class="flex-1 min-h-0">
-        <LineChart :data="chartData" :options="chartOptions" />
+        <component
+          :is="chartType === 'bar' ? BarChart : LineChart"
+          :data="chartData"
+          :options="chartOptions"
+          :key="chartType"
+        />
       </div>
 
       <!-- Chart Info -->
@@ -29,13 +34,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Line as LineChart } from 'vue-chartjs'
+import { Line as LineChart, Bar as BarChart } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -44,7 +50,7 @@ import {
 import ChartDataLabels from 'chartjs-plugin-datalabels'
 import { getMeterColorByName } from '@/utils/meterColors'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, ChartDataLabels)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler, ChartDataLabels)
 
 const { t } = useI18n()
 
@@ -59,11 +65,14 @@ interface SensorData {
   }>
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   sensors: SensorData[]
   loading: boolean
   sensorColors?: Record<string, string>  // Map of deviceUUID -> color hex
-}>()
+  chartType?: 'bar' | 'line'
+}>(), {
+  chartType: 'line'
+})
 
 // Filter sensors that have temperature data
 const sensorsWithData = computed(() => {
@@ -140,10 +149,11 @@ const chartData = computed(() => {
     const colors = getSensorColor(index, sensor.deviceUUID, sensor.sensorLabel, sensor.sensorName)
     const data = sensor.data.map(point => point.value)
 
+    const isBar = props.chartType === 'bar'
     return {
       label: sensor.sensorLabel,
       data: data,
-      backgroundColor: colors.bg,
+      backgroundColor: isBar ? colors.border : colors.bg,
       borderColor: colors.border,
       borderWidth: 2.5,
       tension: 0.4, // Smooth curves

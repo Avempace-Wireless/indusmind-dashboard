@@ -139,7 +139,9 @@
                 `border-${getMeterColorTailwind(index, compteur.name)}-400 dark:border-${getMeterColorTailwind(index, compteur.name)}-500`
               ]" :style="{ backgroundColor: `${getChartColor(index, compteur.name)}08`, minHeight: '90px' }">
                 <div class="flex-1 min-w-0 overflow-hidden">
-                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight break-words pt-1">{{ compteur.name }}</h3>
+                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight break-words pt-1" :title="compteur.name">
+                    {{ compteur.name }}
+                  </h3>
                   <p class="text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">{{ compteur.subtitle || $t('globalMeters.energyMeter') }}</p>
                 </div>
                 <span :class="[
@@ -195,14 +197,95 @@
 
         <!-- Right Panel: Charts (1/3 width on lg, 1/2 on sm, full width on mobile) -->
         <div class="col-span-1 flex flex-col gap-1 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 lg:overflow-y-auto">
-          <!-- Energy Chart -->
+          <!-- Today's Energy Consumption Chart -->
           <div class="overflow-hidden rounded-lg md:rounded-xl border border-green-300 md:border-2 dark:border-green-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
             <div class="border-b border-green-300 md:border-b-2 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
-              <div class="flex items-center gap-1 md:gap-2">
-                <div class="h-1 w-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"></div>
-                <h3 class="text-xs md:text-xs font-bold text-gray-900 dark:text-white">
-                  {{ $t('globalMeters.energyConsumption') }} (kWh)
-                </h3>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-1 md:gap-2">
+                  <div class="h-1 w-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"></div>
+                  <h3 class="text-xs md:text-xs font-bold text-gray-900 dark:text-white">
+                    {{ $t('globalMeters.todayConsumption', "Consommation d'aujourd'hui") }} (kWh)
+                  </h3>
+                </div>
+                <!-- Chart Type Toggle -->
+                <div class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-700 rounded p-0.5">
+                  <button
+                    @click="dailyChartType = 'bar'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      dailyChartType === 'bar'
+                        ? 'bg-white dark:bg-slate-600 text-green-600 dark:text-green-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.barChart', 'Bar Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">bar_chart</span>
+                  </button>
+                  <button
+                    @click="dailyChartType = 'line'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      dailyChartType === 'line'
+                        ? 'bg-white dark:bg-slate-600 text-green-600 dark:text-green-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.lineChart', 'Line Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">show_chart</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
+              <div v-if="enrichedCompteurs.length === 0 || enrichedCompteurs.every(m => !m.hourlyDataDifferential || m.hourlyDataDifferential.length === 0)" class="w-full h-full flex items-center justify-center">
+                <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
+              </div>
+              <DailyEnergyChart
+                v-else
+                :meters="enrichedCompteurs"
+                :loading="isLoadingAPI"
+                :chart-type="dailyChartType"
+              />
+            </div>
+          </div>
+
+          <!-- Annual/Monthly Energy Chart -->
+          <div class="overflow-hidden rounded-lg md:rounded-xl border border-green-300 md:border-2 dark:border-green-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
+            <div class="border-b border-green-300 md:border-b-2 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-1 md:gap-2">
+                  <div class="h-1 w-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-500"></div>
+                  <h3 class="text-xs md:text-xs font-bold text-gray-900 dark:text-white">
+                    {{ $t('globalMeters.energyConsumption') }} (kWh)
+                  </h3>
+                </div>
+                <!-- Chart Type Toggle -->
+                <div class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-700 rounded p-0.5">
+                  <button
+                    @click="yearlyChartType = 'bar'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      yearlyChartType === 'bar'
+                        ? 'bg-white dark:bg-slate-600 text-green-600 dark:text-green-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.barChart', 'Bar Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">bar_chart</span>
+                  </button>
+                  <button
+                    @click="yearlyChartType = 'line'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      yearlyChartType === 'line'
+                        ? 'bg-white dark:bg-slate-600 text-green-600 dark:text-green-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.lineChart', 'Line Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">show_chart</span>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
@@ -213,29 +296,7 @@
                 v-else
                 :meters="enrichedCompteurs"
                 :loading="isLoadingAPI"
-              />
-            </div>
-          </div>
-
-          <!-- Temperature Chart -->
-          <div class="overflow-hidden rounded-lg md:rounded-xl border border-purple-300 md:border-2 dark:border-purple-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
-            <div class="border-b border-purple-300 md:border-b-2 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
-              <div class="flex items-center gap-1 md:gap-2">
-                <div class="h-1 w-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"></div>
-                <h3 class="text-xs md:text-xs font-bold text-gray-900 dark:text-white">
-                  {{ $t('globalMeters.temperatureChart') }}
-                </h3>
-              </div>
-            </div>
-            <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
-              <div v-if="filteredTemperatureChartData.length === 0" class="w-full h-full flex items-center justify-center">
-                <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
-              </div>
-              <TemperatureChart
-                v-else
-                :sensors="filteredTemperatureChartData"
-                :loading="isLoadingTemperature"
-                :sensor-colors="sensorColorMap"
+                :chart-type="yearlyChartType"
               />
             </div>
           </div>
@@ -285,8 +346,10 @@
               <div class="px-4 py-1.5 flex-shrink-0 border-b-2 relative group/header flex items-start justify-between gap-2 overflow-hidden"
                 :style="{ borderColor: getSensorColor(index), backgroundColor: `${getSensorColor(index)}08`, minHeight: '90px' }">
                 <div class="flex-1 min-w-0 overflow-hidden">
-                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight break-words pt-1">{{ sensor.label }}</h3>
-                  <p class="text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">{{ sensor.name }}</p>
+                  <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight break-words pt-1" :title="sensor.name">
+                    {{ sensor.name }}
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-500 leading-tight mt-1">{{ sensor.label }}</p>
                   <!-- Mode Badge -->
                   <span v-if="sensor.mode" :class="[
                     'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold mt-1',
@@ -350,11 +413,40 @@
           <!-- 24-Hour Temperature Chart -->
           <div class="overflow-hidden rounded-lg md:rounded-xl border border-purple-300 md:border-2 dark:border-purple-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
             <div class="border-b border-purple-300 md:border-b-2 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
-              <div class="flex items-center gap-1 md:gap-2">
-                <div class="h-1 w-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"></div>
-                <h3 class="text-xs md:text-xs font-bold text-gray-900 dark:text-white">
-                  {{ $t('globalMeters.temperature24h', '24h Temperature') }} (°C)
-                </h3>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-1 md:gap-2">
+                  <div class="h-1 w-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500"></div>
+                  <h3 class="text-xs md:text-xs font-bold text-gray-900 dark:text-white">
+                    {{ $t('globalMeters.temperature24h', '24h Temperature') }} (°C)
+                  </h3>
+                </div>
+                <!-- Chart Type Toggle -->
+                <div class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-700 rounded p-0.5">
+                  <button
+                    @click="temperatureChartType = 'bar'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      temperatureChartType === 'bar'
+                        ? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-purple-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.barChart', 'Bar Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">bar_chart</span>
+                  </button>
+                  <button
+                    @click="temperatureChartType = 'line'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      temperatureChartType === 'line'
+                        ? 'bg-white dark:bg-slate-600 text-purple-600 dark:text-purple-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.lineChart', 'Line Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">show_chart</span>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
@@ -368,6 +460,7 @@
                 :show-legend="true"
                 :chart-label="$t('globalMeters.temperature24h', '24h Temperature')"
                 :sensor-colors="sensorColorMap"
+                :chart-type="temperatureChartType"
               />
             </div>
           </div>
@@ -375,11 +468,40 @@
           <!-- Monthly Temperature Chart -->
           <div class="overflow-hidden bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0 rounded-lg md:rounded-xl border border-indigo-300 md:border-2 dark:border-indigo-800">
             <div class="border-b border-indigo-300 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 flex-shrink-0 px-1.5 md:px-3 2xl:px-2 py-1 md:py-1.5 2xl:py-1 md:border-b-2">
-              <div class="flex items-center gap-1 md:gap-2 2xl:gap-1">
-                <div class="h-1 w-1 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500"></div>
-                <h3 class="text-xs md:text-xs 2xl:text-[10px] font-bold text-gray-900 dark:text-white">
-                  {{ $t('globalMeters.temperatureMonthly', 'Monthly Temperature') }} (°C)
-                </h3>
+              <div class="flex items-center justify-between gap-1 md:gap-2 2xl:gap-1">
+                <div class="flex items-center gap-1 md:gap-2 2xl:gap-1">
+                  <div class="h-1 w-1 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500"></div>
+                  <h3 class="text-xs md:text-xs 2xl:text-[10px] font-bold text-gray-900 dark:text-white">
+                    {{ $t('globalMeters.temperatureMonthly', 'Monthly Temperature') }} (°C)
+                  </h3>
+                </div>
+                <!-- Chart Type Toggle -->
+                <div class="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-700 rounded p-0.5">
+                  <button
+                    @click="monthlyTemperatureChartType = 'bar'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      monthlyTemperatureChartType === 'bar'
+                        ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.barChart', 'Bar Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">bar_chart</span>
+                  </button>
+                  <button
+                    @click="monthlyTemperatureChartType = 'line'"
+                    :class="[
+                      'p-0.5 rounded transition-colors',
+                      monthlyTemperatureChartType === 'line'
+                        ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                    ]"
+                    :title="$t('globalMeters.lineChart', 'Line Chart')"
+                  >
+                    <span class="material-symbols-outlined" style="font-size: 14px;">show_chart</span>
+                  </button>
+                </div>
               </div>
             </div>
             <div class="flex-1 flex flex-col bg-white dark:bg-gray-800 min-h-0 p-0.5 md:p-1.5 2xl:p-1">
@@ -393,6 +515,7 @@
                 :loading="isLoadingMonthlyChart"
                 :loading-more="isLoadingMoreMonthly"
                 :selected-sensor-id="selectedMonthlySensorId"
+                :chart-type="monthlyTemperatureChartType"
                 @sensor-selected="handleMonthlySensorSelected"
               />
             </div>
@@ -404,6 +527,9 @@
 </template>
 
 <script setup lang="ts">
+// Chart type state for temperature charts
+const temperatureChartType = ref<'bar' | 'line'>('line')
+const monthlyTemperatureChartType = ref<'bar' | 'line'>('line')
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useViewLifecycle } from '@/composables/useViewLifecycle'
@@ -411,6 +537,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import CapteurSelector from '@/components/dashboard/CapteurSelector.vue'
 import EnergyConsumptionChart from '@/features/meters/components/EnergyConsumptionChart.vue'
+import DailyEnergyChart from '@/features/meters/components/DailyEnergyChart.vue'
 import TemperatureChart from '@/features/meters/components/TemperatureChart.vue'
 import MonthlyTemperatureChart from '@/features/meters/components/MonthlyTemperatureChart.vue'
 import { getMeterColorByName } from '@/utils/meterColors'
@@ -447,6 +574,10 @@ const isLoadingThermal = ref(false)
 const thermalZones = ref<ThermalSensorData[]>([])
 const thermalSummary = ref<ThermalDashboardData['summary'] | null>(null)
 const selectedMonthlySensorId = ref<string>('')
+
+// Chart type state (bar or line)
+const dailyChartType = ref<'bar' | 'line'>('bar')
+const yearlyChartType = ref<'bar' | 'line'>('bar')
 
 // Get combined grid styles for meters
 const getMetersGridCombinedStyle = computed(() => {
@@ -953,16 +1084,19 @@ const getSensorsGridStyle = () => {
 const getSensorCardGridSpan = (index: number, totalCount: number): Record<string, any> => {
   // 5 sensors: first row (0-2) at 33% each, second row (3-4) at 50% each
   if (totalCount === 5) {
-    if (index <= 2) return { gridColumn: 'span 2' }
-    if (index >= 3) return { gridColumn: 'span 3' }
+    if (index <= 2) return { gridColumn: 'span 2' }  // Items 0-2: 2 cols = 33%
+    if (index >= 3) return { gridColumn: 'span 3' }  // Items 3-4: 3 cols = 50%
   }
   // 7 sensors: first row (0-3) at 25% each, second row (4-6) at 33.33% each
   if (totalCount === 7) {
-    if (index <= 3) return { gridColumn: 'span 3' }
-    if (index >= 4) return { gridColumn: 'span 4' }
+    if (index <= 3) return { gridColumn: 'span 3' }  // Items 0-3: 3 cols = 25%
+    if (index >= 4) return { gridColumn: 'span 4' }  // Items 4-6: 4 cols = 33.33%
   }
-  // 3 sensors: last item spans full width
-  if (totalCount === 3 && index === 2) return { gridColumn: '1 / -1' }
+  // 3 sensors: last item spans full
+  if (totalCount === 3 && index === 2) {
+    return { gridColumn: '1 / -1' }
+  }
+
   return {}
 }
 
@@ -979,6 +1113,7 @@ const enrichedCompteurs = computed(() => {
 
     if (apiData) {
       // Use real API data (differential approach)
+      // Note: Backend returns todayReadings, map to hourlyDataDifferential for charts
       return {
         ...compteur,
         id: compteur.id,
@@ -988,7 +1123,7 @@ const enrichedCompteurs = computed(() => {
         currentPower: apiData.instantaneous ?? undefined, // For ComparisonChart
         today: apiData.today ?? undefined,
         yesterday: apiData.yesterday ?? undefined,
-        hourlyDataDifferential: apiData.hourlyDataDifferential || [],
+        hourlyDataDifferential: (apiData as any).todayReadings || apiData.hourlyDataDifferential || [],
         monthlyDataDifferential: apiData.monthlyDataDifferential || [],
         yearlyDataDifferential: apiData.yearlyDataDifferential || [],
       }

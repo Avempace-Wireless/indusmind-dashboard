@@ -7,7 +7,7 @@
         <p class="text-slate-600 dark:text-slate-400 text-sm">{{ subtitle }}</p>
       </div>
 
-      <div class="flex items-center gap-4 flex-wrap">
+      <div v-if="!hidePeriodSelector" class="flex items-center gap-4 flex-wrap">
         <!-- Period Selector -->
         <div class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700">
           <button
@@ -85,10 +85,12 @@ interface Props {
   subtitle: string
   selectedCompteurs: Compteur[]
   isTemperatureApi?: boolean // If true, fetch real temperature data from API instead of mock
+  hidePeriodSelector?: boolean // Hide the period selector when true
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  isTemperatureApi: false
+  isTemperatureApi: false,
+  hidePeriodSelector: false
 })
 
 const emit = defineEmits<{
@@ -128,7 +130,7 @@ const isDarkMode = computed(() => {
 const chartTitle = computed(() => {
   return props.mode === 'energy'
     ? t('dashboard.energy')
-    : t('dashboard.temperature')
+    : t('dashboard.temperatureMode')
 })
 
 // Generate energy data based on selected compteurs

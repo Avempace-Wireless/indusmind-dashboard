@@ -232,10 +232,12 @@
       "title": "Energy & Temperature",
       "subtitle": "{count} meter(s) selected",
       "energy": "Energy Consumption",
+      "energyToday": "Today's Energy Consumption",
+      "energyYesterday": "Yesterday's Energy Consumption",
       "temperature": "Thermal Management"
     },
     "energy": "Energy",
-    "temperature": "Temperature",
+    "temperatureMode": "Temperature",
     "period": {
       "today": "Today",
       "yesterday": "Yesterday",
@@ -287,6 +289,10 @@
       "title": "Recent Events",
       "viewAll": "View all",
       "noEvents": "No recent events"
+    },
+    "temperature": {
+      "chart24h": "24 Hour Temperature",
+      "chart30d": "30 Day Temperature"
     }
   },
   "compteur": {
@@ -318,6 +324,8 @@
     },
     "time": {
       "now": "Now",
+      "today": "Today",
+      "yesterday": "Yesterday",
       "min30": "-30min",
       "min15": "-15min",
       "h0": "0h",
@@ -994,6 +1002,8 @@
     }
   },
   "globalMeters": {
+    "barChart": "Bar Chart",
+    "lineChart": "Line Chart",
     "pageTitle": "Global Meters View",
     "subtitle": "Consolidated overview of multiple meters and consumption analysis",
     "selectMeters": "Select Meters",
@@ -1001,7 +1011,11 @@
     "powerTrend": "Power Trend",
     "energyTrend": "Energy Trend",
     "energyConsumption": "Energy Consumption",
+    "todayConsumption": "Today's Consumption",
+    "monthlyConsumption": "Monthly Consumption",
     "yearlyEnergyConsumption": "Yearly Energy Consumption",
+    "barChart": "Bar Chart",
+    "lineChart": "Line Chart",
     "dailyAverage": "Daily Average",
     "energyOverTime": "Energy consumption over time",
     "instantaneousComparison": "Real-time power comparison",
@@ -1052,7 +1066,7 @@
     "manageSensors": "Manage Sensors",
     "temperature24h": "24h Temperature",
     "temperatureMonthlyInfo": "Min/Max temperature over last 30 days",
-    "temperatureMonthly": "Monthly Temperature",
+    "temperatureMonthly": "30 Day Temperature",
     "noSensorsSelected": {
       "title": "No sensors selected",
       "description": "Select sensors to display temperature data",

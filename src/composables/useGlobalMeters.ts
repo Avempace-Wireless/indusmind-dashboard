@@ -32,8 +32,9 @@ export interface GlobalMeterData {
   instantaneous: number | null // Current power in kW
   today: number | null // Today's consumption in kWh (differential sum)
   yesterday: number | null // Yesterday's consumption in kWh (differential sum)
-  hourlyDataDifferential: Array<{ ts: number; value: number; accumulated: number; previousAccumulated: number; readableTime: string }> // Today's hourly differential data
-  monthlyDataDifferential: Array<{ ts: number; value: number; accumulated: number; previousAccumulated: number; readableTime: string }> // Last 7 days daily differential data
+  todayReadings?: Array<{ ts: number; value: number }> // Today's hourly readings from backend
+  hourlyDataDifferential?: Array<{ ts: number; value: number; accumulated?: number; previousAccumulated?: number; readableTime?: string }> // Today's hourly differential data
+  monthlyDataDifferential?: Array<{ ts: number; value: number; accumulated?: number; previousAccumulated?: number; readableTime?: string }> // Last 7 days daily differential data
   yearlyDataDifferential: Array<{ ts: number; value: number; accumulated: number; previousAccumulated: number; readableTime: string }> // Extended period daily differential data
 }
 

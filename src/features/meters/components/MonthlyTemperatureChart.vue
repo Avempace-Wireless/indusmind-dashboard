@@ -6,12 +6,7 @@
         <p class="text-slate-500 dark:text-slate-400">{{ $t('common.loading') }}</p>
       </div>
     </div>
-    <div v-else-if="sensorsWithData.length === 0" class="flex items-center justify-center h-64">
-      <div class="text-center text-slate-500 dark:text-slate-400">
-        <span class="material-symbols-outlined text-4xl mb-2 block opacity-50">thermostat</span>
-        <p>{{ $t('globalMeters.noTemperatureSensors', 'No temperature data available') }}</p>
-      </div>
-    </div>
+
     <div v-else class="w-full overflow-visible h-full flex flex-col">
       <!-- Sensor selector dropdown -->
       <div class="flex-shrink-0 mb-2 px-2">
@@ -26,7 +21,12 @@
       </div>
 
       <div class="flex-1 min-h-0">
-        <LineChart :data="chartData" :options="chartOptions" />
+        <component
+          :is="chartType === 'bar' ? BarChart : LineChart"
+          :data="chartData"
+          :options="chartOptions"
+          :key="chartType"
+        />
       </div>
       <div class="mt-1 text-center text-xs text-slate-600 dark:text-slate-400 flex-shrink-0 flex items-center justify-center gap-2">
         <p>{{ $t('globalMeters.temperatureMonthlyInfo', 'Min/Max temperature over last 30 days') }}</p>
@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Line as LineChart } from 'vue-chartjs'
+import { Line as LineChart, Bar as BarChart } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -81,13 +81,16 @@ interface SensorOption {
   sensorLabel: string
 }
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   sensors: SensorData[]  // Currently loaded sensor data
   availableSensors: SensorOption[]  // All available sensors for dropdown
   loading: boolean
   loadingMore?: boolean  // True while fetching additional data after first response
   selectedSensorId?: string  // Controlled from parent
-}>()
+  chartType?: 'bar' | 'line'
+}>(), {
+  chartType: 'line'
+})
 
 const emit = defineEmits<{
   sensorSelected: [sensorId: string]
@@ -145,12 +148,13 @@ const chartData = computed(() => {
   const sensor = selectedSensor.value
   const labels = sensor.data.map(p => p.readableDate)
 
+  const isBar = props.chartType === 'bar'
   const datasets: any[] = [
     {
       label: 'Min',
       data: sensor.data.map(p => p.min),
       borderColor: MIN_COLOR,
-      backgroundColor: `${MIN_COLOR}20`,
+      backgroundColor: isBar ? MIN_COLOR : `${MIN_COLOR}20`,
       borderWidth: 2,
       pointRadius: 3,
       pointHoverRadius: 5,
@@ -161,7 +165,7 @@ const chartData = computed(() => {
       label: 'Max',
       data: sensor.data.map(p => p.max),
       borderColor: MAX_COLOR,
-      backgroundColor: `${MAX_COLOR}20`,
+      backgroundColor: isBar ? MAX_COLOR : `${MAX_COLOR}20`,
       borderWidth: 2,
       pointRadius: 3,
       pointHoverRadius: 5,
