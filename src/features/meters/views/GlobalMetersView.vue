@@ -1,6 +1,6 @@
 <template>
   <AdminLayout>
-    <div class="w-full flex flex-col gap-0 px-1 py-1 global-meters-view lg:h-[calc(100vh-125px)] lg:overflow-hidden">
+    <div class="w-full flex flex-col gap-0 px-1 py-1 global-meters-view lg:min-h-[calc(100vh-125px)]">
       <div class="border-b border-slate-200 dark:border-border-dark pb-2 lg:pb-1 flex-shrink-0">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <h1 class="text-slate-900 dark:text-white text-2xl lg:text-xl font-bold tracking-tight">{{ $t('globalMeters.pageTitle') }}</h1>
@@ -89,29 +89,6 @@
         </button>
       </div>
 
-      <!-- Loading State -->
-      <div v-else-if="isLoadingAPI && isFirstLoad" class="mb-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-cyan-900 rounded-xl p-4 shadow-md animate-fadeIn">
-        <div class="flex items-center gap-4">
-          <div class="flex-shrink-0">
-            <div class="animate-spin rounded-full h-8 w-8 border-3 border-blue-200 dark:border-cyan-700 border-t-blue-600 dark:border-t-cyan-400"></div>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="material-symbols-outlined text-blue-600 dark:text-cyan-400 text-lg">cloud_download</span>
-              <h3 class="text-sm font-semibold text-blue-900 dark:text-cyan-100">{{ $t('common.loading') }}</h3>
-            </div>
-            <p class="text-xs text-blue-700 dark:text-cyan-300">{{ $t('globalMeters.fetchingMeterData') }}</p>
-          </div>
-          <div class="flex-shrink-0">
-            <div class="flex items-center gap-1">
-              <div class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 0ms"></div>
-              <div class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 150ms"></div>
-              <div class="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-cyan-400 animate-pulse" style="animation-delay: 300ms"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- ===== ENERGY VIEW ===== -->
       <!-- Content Grid: 2/3 (Left - Cards) + 1/3 (Right - Charts) - Responsive -->
       <div v-if="viewMode === 'energy'" class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:flex-1 lg:min-h-0 h-auto">
@@ -169,9 +146,17 @@
                     </span>
                   </div>
                   <div class="flex items-baseline justify-center gap-0.5 mt-0.25">
-                    <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getChartColor(index, compteur.name) }">
-                      {{ formatValue(compteur.instantaneous) }}
-                    </span>
+                    <template v-if="isLoadingAPI && compteur.instantaneous === undefined">
+                      <span class="kpi-shimmer rounded-lg" style="height: clamp(20px, 5vmin, 45px); width: 80px; animation-delay: 0.1s;"></span>
+                    </template>
+                    <template v-else-if="compteur.instantaneous === undefined">
+                      <!-- No value -->
+                    </template>
+                    <template v-else>
+                      <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getChartColor(index, compteur.name) }">
+                        {{ formatValue(compteur.instantaneous) }}
+                      </span>
+                    </template>
                     <span class="font-bold text-slate-900 dark:text-slate-100" style="font-size: clamp(8px, 1vmin, 12px);">kW</span>
                   </div>
                 </div>
@@ -180,12 +165,24 @@
                 <div class="grid grid-cols-2 gap-0 flex-1">
                   <div class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-0 border border-green-200 dark:border-green-900/30 flex flex-col justify-center items-center">
                     <p class="text-green-800 dark:text-green-300 font-extrabold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">{{ $t('globalMeters.today') }}</p>
-                    <p class="text-green-900 dark:text-green-200 font-bold leading-tight" style="font-size: clamp(14px, 2.3vmin, 24px); line-height: 1.1;">{{ formatValue(compteur.today) }}</p>
+                    <template v-if="isLoadingAPI && compteur.today === undefined">
+                      <span class="kpi-shimmer rounded-lg" style="height: clamp(14px, 2.3vmin, 24px); width: 50px; animation-delay: 0.2s;"></span>
+                    </template>
+                    <template v-else-if="compteur.today === undefined">
+                      <!-- No value -->
+                    </template>
+                    <p v-else class="text-green-900 dark:text-green-200 font-bold leading-tight" style="font-size: clamp(14px, 2.3vmin, 24px); line-height: 1.1;">{{ formatValue(compteur.today) }}</p>
                     <p class="text-green-800 dark:text-green-300 font-bold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">kWh</p>
                   </div>
                   <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/30 dark:to-slate-900/30 rounded-lg p-0 border border-slate-300 dark:border-slate-700/50 flex flex-col justify-center items-center">
                     <p class="text-slate-700 dark:text-slate-300 font-extrabold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">{{ $t('globalMeters.yesterday') }}</p>
-                    <p class="text-slate-800 dark:text-slate-200 font-bold leading-tight" style="font-size: clamp(14px, 2.3vmin, 24px); line-height: 1.1;">{{ formatValue(compteur.yesterday) }}</p>
+                    <template v-if="isLoadingAPI && compteur.yesterday === undefined">
+                      <span class="kpi-shimmer rounded-lg" style="height: clamp(14px, 2.3vmin, 24px); width: 50px; animation-delay: 0.3s;"></span>
+                    </template>
+                    <template v-else-if="compteur.yesterday === undefined">
+                      <!-- No value -->
+                    </template>
+                    <p v-else class="text-slate-800 dark:text-slate-200 font-bold leading-tight" style="font-size: clamp(14px, 2.3vmin, 24px); line-height: 1.1;">{{ formatValue(compteur.yesterday) }}</p>
                     <p class="text-slate-700 dark:text-slate-300 font-bold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">kWh</p>
                   </div>
                 </div>
@@ -307,15 +304,8 @@
       <div v-else-if="viewMode === 'temperature'" class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:flex-1 lg:min-h-0 h-auto">
         <!-- Left Panel: Sensor Cards (2/3 width on lg) -->
         <div class="col-span-1 lg:col-span-2 flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 min-h-0 lg:overflow-y-auto">
-          <!-- Loading State -->
-          <div v-if="isLoadingThermal && enrichedThermalSensors.length === 0" class="flex-1 flex items-center justify-center">
-            <div class="text-center">
-              <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 dark:border-slate-700 border-t-purple-600 dark:border-t-purple-400 mx-auto mb-4"></div>
-              <p class="text-sm font-medium text-slate-600 dark:text-slate-300">{{ $t('common.loading') }}</p>
-            </div>
-          </div>
           <!-- Empty State -->
-          <div v-else-if="enrichedThermalSensors.length === 0" class="flex-1 flex items-center justify-center p-8">
+          <div v-if="enrichedThermalSensors.length === 0" class="flex-1 flex items-center justify-center p-8">
             <div class="text-center">
               <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-5xl mb-4">thermostat</span>
               <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">{{ $t('globalMeters.noSensorsSelected.title', 'No sensors selected') }}</p>
@@ -377,20 +367,40 @@
                     </span>
                   </div>
                   <div class="flex items-baseline justify-center gap-0.5 mt-0.25">
-                    <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getSensorColor(index) }">
-                      {{ formatTemp(sensor.temperature) }}
-                    </span>
+                    <template v-if="isLoadingThermal && sensor.temperature === null">
+                      <span class="kpi-shimmer kpi-shimmer--purple rounded-lg" style="height: clamp(20px, 5vmin, 45px); width: 80px; animation-delay: 0.1s;"></span>
+                    </template>
+                    <template v-else-if="sensor.temperature === null">
+                      <!-- No value -->
+                    </template>
+                    <template v-else>
+                      <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getSensorColor(index) }">
+                        {{ formatTemp(sensor.temperature) }}
+                      </span>
+                    </template>
                     <span class="font-bold text-slate-900 dark:text-slate-100" style="font-size: clamp(8px, 1vmin, 12px);">°C</span>
                   </div>
                   <!-- Daily Min / Max (based on 24h data) -->
                   <div class="absolute right-1 top-1/2 -translate-y-1/2 flex flex-col items-end mt-3 gap-0">
                     <div class="flex items-center gap-0">
                       <span class="material-symbols-outlined text-red-500 dark:text-red-400" style="font-size: clamp(10px, 1.5vmin, 14px);">arrow_upward</span>
-                      <span class="font-bold text-slate-700 dark:text-slate-300 w-10 text-right -ml-4" style="font-size: clamp(9px, 1.3vmin, 12px);">{{ formatTemp(getDailyMinMax(sensor.deviceUUID).max) }}°</span>
+                      <template v-if="isLoadingThermal && getDailyMinMax(sensor.deviceUUID).max === null">
+                        <span class="kpi-shimmer kpi-shimmer--purple rounded-full" style="height: clamp(9px, 1.3vmin, 12px); width: 32px; animation-delay: 0.2s;"></span>
+                      </template>
+                      <template v-else-if="getDailyMinMax(sensor.deviceUUID).max === null">
+                        <!-- No value -->
+                      </template>
+                      <span v-else class="font-bold text-slate-700 dark:text-slate-300 w-10 text-right -ml-4" style="font-size: clamp(9px, 1.3vmin, 12px);">{{ formatTemp(getDailyMinMax(sensor.deviceUUID).max) }}°</span>
                     </div>
                     <div class="flex items-center gap-0">
                       <span class="material-symbols-outlined text-blue-500 dark:text-blue-400" style="font-size: clamp(10px, 1.5vmin, 14px);">arrow_downward</span>
-                      <span class="font-bold text-slate-700 dark:text-slate-300 w-10 text-right -ml-4" style="font-size: clamp(9px, 1.3vmin, 12px);">{{ formatTemp(getDailyMinMax(sensor.deviceUUID).min) }}°</span>
+                      <template v-if="isLoadingThermal && getDailyMinMax(sensor.deviceUUID).min === null">
+                        <span class="kpi-shimmer kpi-shimmer--purple rounded-full" style="height: clamp(9px, 1.3vmin, 12px); width: 32px; animation-delay: 0.3s;"></span>
+                      </template>
+                      <template v-else-if="getDailyMinMax(sensor.deviceUUID).min === null">
+                        <!-- No value -->
+                      </template>
+                      <span v-else class="font-bold text-slate-700 dark:text-slate-300 w-10 text-right -ml-4" style="font-size: clamp(9px, 1.3vmin, 12px);">{{ formatTemp(getDailyMinMax(sensor.deviceUUID).min) }}°</span>
                     </div>
                   </div>
                 </div>
@@ -399,7 +409,13 @@
                 <div class="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 rounded-lg border border-purple-200 dark:border-purple-900/30 flex-1 flex items-center justify-center gap-1 px-2">
                   <span class="material-symbols-outlined text-purple-600 dark:text-purple-400" style="font-size: clamp(14px, 2vmin, 20px);">water_drop</span>
                   <p class="text-purple-800 dark:text-purple-300 font-extrabold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">{{ $t('thermal.humidity', 'Humidity') }}</p>
-                  <p class="text-purple-900 dark:text-purple-200 font-bold leading-tight" style="font-size: clamp(16px, 3vmin, 28px); line-height: 1;">{{ formatTemp(sensor.humidity) }}</p>
+                  <template v-if="isLoadingThermal && sensor.humidity === null">
+                    <span class="kpi-shimmer kpi-shimmer--purple rounded-lg" style="height: clamp(16px, 3vmin, 28px); width: 40px; animation-delay: 0.35s;"></span>
+                  </template>
+                  <template v-else-if="sensor.humidity === null">
+                    <!-- No value -->
+                  </template>
+                  <p v-else class="text-purple-900 dark:text-purple-200 font-bold leading-tight" style="font-size: clamp(16px, 3vmin, 28px); line-height: 1;">{{ formatTemp(sensor.humidity) }}</p>
                   <p class="text-purple-800 dark:text-purple-300 font-bold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">%</p>
                 </div>
               </div>
@@ -449,8 +465,9 @@
               </div>
             </div>
             <div class="flex-1 p-0.5 md:p-1.5 flex flex-col bg-white dark:bg-gray-800 min-h-0">
-              <div v-if="filteredTemperatureChartData.length === 0 && !isLoadingTemperature" class="w-full h-full flex items-center justify-center">
-                <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
+              <div v-if="filteredTemperatureChartData.length === 0 && !isLoadingTemperature" class="w-full h-full flex flex-col items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl text-purple-300 dark:text-purple-700">thermostat</span>
+                <p class="text-gray-500 dark:text-gray-400 font-semibold text-sm text-center">{{ enrichedThermalSensors.length === 0 ? $t('globalMeters.noSensorsSelected.title', 'No sensors selected') : ($t('common.noData') || 'No data available') }}</p>
               </div>
               <TemperatureChart
                 v-else
@@ -504,8 +521,9 @@
               </div>
             </div>
             <div class="flex-1 flex flex-col bg-white dark:bg-gray-800 min-h-0 p-0.5 md:p-1.5 2xl:p-1">
-              <div v-if="filteredMonthlyChartData.length === 0 && !isLoadingMonthlyChart" class="w-full h-full flex items-center justify-center">
-                <p class="text-gray-500 dark:text-gray-400 font-semibold">{{ $t('common.noData') || 'No data available' }}</p>
+              <div v-if="filteredMonthlyChartData.length === 0 && !isLoadingMonthlyChart" class="w-full h-full flex flex-col items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-3xl text-indigo-300 dark:text-indigo-700">thermostat</span>
+                <p class="text-gray-500 dark:text-gray-400 font-semibold text-sm text-center">{{ enrichedThermalSensors.length === 0 ? $t('globalMeters.noSensorsSelected.title', 'No sensors selected') : ($t('common.noData') || 'No data available') }}</p>
               </div>
               <MonthlyTemperatureChart
                 v-else
@@ -994,7 +1012,7 @@ const selectedSensorUUIDs = computed(() => {
 })
 
 const filteredTemperatureChartData = computed(() => {
-  if (selectedSensorUUIDs.value.size === 0) return temperatureChartData.value
+  if (selectedSensorUUIDs.value.size === 0) return []
   return temperatureChartData.value.filter(s => selectedSensorUUIDs.value.has(s.deviceUUID))
 })
 
@@ -1021,7 +1039,7 @@ function getDailyMinMax(sensorUUID: string): { min: number | null; max: number |
 }
 
 const filteredMonthlyChartData = computed(() => {
-  if (selectedSensorUUIDs.value.size === 0) return monthlyChartData.value
+  if (selectedSensorUUIDs.value.size === 0) return []
   return monthlyChartData.value.filter(s => selectedSensorUUIDs.value.has(s.deviceUUID))
 })
 
@@ -1258,6 +1276,63 @@ const getGridStyle = () => {
 </script>
 
 <style scoped>
+/* KPI Shimmer / Skeleton loading animation */
+@keyframes kpiShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.kpi-shimmer {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.08) 0%,
+    rgba(148, 163, 184, 0.18) 20%,
+    rgba(148, 163, 184, 0.28) 50%,
+    rgba(148, 163, 184, 0.18) 80%,
+    rgba(148, 163, 184, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: kpiShimmer 1.8s ease-in-out infinite;
+}
+
+:root.dark .kpi-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(100, 116, 139, 0.1) 0%,
+    rgba(100, 116, 139, 0.22) 20%,
+    rgba(100, 116, 139, 0.35) 50%,
+    rgba(100, 116, 139, 0.22) 80%,
+    rgba(100, 116, 139, 0.1) 100%
+  );
+  background-size: 200% 100%;
+}
+
+.kpi-shimmer--purple {
+  background: linear-gradient(
+    90deg,
+    rgba(147, 51, 234, 0.05) 0%,
+    rgba(147, 51, 234, 0.14) 20%,
+    rgba(147, 51, 234, 0.22) 50%,
+    rgba(147, 51, 234, 0.14) 80%,
+    rgba(147, 51, 234, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: kpiShimmer 1.8s ease-in-out infinite;
+}
+
+:root.dark .kpi-shimmer--purple {
+  background: linear-gradient(
+    90deg,
+    rgba(147, 51, 234, 0.08) 0%,
+    rgba(147, 51, 234, 0.2) 20%,
+    rgba(147, 51, 234, 0.3) 50%,
+    rgba(147, 51, 234, 0.2) 80%,
+    rgba(147, 51, 234, 0.08) 100%
+  );
+  background-size: 200% 100%;
+}
+
 /* Fade in animation */
 @keyframes fadeIn {
   from {

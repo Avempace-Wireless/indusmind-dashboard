@@ -29,8 +29,38 @@
       </button>
     </div>
 
-    <!-- No Data Available State (API-only mode) -->
-    <div v-if="showNoDataState" class="px-4 py-12 flex flex-col items-center justify-center text-center">
+    <!-- Shimmer Skeleton (loading, no data yet) -->
+    <div v-if="isLoading && showNoDataState" class="px-4 py-6">
+      <div class="flex items-baseline justify-between mb-3">
+        <span class="cw-shimmer rounded-full h-3 w-24" style="animation-delay: 0s;"></span>
+        <span class="cw-shimmer rounded-full h-3 w-16" style="animation-delay: 0.1s;"></span>
+      </div>
+      <div class="flex items-baseline gap-2 mb-3">
+        <span class="cw-shimmer cw-shimmer--accent rounded-lg h-10 w-28" style="animation-delay: 0.15s;"></span>
+        <span class="cw-shimmer rounded-full h-6 w-10" style="animation-delay: 0.2s;"></span>
+      </div>
+      <!-- Mini Chart Skeleton -->
+      <div class="mt-3 space-y-1">
+        <div class="h-12 bg-slate-100 dark:bg-slate-800 rounded flex items-end gap-px px-1">
+          <div class="flex-1 rounded-t cw-shimmer cw-shimmer--accent" style="height: 40%; animation-delay: 0.25s;"></div>
+          <div class="flex-1 rounded-t cw-shimmer cw-shimmer--accent" style="height: 65%; animation-delay: 0.3s;"></div>
+          <div class="flex-1 rounded-t cw-shimmer cw-shimmer--accent" style="height: 45%; animation-delay: 0.35s;"></div>
+          <div class="flex-1 rounded-t cw-shimmer cw-shimmer--accent" style="height: 80%; animation-delay: 0.4s;"></div>
+          <div class="flex-1 rounded-t cw-shimmer cw-shimmer--accent" style="height: 55%; animation-delay: 0.45s;"></div>
+          <div class="flex-1 rounded-t cw-shimmer cw-shimmer--accent" style="height: 70%; animation-delay: 0.5s;"></div>
+          <div class="flex-1 rounded-t cw-shimmer cw-shimmer--accent" style="height: 35%; animation-delay: 0.55s;"></div>
+          <div class="flex-1 rounded-t cw-shimmer cw-shimmer--accent" style="height: 60%; animation-delay: 0.6s;"></div>
+        </div>
+        <div class="flex justify-between px-1">
+          <span class="cw-shimmer rounded-full h-2 w-8" style="animation-delay: 0.65s;"></span>
+          <span class="cw-shimmer rounded-full h-2 w-8" style="animation-delay: 0.7s;"></span>
+          <span class="cw-shimmer rounded-full h-2 w-8" style="animation-delay: 0.75s;"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Data Available State (API-only mode, not loading) -->
+    <div v-else-if="showNoDataState" class="px-4 py-12 flex flex-col items-center justify-center text-center">
       <span class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-5xl mb-3">
         hourglass_empty
       </span>
@@ -146,12 +176,17 @@
       </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div v-if="isLoading" class="absolute inset-0 rounded-lg bg-white/80 dark:bg-slate-900/80 flex items-center justify-center backdrop-blur-sm">
-      <div class="animate-spin">
-        <span class="material-symbols-outlined text-slate-500 dark:text-slate-300 text-3xl">sync</span>
+    <!-- Loading Overlay (refreshing with existing data) -->
+    <Transition name="cw-overlay">
+      <div v-if="isLoading && !showNoDataState" class="absolute inset-0 rounded-lg bg-white/60 dark:bg-slate-900/60 flex items-center justify-center backdrop-blur-[2px]">
+        <div class="flex items-center gap-2 bg-white/90 dark:bg-slate-800/90 rounded-full px-3 py-1.5 shadow-sm border border-slate-200/50 dark:border-slate-600/50">
+          <div class="animate-spin">
+            <span class="material-symbols-outlined text-slate-400 dark:text-slate-300" style="font-size: 18px;">sync</span>
+          </div>
+          <span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $t('common.loading') }}</span>
+        </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
@@ -785,4 +820,71 @@ watch(
 .sparkline {
   animation: shimmer 2s ease-in-out infinite;
 }
+
+/* KPI shimmer loading animation */
+@keyframes cwShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes cwFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cw-shimmer {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.08) 0%,
+    rgba(148, 163, 184, 0.18) 20%,
+    rgba(148, 163, 184, 0.28) 50%,
+    rgba(148, 163, 184, 0.18) 80%,
+    rgba(148, 163, 184, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: cwShimmer 1.8s ease-in-out infinite;
+}
+
+:root.dark .cw-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(100, 116, 139, 0.1) 0%,
+    rgba(100, 116, 139, 0.22) 20%,
+    rgba(100, 116, 139, 0.35) 50%,
+    rgba(100, 116, 139, 0.22) 80%,
+    rgba(100, 116, 139, 0.1) 100%
+  );
+  background-size: 200% 100%;
+}
+
+.cw-shimmer--accent {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.06) 0%,
+    rgba(59, 130, 246, 0.15) 20%,
+    rgba(59, 130, 246, 0.22) 50%,
+    rgba(59, 130, 246, 0.15) 80%,
+    rgba(59, 130, 246, 0.06) 100%
+  );
+  background-size: 200% 100%;
+}
+
+:root.dark .cw-shimmer--accent {
+  background: linear-gradient(
+    90deg,
+    rgba(96, 165, 250, 0.08) 0%,
+    rgba(96, 165, 250, 0.2) 20%,
+    rgba(96, 165, 250, 0.3) 50%,
+    rgba(96, 165, 250, 0.2) 80%,
+    rgba(96, 165, 250, 0.08) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Overlay transition */
+.cw-overlay-enter-active { transition: opacity 0.2s ease; }
+.cw-overlay-leave-active { transition: opacity 0.15s ease; }
+.cw-overlay-enter-from,
+.cw-overlay-leave-to { opacity: 0; }
 </style>

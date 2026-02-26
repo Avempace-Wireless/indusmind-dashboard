@@ -90,10 +90,7 @@
       <!-- ===== ENERGY VIEW ===== -->
       <template v-if="dashboardViewMode === 'energy'">
         <!-- Meter Widgets Grid (Dynamic, responsive) -->
-        <div v-if="dashboardLoading" class="w-full h-96 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex flex-col items-center justify-center text-slate-600 dark:text-slate-300 gap-4">
-          <p class="text-lg font-medium">{{ $t('common.loading') }}</p>
-        </div>
-        <div v-else :class="[
+        <div :class="[
           'grid gap-6',
           gridLayoutClass
         ]">
@@ -131,13 +128,9 @@
             :compteur="compteur"
             :color-index="index"
             :current-mode="widgetModes[compteur.id]"
-            :is-loading="telemetryLoading"
+            :is-loading="dashboardLoading"
             @update:mode="(mode) => setWidgetMode(compteur.id, mode)"
           />
-
-          <!-- Skeleton loaders while loading -->
-          <CompteurWidgetSkeleton v-if="dashboardLoading" />
-          <CompteurWidgetSkeleton v-if="dashboardLoading && selectedCompteurs.length > 1" />
         </div>
 
         <!-- Energy Charts Side by Side -->
@@ -245,20 +238,40 @@
               </div>
               <div class="flex items-end justify-between mb-4">
                 <div class="flex items-baseline gap-2">
-                  <span class="text-4xl font-bold" :style="{ color: getThermalSensorColor(index) }">
-                    {{ formatThermalTemp(sensor.temperature) }}
-                  </span>
+                  <template v-if="isLoadingThermal && sensor.temperature === null">
+                    <span class="dv-shimmer rounded-lg h-10 w-24" style="animation-delay: 0.1s;"></span>
+                  </template>
+                  <template v-else-if="!isLoadingThermal && sensor.temperature === null">
+                    <!-- No value -->
+                  </template>
+                  <template v-else>
+                    <span class="text-4xl font-bold" :style="{ color: getThermalSensorColor(index) }">
+                      {{ formatThermalTemp(sensor.temperature) }}
+                    </span>
+                  </template>
                   <span class="text-2xl font-medium text-slate-900 dark:text-slate-100">°C</span>
                 </div>
                 <!-- Daily Min / Max (based on 24h data) -->
                 <div class="flex flex-col items-end gap-0.5">
                   <div class="flex items-center gap-0">
                     <span class="material-symbols-outlined text-red-500 dark:text-red-400" style="font-size: 14px;">arrow_upward</span>
-                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 w-12 text-right">{{ formatThermalTemp(getDailyMinMax(sensor.deviceUUID).max) }}°C</span>
+                    <template v-if="isLoadingThermal && sensor.temperature === null">
+                      <span class="dv-shimmer rounded-full h-3 w-10" style="animation-delay: 0.2s;"></span>
+                    </template>
+                    <template v-else-if="sensor.temperature === null">
+                      <!-- No value -->
+                    </template>
+                    <span v-else class="text-xs font-semibold text-slate-700 dark:text-slate-300 w-12 text-right">{{ formatThermalTemp(getDailyMinMax(sensor.deviceUUID).max) }}°C</span>
                   </div>
                   <div class="flex items-center gap-0">
                     <span class="material-symbols-outlined text-blue-500 dark:text-blue-400" style="font-size: 14px;">arrow_downward</span>
-                    <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 w-12 text-right">{{ formatThermalTemp(getDailyMinMax(sensor.deviceUUID).min) }}°C</span>
+                    <template v-if="isLoadingThermal && sensor.temperature === null">
+                      <span class="dv-shimmer rounded-full h-3 w-10" style="animation-delay: 0.3s;"></span>
+                    </template>
+                    <template v-else-if="sensor.temperature === null">
+                      <!-- No value -->
+                    </template>
+                    <span v-else class="text-xs font-semibold text-slate-700 dark:text-slate-300 w-12 text-right">{{ formatThermalTemp(getDailyMinMax(sensor.deviceUUID).min) }}°C</span>
                   </div>
                 </div>
               </div>
@@ -272,13 +285,31 @@
                       <span class="text-sm font-semibold text-purple-800 dark:text-purple-300">{{ $t('thermal.humidity', 'Humidity') }}</span>
                     </div>
                     <div class="flex items-baseline gap-1">
-                      <span class="text-2xl font-bold text-purple-900 dark:text-purple-200">{{ formatThermalTemp(sensor.humidity) }}</span>
+                      <template v-if="isLoadingThermal && sensor.humidity === null">
+                        <span class="dv-shimmer dv-shimmer--purple rounded-lg h-7 w-14" style="animation-delay: 0.35s;"></span>
+                      </template>
+                      <template v-else-if="sensor.humidity === null">
+                        <!-- No value -->
+                      </template>
+                      <span v-else class="text-2xl font-bold text-purple-900 dark:text-purple-200">{{ formatThermalTemp(sensor.humidity) }}</span>
                       <span class="text-base font-semibold text-purple-700 dark:text-purple-300">%</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            <!-- Loading Overlay (refreshing with existing data) -->
+            <Transition name="dv-overlay">
+              <div v-if="isLoadingThermal" class="absolute inset-0 rounded-lg bg-white/60 dark:bg-slate-900/60 flex items-center justify-center backdrop-blur-[2px]">
+                <div class="flex items-center gap-2 bg-white/90 dark:bg-slate-800/90 rounded-full px-3 py-1.5 shadow-sm border border-slate-200/50 dark:border-slate-600/50">
+                  <div class="animate-spin">
+                    <span class="material-symbols-outlined text-slate-400 dark:text-slate-300" style="font-size: 18px;">sync</span>
+                  </div>
+                  <span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $t('common.loading') }}</span>
+                </div>
+              </div>
+            </Transition>
           </div>
         </div>
 
@@ -589,7 +620,6 @@ import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import CapteurSelector from '@/components/dashboard/CapteurSelector.vue'
 import CompteurWidget from '@/components/dashboard/CompteurWidget.vue'
 import CompteurWidgetV2 from '@/components/dashboard/CompteurWidgetV2.vue'
-import CompteurWidgetSkeleton from '@/components/skeletons/CompteurWidgetSkeleton.vue'
 import ChartSkeleton from '@/components/skeletons/ChartSkeleton.vue'
 
 // Lazy load heavy components to improve initial load time
@@ -639,6 +669,9 @@ const temperatureChartPeriod = ref<'today' | 'yesterday' | '7days' | '30days'>('
 const allEquipmentDevices = ref<Device[]>([])
 const equipmentTelemetry = ref<Map<string, DeviceTelemetryData>>(new Map())
 let equipmentTelemetryInterval: ReturnType<typeof setInterval> | null = null
+
+// Track whether the initial telemetry fetch has completed (prevents flash of "no data")
+const telemetryInitialized = ref(false)
 
 // Auto-refresh intervals
 let telemetryRefreshInterval: ReturnType<typeof setInterval> | null = null
@@ -767,7 +800,7 @@ const lastUpdateTime = computed(() => {
 
 const metrics = computed(() => dashboardStore.metrics)
 const isConnected = computed(() => dashboardStore.isConnected)
-const dashboardLoading = computed(() => dashboardStore.loading || telemetryLoading.value)
+const dashboardLoading = computed(() => dashboardStore.loading || telemetryLoading.value || !telemetryInitialized.value)
 
 /**
  * Enriched compteurs with real telemetry data
@@ -1409,6 +1442,7 @@ onMounted(async () => {
 
   // Fetch initial telemetry data
   await fetchTelemetryData()
+  telemetryInitialized.value = true
   if (!guard()) return // Component unmounted during fetch
 
   // Fetch initial thermal sensor data (same approach as ThermalManagementView)
@@ -1812,3 +1846,68 @@ function getCompteurLastUpdate(compteur: any): string {
  */
 
 </script>
+
+<style scoped>
+/* KPI shimmer loading animation */
+@keyframes dvShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.dv-shimmer {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.08) 0%,
+    rgba(148, 163, 184, 0.18) 20%,
+    rgba(148, 163, 184, 0.28) 50%,
+    rgba(148, 163, 184, 0.18) 80%,
+    rgba(148, 163, 184, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: dvShimmer 1.8s ease-in-out infinite;
+}
+
+:root.dark .dv-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(100, 116, 139, 0.1) 0%,
+    rgba(100, 116, 139, 0.22) 20%,
+    rgba(100, 116, 139, 0.35) 50%,
+    rgba(100, 116, 139, 0.22) 80%,
+    rgba(100, 116, 139, 0.1) 100%
+  );
+  background-size: 200% 100%;
+}
+
+.dv-shimmer--purple {
+  background: linear-gradient(
+    90deg,
+    rgba(147, 51, 234, 0.05) 0%,
+    rgba(147, 51, 234, 0.14) 20%,
+    rgba(147, 51, 234, 0.22) 50%,
+    rgba(147, 51, 234, 0.14) 80%,
+    rgba(147, 51, 234, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: dvShimmer 1.8s ease-in-out infinite;
+}
+
+:root.dark .dv-shimmer--purple {
+  background: linear-gradient(
+    90deg,
+    rgba(147, 51, 234, 0.08) 0%,
+    rgba(147, 51, 234, 0.2) 20%,
+    rgba(147, 51, 234, 0.3) 50%,
+    rgba(147, 51, 234, 0.2) 80%,
+    rgba(147, 51, 234, 0.08) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Thermal overlay transition */
+.dv-overlay-enter-active { transition: opacity 0.2s ease; }
+.dv-overlay-leave-active { transition: opacity 0.15s ease; }
+.dv-overlay-enter-from,
+.dv-overlay-leave-to { opacity: 0; }
+</style>
