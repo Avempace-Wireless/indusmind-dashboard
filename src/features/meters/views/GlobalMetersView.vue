@@ -1,9 +1,9 @@
 <template>
   <AdminLayout>
-    <div class="w-full flex flex-col gap-0 px-1 py-1 global-meters-view">
-      <div class="border-b border-slate-200 dark:border-border-dark pb-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-2">
-          <h1 class="text-slate-900 dark:text-white text-3xl font-bold tracking-tight">{{ $t('globalMeters.pageTitle') }}</h1>
+    <div class="w-full flex flex-col gap-0 px-1 py-1 global-meters-view lg:h-[calc(100vh-125px)] lg:overflow-hidden">
+      <div class="border-b border-slate-200 dark:border-border-dark pb-2 lg:pb-1 flex-shrink-0">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h1 class="text-slate-900 dark:text-white text-2xl lg:text-xl font-bold tracking-tight">{{ $t('globalMeters.pageTitle') }}</h1>
           <div class="flex flex-wrap items-center gap-2 xs:gap-3">
             <!-- Energy / Temperature Toggle Switch -->
             <div class="inline-flex items-center rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 p-0.5 shadow-sm">
@@ -114,7 +114,7 @@
 
       <!-- ===== ENERGY VIEW ===== -->
       <!-- Content Grid: 2/3 (Left - Cards) + 1/3 (Right - Charts) - Responsive -->
-      <div v-if="viewMode === 'energy'" class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:h-[calc(100vh-110px)] h-auto">
+      <div v-if="viewMode === 'energy'" class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:flex-1 lg:min-h-0 h-auto">
         <!-- Left Panel: Meter Cards (2/3 width on lg, full width below lg) -->
         <div class="col-span-1 lg:col-span-2 flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 min-h-0 lg:overflow-y-auto">
           <!-- Deterministic Grid: Adapts based on meter count -->
@@ -126,7 +126,6 @@
               :style="{
                 borderColor: getChartColor(index, compteur.name),
                 boxShadow: `0 8px 16px -2px rgba(0, 0, 0, 0.15), 0 2px 4px -1px rgba(0, 0, 0, 0.06), inset 0 0 0 2px ${getChartColor(index, compteur.name)}15`,
-                minHeight: 'clamp(200px, 40vh, 350px)',
                 ...getCardGridSpan(index, enrichedCompteurs.length)
               }"
             >
@@ -137,7 +136,7 @@
               <div :class="[
                 'px-4 py-1.5 flex-shrink-0 border-b-2 relative group/header flex items-start justify-between gap-2 overflow-hidden',
                 `border-${getMeterColorTailwind(index, compteur.name)}-400 dark:border-${getMeterColorTailwind(index, compteur.name)}-500`
-              ]" :style="{ backgroundColor: `${getChartColor(index, compteur.name)}08`, minHeight: '90px' }">
+              ]" :style="{ backgroundColor: `${getChartColor(index, compteur.name)}08` }">
                 <div class="flex-1 min-w-0 overflow-hidden">
                   <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight break-words pt-1" :title="compteur.name">
                     {{ compteur.name }}
@@ -196,9 +195,9 @@
         </div>
 
         <!-- Right Panel: Charts (1/3 width on lg, 1/2 on sm, full width on mobile) -->
-        <div class="col-span-1 flex flex-col gap-1 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 lg:overflow-y-auto">
+        <div class="col-span-1 flex flex-col gap-1 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 lg:overflow-hidden">
           <!-- Today's Energy Consumption Chart -->
-          <div class="overflow-hidden rounded-lg md:rounded-xl border border-green-300 md:border-2 dark:border-green-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
+          <div class="overflow-hidden rounded-lg md:rounded-xl border border-green-300 md:border-2 dark:border-green-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0 lg:max-h-[50%]">
             <div class="border-b border-green-300 md:border-b-2 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-1 md:gap-2">
@@ -250,7 +249,7 @@
           </div>
 
           <!-- Annual/Monthly Energy Chart -->
-          <div class="overflow-hidden rounded-lg md:rounded-xl border border-green-300 md:border-2 dark:border-green-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
+          <div class="overflow-hidden rounded-lg md:rounded-xl border border-green-300 md:border-2 dark:border-green-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0 lg:max-h-[50%]">
             <div class="border-b border-green-300 md:border-b-2 dark:border-green-800 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-1 md:gap-2">
@@ -305,7 +304,7 @@
 
       <!-- ===== TEMPERATURE VIEW ===== -->
       <!-- Same 2/3 + 1/3 layout as energy view -->
-      <div v-else-if="viewMode === 'temperature'" class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:h-[calc(100vh-110px)] h-auto">
+      <div v-else-if="viewMode === 'temperature'" class="grid grid-cols-1 lg:grid-cols-3 gap-1 overflow-hidden pb-2 lg:flex-1 lg:min-h-0 h-auto">
         <!-- Left Panel: Sensor Cards (2/3 width on lg) -->
         <div class="col-span-1 lg:col-span-2 flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 min-h-0 lg:overflow-y-auto">
           <!-- Loading State -->
@@ -344,7 +343,7 @@
 
               <!-- Card Header -->
               <div class="px-4 py-1.5 flex-shrink-0 border-b-2 relative group/header flex items-start justify-between gap-2 overflow-hidden"
-                :style="{ borderColor: getSensorColor(index), backgroundColor: `${getSensorColor(index)}08`, minHeight: '90px' }">
+                :style="{ borderColor: getSensorColor(index), backgroundColor: `${getSensorColor(index)}08` }">
                 <div class="flex-1 min-w-0 overflow-hidden">
                   <h3 class="text-base font-bold text-slate-900 dark:text-slate-100 leading-tight break-words pt-1" :title="sensor.name">
                     {{ sensor.name }}
@@ -409,9 +408,9 @@
         </div>
 
         <!-- Right Panel: Temperature Charts (1/3 width on lg) -->
-        <div class="col-span-1 flex flex-col gap-1 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 lg:overflow-y-auto">
+        <div class="col-span-1 flex flex-col gap-1 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/50 dark:to-slate-900/50 rounded-lg p-0.5 md:p-1 border border-slate-200 dark:border-slate-700 lg:overflow-hidden">
           <!-- 24-Hour Temperature Chart -->
-          <div class="overflow-hidden rounded-lg md:rounded-xl border border-purple-300 md:border-2 dark:border-purple-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0">
+          <div class="overflow-hidden rounded-lg md:rounded-xl border border-purple-300 md:border-2 dark:border-purple-800 bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0 lg:max-h-[50%]">
             <div class="border-b border-purple-300 md:border-b-2 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 px-1.5 md:px-3 py-1 md:py-1.5 flex-shrink-0">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-1 md:gap-2">
@@ -466,7 +465,7 @@
           </div>
 
           <!-- Monthly Temperature Chart -->
-          <div class="overflow-hidden bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0 rounded-lg md:rounded-xl border border-indigo-300 md:border-2 dark:border-indigo-800">
+          <div class="overflow-hidden bg-white shadow-lg dark:bg-gray-800 flex flex-col flex-1 min-h-0 lg:max-h-[50%] rounded-lg md:rounded-xl border border-indigo-300 md:border-2 dark:border-indigo-800">
             <div class="border-b border-indigo-300 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/40 dark:to-blue-950/40 flex-shrink-0 px-1.5 md:px-3 2xl:px-2 py-1 md:py-1.5 2xl:py-1 md:border-b-2">
               <div class="flex items-center justify-between gap-1 md:gap-2 2xl:gap-1">
                 <div class="flex items-center gap-1 md:gap-2 2xl:gap-1">
