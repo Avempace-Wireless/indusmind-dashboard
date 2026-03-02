@@ -180,10 +180,8 @@
     <Transition name="cw-overlay">
       <div v-if="isLoading && !showNoDataState" class="absolute inset-0 rounded-lg bg-white/60 dark:bg-slate-900/60 flex items-center justify-center backdrop-blur-[2px]">
         <div class="flex items-center gap-2 bg-white/90 dark:bg-slate-800/90 rounded-full px-3 py-1.5 shadow-sm border border-slate-200/50 dark:border-slate-600/50">
-          <div class="animate-spin">
-            <span class="material-symbols-outlined text-slate-400 dark:text-slate-300" style="font-size: 18px;">sync</span>
-          </div>
-          <span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ $t('common.loading') }}</span>
+          <span class="cw-shimmer rounded-full h-2.5 w-16"></span>
+          <span class="cw-shimmer rounded-full h-2.5 w-10" style="animation-delay: 0.1s;"></span>
         </div>
       </div>
     </Transition>

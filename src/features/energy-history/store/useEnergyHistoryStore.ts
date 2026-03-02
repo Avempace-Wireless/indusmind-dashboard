@@ -64,7 +64,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   // State - Date Selection
   // ===========================
-  const selectedDates = ref<string[]>([]) // Format: YYYY-MM-DD
+  const selectedDates = ref<string[]>([]) // Format: YYYY-MM-DD (user's current selection)
+  const confirmedDates = ref<string[]>([]) // Dates that have been fetched and displayed in chart/table
   const currentMonth = ref(new Date())
   const activePeriodPreset = ref<'last7Days' | 'last4Weeks' | 'last3Months' | 'last30Days' | 'thisMonth' | 'lastMonth' | null>(null)
 
@@ -91,6 +92,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // State - Resolution/Period
   // ===========================
   const resolution = ref<'hourly' | 'daily'>('hourly') // Hourly for 1 day, daily for multiple
+  const cachedResolution = ref<'hourly' | 'daily'>('hourly') // Cache computed resolution after fetch
+  const hasLoadedData = ref(false) // Track if data has been successfully fetched
 
   // ===========================
   // Computed - Enabled Metrics
@@ -131,11 +134,15 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // Computed - Auto Resolution
   // ===========================
   const effectiveResolution = computed(() => {
-    // Check the actual data structure to determine resolution
-    // Preference: If we have 4+ selected dates AND detect daily pattern, use DAILY
-    // Otherwise: Check if ANY device has daily pattern (hour=12, length=1)
+    // ⚠️ CRITICAL: Only return cached resolution if data has been loaded
+    // This prevents chart re-render when dates are selected before button click
+    if (!hasLoadedData.value) {
+      console.log('[effectiveResolution] No data loaded yet, returning cached:', cachedResolution.value)
+      return cachedResolution.value
+    }
 
-    console.log('[effectiveResolution] Computing... historicalDataSize:', historicalData.value.size, 'selectedDatesLength:', selectedDates.value.length)
+    // Check the actual data structure to determine resolution
+    console.log('[effectiveResolution] Computing from loaded data... historicalDataSize:', historicalData.value.size)
 
     // Track what we find across all devices
     let foundDailyPattern = false
@@ -144,50 +151,31 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     if (historicalData.value.size > 0) {
       // Check ALL devices, not just the first one
       for (const [deviceUUID, deviceDates] of historicalData.value.entries()) {
-        console.log(`[effectiveResolution] Checking device ${deviceUUID}: ${deviceDates.length} dates`)
-
         if (deviceDates.length > 0) {
           const firstDate = deviceDates[0]
           const allHour12 = firstDate.hourlyData.length === 1 && firstDate.hourlyData[0].hour === 12
 
-          console.log('[effectiveResolution] First date details:', {
-            date: firstDate.date,
-            hourlyDataLength: firstDate.hourlyData.length,
-            hour: firstDate.hourlyData[0]?.hour,
-            allHour12,
-          })
-
           if (allHour12) {
             foundDailyPattern = true
-            console.log('[effectiveResolution] ✓ Found DAILY pattern in device:', deviceUUID)
           } else if (firstDate.hourlyData.length > 1) {
             foundHourlyPattern = true
-            console.log('[effectiveResolution] Found HOURLY pattern in device:', deviceUUID)
           }
         }
       }
     }
 
-    // Decision logic:
-    // 1. If we found daily pattern, prefer daily (even if some devices have hourly)
-    // 2. If only hourly pattern found, use hourly
-    // 3. Otherwise, use fallback based on selectedDates count
+    // Decision logic based on LOADED DATA, not date count
+    let computedResolution: 'hourly' | 'daily'
     if (foundDailyPattern) {
-      console.log('[effectiveResolution] ✓ RETURNING DAILY (found daily pattern across devices)')
-      return 'daily' as const
+      computedResolution = 'daily'
+    } else if (foundHourlyPattern) {
+      computedResolution = 'hourly'
+    } else {
+      computedResolution = 'hourly' // Default fallback
     }
 
-    if (foundHourlyPattern && selectedDates.value.length <= 3) {
-      console.log('[effectiveResolution] ✓ RETURNING HOURLY (found hourly pattern and <= 3 dates)')
-      return 'hourly' as const
-    }
-
-    // Auto-switch: 3 days or less = hourly, 4+ days = daily
-    const fallbackResolution = selectedDates.value.length <= 3 ? 'hourly' : 'daily'
-    console.log('[effectiveResolution] ✓ RETURNING FALLBACK:', fallbackResolution,
-                '(selectedDatesLength:', selectedDates.value.length, ')')
-
-    return fallbackResolution
+    console.log('[effectiveResolution] ✓ RETURNING:', computedResolution)
+    return computedResolution
   })
 
   const resolutionLabel = computed(() =>
@@ -280,6 +268,20 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     { deep: true }
   )
 
+  // ⚠️ CRITICAL: Reset hasLoadedData when dates change
+  // This prevents chart from rendering with new dates until button is clicked
+  watch(
+    () => selectedDates.value,
+    () => {
+      // Only reset if we already had data loaded (not on initial mount)
+      if (hasLoadedData.value && historicalData.value.size > 0) {
+        hasLoadedData.value = false
+        console.log('[useEnergyHistoryStore] 🔄 selectedDates changed - resetting hasLoadedData to false')
+      }
+    },
+    { deep: true }
+  )
+
   // ===========================
   // Computed - Calendar Days
   // ===========================
@@ -365,6 +367,13 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       return { labels: [], datasets: [] }
     }
 
+    // ⚠️ CRITICAL: Don't render chart until after first successful data fetch
+    // This prevents chart from rendering when calendar dates are selected before button click
+    if (!hasLoadedData.value) {
+      console.log('📊 [chartData] SKIPPING - No data loaded yet (hasLoadedData=false)')
+      return { labels: [], datasets: [] }
+    }
+
     console.log('📊 [chartData] Computed fired:', {
       selectedDatesCount: selectedDates.value.length,
       selectedDates: selectedDates.value,
@@ -420,12 +429,12 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
       console.log('[Chart] ✓ Metric found, proceeding with hourly per-day display')
 
-      // ✅ HOURLY MODE: Display each selected day's 24-hour breakdown sequentially
-      let datesToUse = selectedDates.value.length > 0 ? [...selectedDates.value] : (dateStr ? [dateStr] : [])
+      // ✅ HOURLY MODE: Display each confirmed day's 24-hour breakdown sequentially
+      let datesToUse = confirmedDates.value.length > 0 ? [...confirmedDates.value] : (dateStr ? [dateStr] : [])
 
-      console.log('[Chart] 🔍 Selected dates for chart:', {
-        selectedDatesCount: selectedDates.value.length,
-        selectedDates: selectedDates.value.slice(0, 10),
+      console.log('[Chart] 🔍 Confirmed dates for chart:', {
+        confirmedDatesCount: confirmedDates.value.length,
+        confirmedDates: confirmedDates.value.slice(0, 10),
         datesToUse: datesToUse.slice(0, 10)
       })
 
@@ -571,21 +580,21 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
       }
 
       // Sort dates chronologically for daily mode - YYYY-MM-DD format sorts correctly with localeCompare
-      let datesToUse = [...selectedDates.value]
+      let datesToUse = [...confirmedDates.value]
       datesToUse.sort((a, b) => a.localeCompare(b))
 
-      // 🔍 DIAGNOSTIC: Show what dates are stored vs selected
+      // 🔍 DIAGNOSTIC: Show what dates are stored vs confirmed
       const allStoredDates = new Set<string>()
       for (const [_, records] of historicalData.value.entries()) {
         records.forEach(r => allStoredDates.add(r.date))
       }
 
       console.log('[Chart] Daily mode - DATE MISMATCH CHECK:', {
-        selectedDates: datesToUse.slice(0, 5),
+        confirmedDates: datesToUse.slice(0, 5),
         storedDates: Array.from(allStoredDates).sort().slice(0, 5),
-        selectedCount: datesToUse.length,
+        confirmedCount: datesToUse.length,
         storedCount: allStoredDates.size,
-        firstSelectedDate: datesToUse[0],
+        firstConfirmedDate: datesToUse[0],
         firstStoredDate: Array.from(allStoredDates).sort()[0],
       })
 
@@ -610,9 +619,9 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         datesWithData: Array.from(datesWithData).sort(),
       })
 
-      // ⚠️ IMPORTANT: Use ALL selected dates as labels to show gaps
+      // ⚠️ IMPORTANT: Use ALL confirmed dates as labels to show gaps
       // Don't filter - show all dates and use null for missing data
-      const datesToDisplay = datesToUse // Use ALL dates, not filtered
+      const datesToDisplay = datesToUse // Use ALL confirmed dates, not filtered
 
       // Build datasets only for dates that have data
       console.log('[Chart] Daily mode - Building datasets:', {
@@ -703,11 +712,11 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
   // ===========================
   const metricCardsData = computed(() => {
     const metric = selectedMetric.value
-    const dates = selectedDates.value
+    const dates = confirmedDates.value
     const numDays = dates.length || 1
 
     return visibleCompteurs.value.map((compteur, idx) => {
-      // Calculate sum across all selected dates
+      // Calculate sum across all confirmed dates
       let sumTotal = 0
       dates.forEach(dateStr => {
         const data = getMetricDataForDate(dateStr, metric.type, compteur.id)
@@ -717,7 +726,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         }
       })
 
-      // Calculate average when multiple days selected
+      // Calculate average when multiple days confirmed
       const displayValue = numDays > 1 ? sumTotal / numDays : sumTotal
       const locale = i18n.global.locale.value
       const daysText = locale === 'en' ? 'days' : 'jours'
@@ -746,7 +755,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     if (effectiveResolution.value === 'hourly') {
       // Hourly table: use hours directly from sorted API response
       const metric = selectedMetric.value
-      const dateStr = selectedDates.value[0]
+      const dateStr = confirmedDates.value[0]
 
       // Get first compteur's data to determine available hours (API already sorts them)
       const firstCompteur = visibleCompteurs.value[0]
@@ -784,10 +793,10 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
 
       return hourlyRows
     } else {
-      // Daily table: rows per date with actual data
+      // Daily table: rows per confirmed date with actual data
       const metric = selectedMetric.value
 
-      return selectedDates.value.map(dateStr => {
+      return confirmedDates.value.map(dateStr => {
         const row: any = {
           date: dateStr,
           time: dateStr,
@@ -1221,6 +1230,14 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         error: error.value,
       })
       loading.value = false
+
+      // ✅ MARK DATA AS LOADED - allows effectiveResolution to trigger chart render
+      if (!error.value && historicalData.value.size > 0) {
+        hasLoadedData.value = true
+        // ✅ UPDATE CONFIRMED DATES - chart/table now display these dates
+        confirmedDates.value = [...selectedDates.value]
+        console.log('[energyHistoryStore] ✅ hasLoadedData = true, confirmedDates updated, chart can now render')
+      }
     }
   }
 
@@ -1327,6 +1344,14 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
         firstFewDates: value.slice(0, 3).map(d => ({ date: d.date, metricType: d.metricType }))
       }))
     })
+
+    // ✅ MARK DATA AS LOADED - allows effectiveResolution to trigger chart render
+    if (historicalData.value.size > 0) {
+      hasLoadedData.value = true
+      // ✅ UPDATE CONFIRMED DATES - chart/table now display these dates
+      confirmedDates.value = [...selectedDates.value]
+      console.log('[processAPIResponse] ✅ hasLoadedData = true, confirmedDates updated, chart can now render')
+    }
   }
 
   async function refreshData() {
@@ -1701,6 +1726,7 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     // State
     availableMetrics,
     selectedDates,
+    confirmedDates,
     currentMonth,
     activePeriodPreset,
     hourFrom,
@@ -1711,6 +1737,8 @@ export const useEnergyHistoryStore = defineStore('energyHistory', () => {
     photovoltaicPercentage,
     resolution,
     historicalData,
+    hasLoadedData,
+    cachedResolution,
 
     // Computed
     enabledMetrics,

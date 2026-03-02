@@ -44,7 +44,9 @@
     "page": "Page",
     "of": "de",
     "showing": "Affichage de",
-    "itemsPerPage": "Éléments par page"
+    "itemsPerPage": "Éléments par page",
+    "hourly": "Horaire",
+    "daily": "Quotidien"
   },
   "auth": {
     "login": {
@@ -575,11 +577,13 @@
       "table": "Tableau"
     },    "emptyState": {
       "noMeters": "Aucun compteur sélectionné",
-      "selectDate": "Sélectionnez une date",
+      "selectDate": "Aucune date sélectionnée",
       "noMetrics": "Aucune métrique activée",
       "noData": "Aucune donnée disponible",
+      "pendingFetch": "Prêt à charger les données",
+      "clickButton": "Appuyez sur Charger les données pour afficher le graphique",
       "hint": "Sélectionnez des compteurs, des dates et activez des métriques pour voir les données",
-      "selectDateHint": "Sélectionnez une date pour afficher les données"
+      "selectDateHint": "Choisissez une date ou une période depuis le calendrier"
     },    "chart": {
       "title": "Analyse {resolution} par compteur",
       "subtitle": {
@@ -612,6 +616,8 @@
     },
     "calendar": {
       "title": "Calendrier",
+      "day": "jour",
+      "days": "jours",
       "daysSelected": "{count} jour sélectionné | {count} jours sélectionnés",
       "maxReached": "Maximum 32 jours",
       "weekdays": {
@@ -628,7 +634,13 @@
         "last7Days": "7 derniers jours",
         "last4Weeks": "4 dernières semaines",
         "last3Months": "3 derniers mois"
-      }
+      },
+      "calendarInstruction": "Sélectionnez des dates ou utilisez les périodes rapides, puis cliquez sur Charger les données",
+      "presetsAutoLoad": "⚡ Périodes rapides",
+      "interiorDateHint": "Seules les extrémités sont modifiables — cliquez sur la première ou dernière date pour réduire la plage",
+      "fetchData": "Charger les données",
+      "fetchingData": "Chargement...",
+      "pendingFetch": "Cliquez sur Charger pour afficher les données"
     },
     "characteristics": {
       "title": "Caractéristiques"
@@ -661,7 +673,8 @@
     "meters": {
       "title": "Sélectionnez les compteurs à comparer",
       "selected": "{count} mètre sélectionné | {count} mètres sélectionnés",
-      "selectMeters": "Sélectionnez au moins un compteur",
+      "selectMeters": "Aucun compteur sélectionné. Ajoutez des compteurs à comparer.",
+      "modify": "Modifier la sélection",
       "search": "Rechercher des compteurs..."
     },
     "periods": {
@@ -701,6 +714,17 @@
       "line": "Lignes",
       "heatmap": "Carte thermique",
       "table": "Tableau"
+    },
+    "charts": {
+      "sideBySide": "Comparaison Côte à Côte ({count} compteurs, {granularity})",
+      "unified": "Comparaison Unifiée ({count} compteurs, {granularity})",
+      "noData": "Aucune donnée à afficher",
+      "selectOtherMeter": "Selectionnez un autre compteur pour comparer",
+      "selectPeriod": "Selectionnez une periode pour comparer"
+    },
+    "selectDateRange": "Sélectionnez une plage de dates via le calendrier pour comparer les compteurs",
+    "calendar": {
+      "fetchData": "Charger Données de Comparaison"
     },
     "viewOptions": {
       "title": "Options d'affichage",
@@ -747,6 +771,11 @@
       "unknownMeter": "Inconnu"
     },
     "table": {
+      "title": "Tableau de Comparaison Détaillée",
+      "subtitle": {
+        "hourly": "Consommation horaire avec analyse d'écart et tendance",
+        "daily": "Consommation quotidienne avec analyse d'écart et tendance"
+      },
       "detailed": "Comparaison détaillée",
       "searchPlaceholder": "Rechercher par étiquette ou valeur",
       "noResults": "Aucun résultat ne correspond à votre recherche.",
@@ -769,6 +798,23 @@
       "generateReport": "Générer un rapport",
       "selectAll": "Tout sélectionner",
       "deselectAll": "Tout désélectionner"
+    },
+    "sideBySide": {
+      "title": "Comparaison Côte à Côte des Compteurs",
+      "subtitle": "Comparer {meterCount} compteurs par données {granularity}",
+      "timeLabel": "Période",
+      "periods": "périodes",
+      "hourly": "horaires",
+      "daily": "quotidiennes",
+      "aboveAverage": "Consommation supérieure à la moyenne",
+      "belowAverage": "Consommation inférieure à la moyenne"
+    },
+    "details": {
+      "title": "Résumé de Comparaison",
+      "meters": "Compteurs",
+      "periods": "Périodes",
+      "granularity": "Granularité",
+      "dataPoints": "Points de Données"
     }
   },
   "tableDetailModal": {
