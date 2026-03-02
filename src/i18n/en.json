@@ -647,28 +647,33 @@
     }
   },
   "comparison": {
-    "title": "Comparison - Multi-Meter Analysis",
-    "subtitle": "Compare performance across multiple meters, periods or characteristics",
+    "title": "Comparison - Single Meter Analysis",
+    "subtitle": "Compare the same meter across different time periods",
     "fetchingData": "Fetching comparison data...",
     "errors": {
-      "loadFailed": "Failed to load comparison data"
+      "loadFailed": "Failed to load comparison data",
+      "needMeters": "Please select a meter to compare",
+      "validation": {
+        "title": "Period Selection Required",
+        "selectBothPeriods": "Please select both a reference and comparison period, then press Fetch",
+        "selectRefPeriod": "Please select a reference period using the calendar on the right",
+        "selectCompPeriod": "Please select a comparison period using the calendar on the right, then press Fetch",
+        "invalidDateFormat": "The selected date is invalid. Please pick a valid date from the calendar",
+        "invalidDateRange": "The selected dates could not be parsed. Please re-select from the calendar",
+        "refDateInFuture": "Reference date cannot be in the future. Please select a past or current date",
+        "compDateInFuture": "Comparison date cannot be in the future. Please select a past or current date",
+        "refBeforeComp": "Reference date ({refDate}) must be before comparison date ({compDate}). Swap dates or pick new ones",
+        "needMeter": "Please select a meter first, then choose your periods"
+      }
     },
     "empty": {
-      "title": "No comparison data",
-      "description": "No comparison data for the selected meters and period."
-    },
-    "mode": {
-      "title": "Choose comparison type",
-      "byMeters": "By Meters",
-      "byMetersDesc": "Compare the same period across different meters",
-      "byPeriods": "By Periods",
-      "byPeriodsDesc": "Compare different periods for the same meter(s)",
-      "matrix": "Matrix",
-      "matrixDesc": "Compare meters AND periods simultaneously"
+      "title": "No Data Available",
+      "description": "No consumption data was found for the selected meter and periods. Try selecting a different date range or check that the meter was active during this period.",
+      "tryAgain": "Try different periods"
     },
     "meters": {
       "title": "Select meters to compare",
-      "selected": "{count} meter selected | {count} meters selected",
+      "selectOne": "Select a Meter to Compare",
       "selectMeters": "No meters selected. Add meters to compare.",
       "modify": "Modify Selection",
       "all": "All meters",
@@ -676,13 +681,24 @@
     },
     "periods": {
       "title": "Select periods to compare",
-      "selected": "{count} period selected | {count} periods selected",
-      "range": "From {start} to {end}",
+      "reference": "Reference Period",
+      "comparison": "Comparison Period",
+      "comparisonType": "Comparison Type",
+      "period": "Period",
+      "types": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month"
+      },
+      "selectDate": "Select date",
+      "quickPresets": "Quick Presets",
       "presets": {
-        "last7Days": "Last 7 days",
-        "last4Weeks": "Last 4 weeks",
-        "last3Months": "Last 3 months",
-        "custom": "Custom"
+        "todayYesterday": "Today vs Yesterday",
+        "last7Days": "This Week vs Last Week",
+        "thisWeekLastWeek": "This Week vs Last Week",
+        "last30Days": "Last 30 vs Previous 30",
+        "thisMonthLastMonth": "This Month vs Last Month",
+        "thisQuarterLastQuarter": "This Quarter vs Last Quarter"
       }
     },
     "aggregation": {
@@ -717,7 +733,14 @@
       "unified": "Unified Comparison ({count} meters, {granularity})",
       "noData": "No data to display",
       "selectOtherMeter": "Select another meter to compare",
-      "selectPeriod": "Select a period to compare"
+      "selectPeriods": "Select comparison periods",
+      "selectPeriodsHint": "Choose a reference and comparison period from the panel on the right, then press",
+      "selectOtherPeriod": "Almost there!",
+      "readyToCompare": "Ready to compare",
+      "readyToCompareHint": "You have selected both periods. Press the button below to load the comparison data.",
+      "selectReferencePeriod": "Select a reference period on the right",
+      "selectComparisonPeriod": "Select a comparison period on the right",
+      "thenPressFetch": "Then press"
     },
     "selectDateRange": "Select a date range using the calendar to compare meters",
     "calendar": {
@@ -812,11 +835,6 @@
       "periods": "Periods",
       "granularity": "Granularity",
       "dataPoints": "Data Points"
-    },
-    "charts": {
-      "sideBySide": "Side-by-Side Comparison ({count} meters, {granularity})",
-      "unified": "Unified Comparison ({count} meters, {granularity})",
-      "noData": "No data to display"
     }
   },
   "tableDetailModal": {

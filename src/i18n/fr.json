@@ -651,41 +651,57 @@
     }
   },
   "comparison": {
-    "title": "Comparaison - Analyse Multi-Mètres",
-    "subtitle": "Comparez la performance entre plusieurs compteurs, périodes ou caractéristiques",
+    "title": "Comparaison - Analyse d'un Seul Compteur",
+    "subtitle": "Comparez le même compteur sur différentes périodes",
     "fetchingData": "Récupération des données de comparaison...",
     "errors": {
-      "loadFailed": "Impossible de charger les données de comparaison"
+      "loadFailed": "Impossible de charger les données de comparaison",
+      "needMeters": "Veuillez sélectionner un compteur à comparer",
+      "validation": {
+        "title": "Sélection de période requise",
+        "selectBothPeriods": "Veuillez sélectionner une période de référence et une période de comparaison, puis appuyez sur Charger",
+        "selectRefPeriod": "Veuillez sélectionner une période de référence à l'aide du calendrier à droite",
+        "selectCompPeriod": "Veuillez sélectionner une période de comparaison à l'aide du calendrier à droite, puis appuyez sur Charger",
+        "invalidDateFormat": "La date sélectionnée est invalide. Veuillez choisir une date valide depuis le calendrier",
+        "invalidDateRange": "Les dates sélectionnées n'ont pas pu être analysées. Veuillez re-sélectionner depuis le calendrier",
+        "refDateInFuture": "La date de référence ne peut pas être dans le futur. Veuillez sélectionner une date passée ou actuelle",
+        "compDateInFuture": "La date de comparaison ne peut pas être dans le futur. Veuillez sélectionner une date passée ou actuelle",
+        "refBeforeComp": "La date de référence ({refDate}) doit être avant la date de comparaison ({compDate}). Inversez les dates ou sélectionnez-en de nouvelles",
+        "needMeter": "Veuillez d'abord sélectionner un compteur, puis choisir vos périodes"
+      }
     },
     "empty": {
-      "title": "Aucune donnée de comparaison",
-      "description": "Aucune donnée de comparaison pour les compteurs et la période sélectionnés."
-    },
-    "mode": {
-      "title": "Choisir le type de comparaison",
-      "byMeters": "Par Compteurs",
-      "byMetersDesc": "Compare la même période entre différents compteurs",
-      "byPeriods": "Par Périodes",
-      "byPeriodsDesc": "Compare différentes périodes pour le/les même(s) compteur(s)",
-      "matrix": "Matrice",
-      "matrixDesc": "Compare compteurs ET périodes simultanément"
+      "title": "Aucune donnée disponible",
+      "description": "Aucune donnée de consommation trouvée pour le compteur et les périodes sélectionnés. Essayez une plage de dates différente ou vérifiez que le compteur était actif pendant cette période.",
+      "tryAgain": "Essayer d'autres périodes"
     },
     "meters": {
       "title": "Sélectionnez les compteurs à comparer",
-      "selected": "{count} mètre sélectionné | {count} mètres sélectionnés",
+      "selectOne": "Sélectionner un Compteur à Comparer",
       "selectMeters": "Aucun compteur sélectionné. Ajoutez des compteurs à comparer.",
       "modify": "Modifier la sélection",
       "search": "Rechercher des compteurs..."
     },
     "periods": {
       "title": "Sélectionnez les périodes à comparer",
-      "selected": "{count} période sélectionnée | {count} périodes sélectionnées",
-      "range": "Du {start} au {end}",
+      "reference": "Période de Référence",
+      "comparison": "Période de Comparaison",
+      "comparisonType": "Type de Comparaison",
+      "period": "Période",
+      "types": {
+        "day": "Jour",
+        "week": "Semaine",
+        "month": "Mois"
+      },
+      "selectDate": "Sélectionner une date",
+      "quickPresets": "Raccourcis",
       "presets": {
-        "last7Days": "7 derniers jours",
-        "last4Weeks": "4 dernières semaines",
-        "last3Months": "3 derniers mois",
-        "custom": "Personnalisé"
+        "todayYesterday": "Aujourd'hui vs Hier",
+        "last7Days": "Cette Semaine vs Semaine Passée",
+        "thisWeekLastWeek": "Cette Semaine vs Semaine Passée",
+        "last30Days": "30 Derniers jours vs 30 Précédents",
+        "thisMonthLastMonth": "Ce Mois vs Mois Dernier",
+        "thisQuarterLastQuarter": "Ce Trimestre vs Trimestre Dernier"
       }
     },
     "aggregation": {
@@ -719,8 +735,15 @@
       "sideBySide": "Comparaison Côte à Côte ({count} compteurs, {granularity})",
       "unified": "Comparaison Unifiée ({count} compteurs, {granularity})",
       "noData": "Aucune donnée à afficher",
-      "selectOtherMeter": "Selectionnez un autre compteur pour comparer",
-      "selectPeriod": "Selectionnez une periode pour comparer"
+      "selectOtherMeter": "Sélectionnez un autre compteur pour comparer",
+      "selectPeriods": "Sélectionnez les périodes de comparaison",
+      "selectPeriodsHint": "Choisissez une période de référence et de comparaison depuis le panneau à droite, puis appuyez sur",
+      "selectOtherPeriod": "Presque terminé !",
+      "readyToCompare": "Prêt à comparer",
+      "readyToCompareHint": "Vous avez sélectionné les deux périodes. Appuyez sur le bouton ci-dessous pour charger les données de comparaison.",
+      "selectReferencePeriod": "Sélectionnez une période de référence à droite",
+      "selectComparisonPeriod": "Sélectionnez une période de comparaison à droite",
+      "thenPressFetch": "Puis appuyez sur"
     },
     "selectDateRange": "Sélectionnez une plage de dates via le calendrier pour comparer les compteurs",
     "calendar": {
@@ -760,34 +783,34 @@
       "fromAverage": "de la moyenne",
       "peakOn": " (pic le {date})",
       "minOn": " (minimum le {date})",
-      "highestDay": "Jour avec la consommation la plus élevée",
-      "lowestDay": "Jour avec la consommation la plus basse",
+      "highestDay": "Jour avec la plus grande consommation",
+      "lowestDay": "Jour avec la plus petite consommation",
       "dailyAverage": "Consommation quotidienne moyenne",
       "days": "jours",
       "dayVariance": "Variance entre les valeurs quotidiennes",
-      "varianceFormula": "Écart = ({value} − {avg}) / {avg} × 100 = {result}%",
-      "trendFormula": "vs {prevDate} : ({value} − {prevValue}) / {prevValue} × 100 = {result}%",
-      "noPreviousPeriod": "Première période — pas de comparaison",
+      "varianceFormula": "Variance = ({value} − {avg}) / {avg} × 100 = {result}%",
+      "trendFormula": "vs {prevDate}: ({value} − {prevValue}) / {prevValue} × 100 = {result}%",
+      "noPreviousPeriod": "Première période — aucune comparaison disponible",
       "unknownMeter": "Inconnu"
     },
     "table": {
-      "title": "Tableau de Comparaison Détaillée",
+      "title": "Tableau de Comparaison Détaillé",
       "subtitle": {
-        "hourly": "Consommation horaire avec analyse d'écart et tendance",
-        "daily": "Consommation quotidienne avec analyse d'écart et tendance"
+        "hourly": "Consommation horaire avec analyse de variance et tendance",
+        "daily": "Consommation quotidienne avec analyse de variance et tendance"
       },
-      "detailed": "Comparaison détaillée",
-      "searchPlaceholder": "Rechercher par étiquette ou valeur",
+      "detailed": "Comparaison Détaillée",
+      "searchPlaceholder": "Rechercher par label ou valeur",
       "noResults": "Aucun résultat ne correspond à votre recherche.",
       "meter": "Compteur",
       "period": "Période",
-      "rank": "Rang",
-      "label": "Étiquette",
+      "rank": "Classement",
+      "label": "Label",
       "value": "Valeur",
-      "variance": "Écart %",
+      "variance": "Variance %",
       "trend": "Tendance",
       "pagination": {
-        "range": "{start}-{end} sur {total}",
+        "range": "{start}-{end} de {total}",
         "page": "Page {current} / {total}"
       }
     },
@@ -796,18 +819,18 @@
       "reset": "Réinitialiser",
       "export": "Exporter en CSV",
       "generateReport": "Générer un rapport",
-      "selectAll": "Tout sélectionner",
-      "deselectAll": "Tout désélectionner"
+      "selectAll": "Sélectionner tout",
+      "deselectAll": "Désélectionner tout"
     },
     "sideBySide": {
-      "title": "Comparaison Côte à Côte des Compteurs",
-      "subtitle": "Comparer {meterCount} compteurs par données {granularity}",
+      "title": "Comparaison de Compteurs Côte à Côte",
+      "subtitle": "Comparez {meterCount} compteurs sur des données {granularity}",
       "timeLabel": "Période",
       "periods": "périodes",
-      "hourly": "horaires",
-      "daily": "quotidiennes",
-      "aboveAverage": "Consommation supérieure à la moyenne",
-      "belowAverage": "Consommation inférieure à la moyenne"
+      "hourly": "horaire",
+      "daily": "quotidienne",
+      "aboveAverage": "Consommation au-dessus de la moyenne",
+      "belowAverage": "Consommation en dessous de la moyenne"
     },
     "details": {
       "title": "Résumé de Comparaison",
