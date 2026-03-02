@@ -210,6 +210,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useViewLifecycle } from '@/composables/useViewLifecycle'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { getAllIndusmindCustomerDevices, type Device } from '@/services/deviceAPI'
 import {
@@ -220,6 +221,7 @@ import {
 } from '@/services/equipmentTelemetryAPI'
 
 const { t } = useI18n()
+const { isActive } = useViewLifecycle()
 
 const devices = ref<Device[]>([])
 const deviceTelemetry = ref<Map<string, DeviceTelemetryData>>(new Map())
@@ -419,7 +421,10 @@ const fetchDevices = async () => {
     await fetchTelemetryData()
 
     // Set up auto-refresh every 10 seconds
-    telemetryInterval = setInterval(fetchTelemetryData, 10000)
+    telemetryInterval = setInterval(() => {
+      if (!isActive.value) return // Skip if component unmounted
+      fetchTelemetryData()
+    }, 10000)
   } catch (err) {
     error.value = err instanceof Error ? err.message : t('equipment.fetchError')
     console.error('Error fetching devices:', err)

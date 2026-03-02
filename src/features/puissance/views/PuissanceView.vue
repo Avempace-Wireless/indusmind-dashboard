@@ -539,6 +539,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
+import { useViewLifecycle } from '@/composables/useViewLifecycle'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import KPICard from '@/components/puissance/KPICard.vue'
 import BarChart from '@/components/puissance/BarChart.vue'
@@ -554,6 +555,7 @@ import { useApiData } from '@/config/dataMode'
 import type { Meter, KPIValues } from '@/data/mockData'
 
 const { t } = useI18n()
+const { isActive, guard } = useViewLifecycle()
 
 // ✅ USE PUISSANCE COMPOSABLE FOR KPI DATA
 const { getKPIs, getChartData, fetchPuissanceKPIs, isLoading, error } = usePuissance()
@@ -691,11 +693,13 @@ onMounted(async () => {
   // Fetch telemetry data for current meter if API mode enabled
   if (useApiData()) {
     await loadCurrentMeterData()
+    if (!guard()) return // Component unmounted during fetch
   }
 
   // Start 20-second silent refresh interval for telemetry data
   if (useApiData()) {
     telemetryRefreshInterval = setInterval(() => {
+      if (!isActive.value) return // Skip if component unmounted
       if (selectedMeterIds.value.length > 0 && currentMeterId.value) {
         console.log('[Puissance] Silent refresh triggered (20s interval)')
         loadCurrentMeterDataSilently()

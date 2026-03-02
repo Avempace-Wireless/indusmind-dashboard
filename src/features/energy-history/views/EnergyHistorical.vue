@@ -139,7 +139,7 @@
           </div>
 
           <!-- Chart Canvas -->
-          <div class="relative" style="height: 400px;">
+          <div class="relative rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30" style="height: 400px;">
             <!-- Loading Overlay (on top of chart, doesn't hide canvas) -->
             <div v-if="!hasLoadedOnce || store.loading" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-20 rounded-2xl">
               <div class="flex flex-col items-center gap-3">
@@ -160,12 +160,44 @@
               </button>
             </div>
             <!-- Empty State -->
-            <div v-if="!store.loading && !store.error && hasLoadedOnce && !hasChartData" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 z-20">
-              <span v-if="selectedDates.length === 0" class="material-symbols-outlined text-6xl mb-4 opacity-50 text-blue-400">calendar_today</span>
-              <span v-else class="material-symbols-outlined text-6xl mb-4 opacity-30 text-gray-400">bar_chart</span>
-              <p class="text-lg font-medium">{{ emptyStateMessage }}</p>
-              <p v-if="selectedDates.length === 0" class="text-sm mt-2 text-blue-600 dark:text-blue-400">{{ t('energyHistory.emptyState.selectDate') }}</p>
-              <p v-else class="text-sm mt-2">{{ t('energyHistory.emptyState.hint') }}</p>
+            <div v-if="!store.loading && !store.error && hasLoadedOnce && !hasChartData" class="absolute inset-0 flex flex-col items-center justify-center z-20 bg-white/60 dark:bg-gray-900/60 backdrop-blur-[2px]">
+              <!-- Pending state: dates selected but not confirmed -->
+              <div v-if="selectedDates.length > 0 && !hasLoadedData" class="flex flex-col items-center px-6">
+                <span class="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-500 mb-3">bar_chart</span>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                  {{ selectedDates.length }} {{ selectedDates.length === 1 ? t('energyHistory.calendar.day') : t('energyHistory.calendar.days') }}
+                  <span class="font-normal">·</span>
+                  {{ selectedDates[0] }}<span v-if="selectedDates.length > 1"> → {{ selectedDates[selectedDates.length - 1] }}</span>
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">{{ t('energyHistory.emptyState.clickButton') }}</p>
+                <button
+                  @click="validateAndSearch"
+                  :disabled="energyHistoryLoading"
+                  :class="[
+                    'px-5 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2',
+                    energyHistoryLoading
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                  ]"
+                >
+                  <span v-if="energyHistoryLoading" class="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                  <span v-else class="material-symbols-outlined text-base">query_stats</span>
+                  {{ t('energyHistory.calendar.fetchData') }}
+                </button>
+              </div>
+
+              <!-- No dates selected -->
+              <div v-else-if="selectedDates.length === 0" class="flex flex-col items-center px-6">
+                <span class="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-500 mb-3">calendar_today</span>
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ t('energyHistory.emptyState.selectDate') }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('energyHistory.emptyState.selectDateHint') }}</p>
+              </div>
+
+              <!-- No data available -->
+              <div v-else class="flex flex-col items-center">
+                <span class="material-symbols-outlined text-4xl mb-3 text-gray-400 dark:text-gray-500">bar_chart</span>
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ t('energyHistory.emptyState.noData') }}</p>
+              </div>
             </div>
             <!-- Chart (always in DOM so Chart.js keeps proper dimensions) -->
             <canvas ref="chartCanvas"></canvas>
@@ -251,96 +283,95 @@
       </div>
 
       <!-- Right Panel: Controls (30%) -->
-      <div class="xl:col-span-3 space-y-6 order-1 xl:order-2">
-        <!-- Calendar Selector -->
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('energyHistory.calendar.title') }}</h3>
-            <button
-              @click="goToToday"
-              class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {{ t('energyHistory.buttons.today') }}
-            </button>
+      <div class="xl:col-span-3 order-1 xl:order-2">
+
+        <!-- Single compact card — presets + fetch + calendar (all above fold) -->
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+
+          <!-- Header row: title -->
+          <div class="mb-2">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('energyHistory.calendar.title') }}</h3>
           </div>
+
+          <!-- Instruction hint -->
+          <p class="text-[11px] text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-1 leading-tight">
+            <span class="material-symbols-outlined text-xs shrink-0">event_note</span>
+            {{ t('energyHistory.calendar.calendarInstruction') }}
+          </p>
 
           <!-- Period Presets -->
-          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ t('energyHistory.calendar.periods.title') }}</p>
-            <div class="grid grid-cols-3 gap-2">
-              <button
-                v-for="preset in ['last7Days', 'last4Weeks', 'last3Months']"
-                :key="preset"
-                @click="selectPreset(preset)"
-                :disabled="energyHistoryLoading"
-                :class="[
-                  'px-3 py-2 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
-                  activePeriodPreset === preset
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                ]"
-              >
-                {{ t(`energyHistory.calendar.periods.${preset}`) }}
-              </button>
-            </div>
+          <div class="grid grid-cols-3 gap-1.5 mb-2">
+            <button
+              v-for="preset in ['last7Days', 'last4Weeks', 'last3Months']"
+              :key="preset"
+              @click="selectPreset(preset)"
+              :disabled="energyHistoryLoading"
+              :class="[
+                'py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                activePeriodPreset === preset
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              ]"
+            >
+              {{ t(`energyHistory.calendar.periods.${preset}`) }}
+            </button>
           </div>
 
-           <!-- Selected Dates Range Info -->
-          <div v-if="selectedDates.length > 0"
-               class="mb-4 mt-2 p-3 rounded-lg border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-            <div class="flex items-center justify-between">
-              <div class="text-xs">
-                <span class="font-semibold text-blue-900 dark:text-blue-100">
-                  {{ t('energyHistory.calendar.daysSelected', { count: selectedDates.length }) }}
-                </span>
-                <div v-if="selectedDates.length > 1"
-                     class="text-blue-700 dark:text-blue-300 mt-1">
-                  {{ selectedDates[0] }} → {{ selectedDates[selectedDates.length - 1] }}
-                </div>
-              </div>
-              <button
-                @click="goToToday"
-                class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-xs"
-              >
-                {{ t('common.clear') }}
-              </button>
-            </div>
+          <!-- Selected range + clear (only when dates selected) -->
+          <div v-if="selectedDates.length > 0" class="flex items-center justify-between mb-2 text-xs">
+            <span class="font-medium text-blue-700 dark:text-blue-300 truncate">
+              {{ t('energyHistory.calendar.daysSelected', { count: selectedDates.length }) }}
+              <span v-if="selectedDates.length > 1" class="text-gray-400 ml-1">· {{ selectedDates[0] }} → {{ selectedDates[selectedDates.length - 1] }}</span>
+            </span>
+            <button @click="clearDates(); activePeriodPreset = null; hasLoadedData = false; historicalData.clear()" class="ml-2 shrink-0 text-red-500 hover:text-red-700 flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-sm leading-none">close</span>
+            </button>
           </div>
+
+          <!-- Fetch Button — always clickable (auto-selects today if no date chosen) -->
+          <button
+            @click="validateAndSearch"
+            :disabled="energyHistoryLoading"
+            :class="[
+              'w-full py-2 px-4 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 mb-2',
+              energyHistoryLoading
+                ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                : hasPendingChanges
+                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md ring-2 ring-blue-400 ring-offset-1 animate-pulse-once'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+            ]"
+          >
+            <span v-if="energyHistoryLoading" class="material-symbols-outlined text-base animate-spin">progress_activity</span>
+            <span v-else class="material-symbols-outlined text-base">query_stats</span>
+            {{ energyHistoryLoading ? t('energyHistory.calendar.fetchingData') : t('energyHistory.calendar.fetchData') }}
+          </button>
+
+          <!-- Divider -->
+          <div class="border-t border-gray-200 dark:border-gray-700 mb-2"></div>
 
           <!-- Month Navigation -->
-          <div class="flex items-center justify-between mb-4">
-            <button
-              @click="prevMonth"
-              :disabled="energyHistoryLoading"
-              class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span class="material-symbols-outlined text-xl">chevron_left</span>
+          <div class="flex items-center justify-between mb-1.5">
+            <button @click="prevMonth" :disabled="energyHistoryLoading"
+              class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 disabled:opacity-50">
+              <span class="material-symbols-outlined text-lg">chevron_left</span>
             </button>
-            <span class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ monthLabel }}
-            </span>
-            <button
-              @click="nextMonth"
-              :disabled="energyHistoryLoading"
-              class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span class="material-symbols-outlined text-xl">chevron_right</span>
+            <span class="text-xs font-semibold text-gray-900 dark:text-white">{{ monthLabel }}</span>
+            <button @click="nextMonth" :disabled="energyHistoryLoading"
+              class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 disabled:opacity-50">
+              <span class="material-symbols-outlined text-lg">chevron_right</span>
             </button>
           </div>
 
           <!-- Weekday Headers -->
-          <div class="grid grid-cols-7 gap-1 mb-2">
-            <div
-              v-for="day in weekDays"
-              :key="day"
-              class="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-1"
-            >
+          <div class="grid grid-cols-7 gap-0.5 mb-0.5">
+            <div v-for="day in weekDays" :key="day"
+              class="text-center text-[10px] font-medium text-gray-400 dark:text-gray-500">
               {{ day }}
             </div>
           </div>
 
           <!-- Calendar Days -->
-          <div class="grid grid-cols-7 gap-1">
+          <div class="grid grid-cols-7 gap-0.5">
             <button
               v-for="(day, index) in calendarDays"
               :key="index"
@@ -349,9 +380,12 @@
               @mouseover="isDragging && !energyHistoryLoading && day.date && onDragOver(day.date)"
               @mouseup="endDrag"
               :disabled="!day.date || energyHistoryLoading"
+              :title="day.isSelected && day.date && interiorSelectedDates.has(day.date) ? t('energyHistory.calendar.interiorDateHint') : undefined"
               :class="[
-                'aspect-square flex items-center justify-center text-xs rounded-md transition-all relative',
-                day.isCurrentMonth
+                'aspect-square flex items-center justify-center text-[11px] rounded transition-all relative',
+                day.isSelected && day.date && interiorSelectedDates.has(day.date)
+                  ? 'bg-blue-400 dark:bg-blue-500 text-white cursor-not-allowed'
+                  : day.isCurrentMonth
                   ? day.isSelected
                     ? 'bg-blue-600 text-white font-semibold'
                     : day.isToday
@@ -363,10 +397,9 @@
               ]"
             >
               {{ day.dateObj ? day.dateObj.getDate() : '' }}
-              <span
-                v-if="day.hasData"
-                class="absolute bottom-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-green-500"
-              ></span>
+              <span v-if="day.hasData"
+                class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-0.5 h-0.5 rounded-full bg-green-500">
+              </span>
             </button>
           </div>
 
@@ -449,17 +482,6 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler, LineController, BarController } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
 
-// Debounce helper function
-function debounce(func: (...args: any[]) => Promise<void>, wait: number) {
-  let timeout: ReturnType<typeof setTimeout> | null = null
-  return (...args: any[]) => {
-    if (timeout) clearTimeout(timeout)
-    timeout = setTimeout(() => {
-      func(...args)
-      timeout = null
-    }, wait)
-  }
-}
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import CompteurSelector from '@/components/dashboard/CompteurSelector.vue'
 import { useEnergyHistoryStore } from '@/features/energy-history/store/useEnergyHistoryStore'
@@ -469,6 +491,7 @@ import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { useEnergyHistory } from '@/composables/useEnergyHistory'
 import { useMockData } from '@/config/dataMode'
 import { getMeterOrderRank } from '@/utils/meterColors'
+import { TimeUtils } from '@/utils/TimeUtils'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
@@ -564,11 +587,14 @@ const {
   loading,
   error,
   historicalData,
+  hasLoadedData,
+  confirmedDates,
 } = storeToRefs(store)
 
 const {
   toggleMetric,
   toggleDate,
+  clearDates,
   prevMonth,
   nextMonth,
   goToToday,
@@ -592,32 +618,6 @@ const chartCanvas = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
 const chartType = ref<'line' | 'bar'>('bar')
 
-// Period preset selector method
-function selectPreset(preset: string) {
-  switch (preset) {
-    case 'last7Days':
-      selectLast7Days()
-      break
-    case 'last4Weeks':
-      selectLast4Weeks()
-      break
-    case 'last3Months':
-      selectLast3Months()
-      break
-  }
-}
-
-function formatCell(v: any) {
-  // Handle if v is an object with a value property
-  if (v && typeof v === 'object' && 'value' in v) {
-    v = v.value
-  }
-
-  if (typeof v !== 'number' || isNaN(v)) return '-'
-
-  const dp = selectedMetric.value.decimalPlaces
-  return v.toFixed(dp)
-}
 const hiddenDatasets = ref<string[]>([])
 const viewMode = ref<'chart' | 'table'>('chart')
 const isTableZoomed = ref(false)
@@ -649,6 +649,18 @@ function resetTableZoom() {
   itemsPerPage.value = effectiveResolution.value === 'hourly' ? 24 : Math.min(100, tableData.value.length)
 }
 
+function formatCell(v: any) {
+  // Handle if v is an object with a value property
+  if (v && typeof v === 'object' && 'value' in v) {
+    v = v.value
+  }
+
+  if (typeof v !== 'number' || isNaN(v)) return '-'
+
+  const dp = selectedMetric.value.decimalPlaces
+  return v.toFixed(dp)
+}
+
 // Calendar drag-to-select
 const isDragging = ref(false)
 const dragStart = ref<string | null>(null)
@@ -656,11 +668,38 @@ const dragStart = ref<string | null>(null)
 // API call tracking - prevent concurrent requests
 const isFetchingData = ref(false)
 
+// Track whether calendar dates changed since last search (pending validation)
+const hasPendingChanges = ref(false)
+
 // Track if data has been loaded at least once (for first-load loading state)
 const hasLoadedOnce = ref(false)
 
+// Interior selected dates = selected but not at the range edges (can't be removed)
+const interiorSelectedDates = computed<Set<string>>(() => {
+  if (selectedDates.value.length <= 2) return new Set()
+  const sorted = [...selectedDates.value].sort()
+  return new Set(sorted.slice(1, -1))
+})
+
 // Guard: prevent watchers from re-triggering during initial mount setup
 const initialSetupDone = ref(false)
+
+// Period preset selector method
+function selectPreset(preset: string) {
+  switch (preset) {
+    case 'last7Days':
+      selectLast7Days()
+      break
+    case 'last4Weeks':
+      selectLast4Weeks()
+      break
+    case 'last3Months':
+      selectLast3Months()
+      break
+  }
+  // Mark pending - user must click Fetch Data button
+  hasPendingChanges.value = true
+}
 
 // ===========================
 // Category Selection - Synced with Centralized Meter Selection
@@ -849,8 +888,8 @@ watch(
       activeCompteurIds.value = newCompteurs.map(c => c.id)
       // Skip data refresh during initial mount — onMounted handles it
       if (!initialSetupDone.value) return
-      await nextTick()
-      await refreshData()
+      // Mark pending — user must click Fetch Data button
+      hasPendingChanges.value = true
     }
   },
   { immediate: true }
@@ -967,6 +1006,10 @@ const emptyStateMessage = computed(() => {
   }
   if (selectedDates.value.length === 0) {
     return t('energyHistory.emptyState.selectDate')
+  }
+  // Pending state: dates selected but not confirmed (waiting for button click)
+  if (selectedDates.value.length > 0 && !hasLoadedData.value) {
+    return t('energyHistory.emptyState.pendingFetch')
   }
   if (enabledMetrics.value.length === 0) {
     return t('energyHistory.emptyState.noMetrics')
@@ -1486,8 +1529,12 @@ onMounted(async () => {
 
   selectedCategory.value = null // No specific category filter
 
-  // Initialize with last 7 days (default period)
-  selectLast7Days()
+  // Initialize with current date (today) as default
+  const today = new Date()
+  selectedDates.value = [TimeUtils.toLocalDateStr(today)]
+  activePeriodPreset.value = null // No preset, manual date selection
+  currentMonth.value = today
+  console.log('[EnergyHistorical] Initialized with today:', TimeUtils.toLocalDateStr(today))
 
   // Wait for next tick to ensure all state is synchronized
   await nextTick()
@@ -1498,64 +1545,23 @@ onMounted(async () => {
     if (consumptionMetric) consumptionMetric.enabled = true
   }
 
-  // Refresh data to populate charts (MUST await to ensure data is loaded)
-  console.log('Before refreshData:', {
+  // Auto-fetch today's data on initial mount
+  hasPendingChanges.value = false
+  hasLoadedOnce.value = true
+
+  console.log('[EnergyHistorical] Mount complete — auto-fetching today\'s data', {
     selectedDates: selectedDates.value.length,
     selectedMeterIds: selectedMeterIds.value.length,
     visibleCompteurs: visibleCompteurs.value.length,
     enabledMetrics: enabledMetrics.value.filter(m => m.enabled).length,
   })
 
-  await refreshData()
-
-  // Wait for store to clear loading state
-  let loadingWaitCount = 0
-  while (store.loading && loadingWaitCount < 20) {
-    await new Promise(resolve => setTimeout(resolve, 50))
-    loadingWaitCount++
-  }
-  console.log(`Waited ${loadingWaitCount * 50}ms for store.loading to clear`)
-
-  // Wait for computed properties to recalculate after data loads
+  // Allow watchers to run after initial setup is done
   await nextTick()
-  await nextTick()
-  await new Promise(resolve => setTimeout(resolve, 200))
+  initialSetupDone.value = true
 
-  // Debug: log chart state after data is ready
-  console.log('After refreshData:', {
-    hasChartData: hasChartData.value,
-    selectedDates: selectedDates.value.length,
-    visibleCompteurs: visibleCompteurs.value.length,
-    enabledMetrics: enabledMetrics.value.filter(m => m.enabled).length,
-    chartLabels: Array.isArray(chartData.value?.labels) ? chartData.value.labels.length : 0,
-    chartDatasets: Array.isArray(chartData.value?.datasets) ? chartData.value.datasets.length : 0,
-    storeLoading: store.loading,
-    storeError: store.error,
-    historicalDataSize: store.historicalData.size,
-  })
-
-  // Only mark as loaded once data is actually ready
-  if (hasChartData.value) {
-    console.log('✅ Chart data is ready, initializing chart...')
-  } else {
-    console.warn('⚠️ Chart data is NOT ready after refreshData')
-  }
-  hasLoadedOnce.value = true
-
-  // Initialize chart after data is confirmed to be loaded
-  if (hasChartData.value) {
-    initChart()
-  }
-
-  // Force chart re-initialization if canvas still not ready after a delay
-  setTimeout(() => {
-    if (!chartInstance && hasChartData.value) {
-      console.log('Delayed chart initialization (canvas/data ready now)...')
-      initChart()
-    }
-    // Allow watchers to run only after initial setup is fully done
-    initialSetupDone.value = true
-  }, 500)
+  // Fetch today's data automatically on mount
+  await fetchEnergyHistoryData()
 })
 
 // Rebuild chart when chart data shape changes (labels/datasets)
@@ -1575,7 +1581,7 @@ watch(
   }
 )
 
-// When compteurs arrive later (e.g., after refresh), hydrate meters store and refresh
+// When compteurs arrive later (e.g., after refresh), hydrate meters store
 watch(
   () => dashboardStore.compteurs,
   async (compteurs) => {
@@ -1587,11 +1593,8 @@ watch(
     }
     // Skip data refresh during initial mount — onMounted handles it
     if (!initialSetupDone.value) return
-    await nextTick()
-    await refreshData()
-    if (!chartInstance && hasChartData.value) {
-      initChart()
-    }
+    // Mark pending — user must click Fetch Data button
+    hasPendingChanges.value = true
   },
   { deep: true }
 )
@@ -1640,12 +1643,11 @@ watch(viewMode, (m) => {
 })
 
 // Refresh data when meter visibility changes (activeCompteurIds toggle)
-// Chart will be re-initialized by the unified chart watcher when data loads
+// Mark pending — user must click Fetch Data button
 watch(activeCompteurIds, async () => {
   // Skip during initial mount — onMounted handles it
   if (!initialSetupDone.value) return
-  await nextTick()
-  await refreshData()
+  hasPendingChanges.value = true
 }, { deep: true })
 
 // Adjust table paging when resolution changes
@@ -1661,21 +1663,32 @@ watch([hourFrom, hourTo], () => {
   }
   // Skip during initial mount — onMounted handles it
   if (!initialSetupDone.value) return
-  // Refresh data when hour range changes
-  refreshData()
+  // Mark pending — user must click Fetch Data button
+  hasPendingChanges.value = true
 })
 
-// Debounced refresh function for date selection (wait 500ms after last click)
-const debouncedRefreshData = debounce(async () => {
-  console.log('[EnergyHistorical] Dates finished changing, calling API...')
+// Validate and fetch - called by the Fetch Data button
+async function validateAndSearch() {
+  console.log('[EnergyHistorical] Fetch Data button clicked, fetching data...')
+  // If no dates selected, default to today
+  if (selectedDates.value.length === 0) {
+    goToToday()
+    await nextTick()
+  }
+  hasPendingChanges.value = false
   await fetchEnergyHistoryData()
-}, 500)
+}
 
-// Refresh data when dates or enabled metrics change
-// Guarded by initialSetupDone to prevent redundant fetch during mount
-// (onMounted already handles the first fetch via selectLast7Days → refreshData)
-watch([selectedDates, enabledMetrics, activePeriodPreset], async () => {
-  // Skip during initial mount — onMounted already fetched the data
+// Watch for date changes to mark pending state (no auto-fetch)
+watch(selectedDates, () => {
+  if (!initialSetupDone.value) return
+  // Mark that dates changed — user must click Fetch Data button
+  hasPendingChanges.value = true
+  console.log('[EnergyHistorical WATCHER] Dates changed - pending fetch')
+}, { deep: true })
+
+// Watch for period presets and metric changes — mark pending, require button click
+watch([enabledMetrics, activePeriodPreset], () => {
   if (!initialSetupDone.value) {
     console.log('[EnergyHistorical WATCHER] Skipping - initial setup not done yet')
     return
@@ -1688,21 +1701,9 @@ watch([selectedDates, enabledMetrics, activePeriodPreset], async () => {
     isFetchingData: isFetchingData.value
   })
 
-  // Don't start new API call if one is already in progress
-  if (isFetchingData.value) {
-    console.log('[EnergyHistorical WATCHER] Skipping - already fetching')
-    return
-  }
-
-  // If a period preset was selected, fetch data immediately (no debounce)
-  if (activePeriodPreset.value) {
-    console.log('[EnergyHistorical WATCHER] Period preset detected, calling fetchEnergyHistoryData')
-    await fetchEnergyHistoryData()
-  } else {
-    // For manual date selection, use debounce to wait for user to stop clicking
-    console.log('[EnergyHistorical WATCHER] Manual selection, using debounce')
-    debouncedRefreshData()
-  }
+  // All changes require user to click Fetch Data button
+  hasPendingChanges.value = true
+  console.log('[EnergyHistorical WATCHER] Marked pending - user must click Fetch Data')
 }, { deep: true })
 </script>
 
@@ -1740,6 +1741,16 @@ watch([selectedDates, enabledMetrics, activePeriodPreset], async () => {
 /* Smooth transitions */
 button {
   transition: all 0.2s ease-in-out;
+}
+
+/* Pulse-once animation for search button when pending */
+.animate-pulse-once {
+  animation: pulseOnce 1.5s ease-in-out 1;
+}
+
+@keyframes pulseOnce {
+  0%, 100% { box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3); }
+  50% { box-shadow: 0 0 16px rgba(37, 99, 235, 0.5); }
 }
 
 /* Custom scrollbar for table */

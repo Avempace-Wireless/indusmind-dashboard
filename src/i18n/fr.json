@@ -44,7 +44,9 @@
     "page": "Page",
     "of": "de",
     "showing": "Affichage de",
-    "itemsPerPage": "Éléments par page"
+    "itemsPerPage": "Éléments par page",
+    "hourly": "Horaire",
+    "daily": "Quotidien"
   },
   "auth": {
     "login": {
@@ -216,6 +218,11 @@
       "lastUpdate": "Dernière mise à jour: "
     },
     "manageMeters": "Gérer les compteurs",
+    "manageSensors": "Gérer les capteurs",
+    "viewMode": {
+      "energy": "Énergie",
+      "temperature": "Température"
+    },
     "noMetersSelected": {
       "title": "Aucun compteur sélectionné",
       "description": "Sélectionnez des compteurs pour afficher les données de consommation",
@@ -225,10 +232,12 @@
       "title": "Énergie & Température",
       "subtitle": "{count} compteur(s) sélectionné(s)",
       "energy": "Consommation Énergétique",
+      "energyToday": "Consommation Énergétique d'aujourd'hui",
+      "energyYesterday": "Consommation Énergétique d'hier",
       "temperature": "Gestion Thermique"
     },
     "energy": "Énergie",
-    "temperature": "Température",
+    "temperatureMode": "Température",
     "period": {
       "today": "Aujourd'hui",
       "yesterday": "Hier",
@@ -280,6 +289,10 @@
       "title": "Derniers Événements",
       "viewAll": "Voir tout",
       "noEvents": "Aucun événement récent"
+    },
+    "temperature": {
+      "chart24h": "Température 24 Heures",
+      "chart30d": "Température 30 Jours"
     }
   },
   "compteur": {
@@ -311,6 +324,8 @@
     },
     "time": {
       "now": "Maintenant",
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
       "min30": "-30min",
       "min15": "-15min",
       "h0": "0h",
@@ -329,6 +344,18 @@
     "realTimeCost": "Coût en Temps Réel",
     "totalPower": "Puissance Totale",
     "target": "Objectif"
+  },
+  "capteur": {
+    "selector": {
+      "title": "Sélectionner les capteurs",
+      "search": "Rechercher des capteurs...",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Tout désélectionner",
+      "selected": "{count} sélectionné(s)",
+      "noResults": "Aucun capteur trouvé",
+      "maxSelectionWarning": "Sélection maximale de 8 capteurs atteinte. Désélectionnez un capteur pour en ajouter un autre.",
+      "typeSensor": "Capteur"
+    }
   },
   "temperature": {
     "zones": {
@@ -550,11 +577,13 @@
       "table": "Tableau"
     },    "emptyState": {
       "noMeters": "Aucun compteur sélectionné",
-      "selectDate": "Sélectionnez une date",
+      "selectDate": "Aucune date sélectionnée",
       "noMetrics": "Aucune métrique activée",
       "noData": "Aucune donnée disponible",
+      "pendingFetch": "Prêt à charger les données",
+      "clickButton": "Appuyez sur Charger les données pour afficher le graphique",
       "hint": "Sélectionnez des compteurs, des dates et activez des métriques pour voir les données",
-      "selectDateHint": "Sélectionnez une date pour afficher les données"
+      "selectDateHint": "Choisissez une date ou une période depuis le calendrier"
     },    "chart": {
       "title": "Analyse {resolution} par compteur",
       "subtitle": {
@@ -587,6 +616,8 @@
     },
     "calendar": {
       "title": "Calendrier",
+      "day": "jour",
+      "days": "jours",
       "daysSelected": "{count} jour sélectionné | {count} jours sélectionnés",
       "maxReached": "Maximum 32 jours",
       "weekdays": {
@@ -603,7 +634,13 @@
         "last7Days": "7 derniers jours",
         "last4Weeks": "4 dernières semaines",
         "last3Months": "3 derniers mois"
-      }
+      },
+      "calendarInstruction": "Sélectionnez des dates ou utilisez les périodes rapides, puis cliquez sur Charger les données",
+      "presetsAutoLoad": "⚡ Périodes rapides",
+      "interiorDateHint": "Seules les extrémités sont modifiables — cliquez sur la première ou dernière date pour réduire la plage",
+      "fetchData": "Charger les données",
+      "fetchingData": "Chargement...",
+      "pendingFetch": "Cliquez sur Charger pour afficher les données"
     },
     "characteristics": {
       "title": "Caractéristiques"
@@ -636,7 +673,8 @@
     "meters": {
       "title": "Sélectionnez les compteurs à comparer",
       "selected": "{count} mètre sélectionné | {count} mètres sélectionnés",
-      "selectMeters": "Sélectionnez au moins un compteur",
+      "selectMeters": "Aucun compteur sélectionné. Ajoutez des compteurs à comparer.",
+      "modify": "Modifier la sélection",
       "search": "Rechercher des compteurs..."
     },
     "periods": {
@@ -676,6 +714,17 @@
       "line": "Lignes",
       "heatmap": "Carte thermique",
       "table": "Tableau"
+    },
+    "charts": {
+      "sideBySide": "Comparaison Côte à Côte ({count} compteurs, {granularity})",
+      "unified": "Comparaison Unifiée ({count} compteurs, {granularity})",
+      "noData": "Aucune donnée à afficher",
+      "selectOtherMeter": "Selectionnez un autre compteur pour comparer",
+      "selectPeriod": "Selectionnez une periode pour comparer"
+    },
+    "selectDateRange": "Sélectionnez une plage de dates via le calendrier pour comparer les compteurs",
+    "calendar": {
+      "fetchData": "Charger Données de Comparaison"
     },
     "viewOptions": {
       "title": "Options d'affichage",
@@ -722,6 +771,11 @@
       "unknownMeter": "Inconnu"
     },
     "table": {
+      "title": "Tableau de Comparaison Détaillée",
+      "subtitle": {
+        "hourly": "Consommation horaire avec analyse d'écart et tendance",
+        "daily": "Consommation quotidienne avec analyse d'écart et tendance"
+      },
       "detailed": "Comparaison détaillée",
       "searchPlaceholder": "Rechercher par étiquette ou valeur",
       "noResults": "Aucun résultat ne correspond à votre recherche.",
@@ -744,6 +798,23 @@
       "generateReport": "Générer un rapport",
       "selectAll": "Tout sélectionner",
       "deselectAll": "Tout désélectionner"
+    },
+    "sideBySide": {
+      "title": "Comparaison Côte à Côte des Compteurs",
+      "subtitle": "Comparer {meterCount} compteurs par données {granularity}",
+      "timeLabel": "Période",
+      "periods": "périodes",
+      "hourly": "horaires",
+      "daily": "quotidiennes",
+      "aboveAverage": "Consommation supérieure à la moyenne",
+      "belowAverage": "Consommation inférieure à la moyenne"
+    },
+    "details": {
+      "title": "Résumé de Comparaison",
+      "meters": "Compteurs",
+      "periods": "Périodes",
+      "granularity": "Granularité",
+      "dataPoints": "Points de Données"
     }
   },
   "tableDetailModal": {
@@ -773,6 +844,7 @@
     },
     "zone": "Zone {number}",
     "currentTemp": "Température",
+    "humidity": "Humidité",
     "maxTemp": "Temp. Max",
     "minTemp": "Temp. Min",
     "manuel": "Manuel",
@@ -863,7 +935,6 @@
     "mode": {
       "updating": "Mise à jour en cours...",
       "updateSuccess": "Mode mis à jour avec succès",
-      "updateError": "Impossible de mettre à jour le mode",
       "updateError": "Impossible de mettre à jour le mode",
       "updateErrorRetry": "Impossible de mettre à jour le mode. Veuillez réessayer.",
       "updateErrorBrief": "Échec de la mise à jour"
@@ -981,6 +1052,8 @@
     }
   },
   "globalMeters": {
+    "barChart": "Histogramme",
+    "lineChart": "Courbe",
     "pageTitle": "Vue Compteurs Globaux",
     "subtitle": "Aperçu consolidé de plusieurs compteurs et analyse de consommation",
     "selectMeters": "Sélectionner des Compteurs",
@@ -988,6 +1061,8 @@
     "powerTrend": "Tendance de Puissance",
     "energyTrend": "Tendance d'Énergie",
     "energyConsumption": "Consommation d'Énergie",
+    "todayConsumption": "Consommation d'aujourd'hui",
+    "monthlyConsumption": "Consommation mensuelle",
     "yearlyEnergyConsumption": "Consommation d'Énergie Annuelle",
     "dailyAverage": "Moyenne Quotidienne",
     "energyOverTime": "Consommation d'énergie dans le temps",
@@ -1025,6 +1100,26 @@
     "autoRefresh": "Actualisation automatique toutes les 5 secondes",
     "tvDisplayMode": "Mode d'affichage Usine",
     "noTemperatureSensors": "Aucun capteur de température disponible",
-    "temperature24Hours": "Température sur 24 heures (Moyennes horaires)"
+    "temperature24Hours": "Température sur 24 heures (Moyennes horaires)",
+    "currentTemp": "Température actuelle",
+    "humidity": "Humidité",
+    "dewPoint": "Point de rosée",
+    "sensorActive": "Actif",
+    "sensorInactive": "Inactif",
+    "targetRange": "Plage cible",
+    "modeManuel": "Manuel",
+    "modeAuto": "Auto",
+    "noMode": "Non configuré",
+    "addSensors": "Ajouter des capteurs",
+    "manageSensors": "Gérer les capteurs",
+    "temperature24h": "Température 24h",
+    "temperatureMonthlyInfo": "Température min/max sur les 30 derniers jours",
+    "temperatureMonthly": "Température 30 jours",
+    "noSensorsSelected": {
+      "title": "Aucun capteur sélectionné",
+      "description": "Sélectionnez des capteurs pour afficher les données de température",
+      "action": "Ajouter des capteurs"
+    },
+    "loadingTemperature": "Chargement des données thermiques..."
   }
 }

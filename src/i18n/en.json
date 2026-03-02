@@ -46,7 +46,9 @@
     "page": "Page",
     "of": "of",
     "showing": "Showing",
-    "itemsPerPage": "Items per page"
+    "itemsPerPage": "Items per page",
+    "hourly": "Hourly",
+    "daily": "Daily"
   },
   "auth": {
     "login": {
@@ -218,6 +220,11 @@
       "lastUpdate": "Last update: "
     },
     "manageMeters": "Manage Meters",
+    "manageSensors": "Manage Sensors",
+    "viewMode": {
+      "energy": "Energy",
+      "temperature": "Temperature"
+    },
     "noMetersSelected": {
       "title": "No meters selected",
       "description": "Select meters to display energy consumption data",
@@ -227,10 +234,12 @@
       "title": "Energy & Temperature",
       "subtitle": "{count} meter(s) selected",
       "energy": "Energy Consumption",
+      "energyToday": "Today's Energy Consumption",
+      "energyYesterday": "Yesterday's Energy Consumption",
       "temperature": "Thermal Management"
     },
     "energy": "Energy",
-    "temperature": "Temperature",
+    "temperatureMode": "Temperature",
     "period": {
       "today": "Today",
       "yesterday": "Yesterday",
@@ -282,6 +291,10 @@
       "title": "Recent Events",
       "viewAll": "View all",
       "noEvents": "No recent events"
+    },
+    "temperature": {
+      "chart24h": "24 Hour Temperature",
+      "chart30d": "30 Day Temperature"
     }
   },
   "compteur": {
@@ -313,6 +326,8 @@
     },
     "time": {
       "now": "Now",
+      "today": "Today",
+      "yesterday": "Yesterday",
       "min30": "-30min",
       "min15": "-15min",
       "h0": "0h",
@@ -331,6 +346,18 @@
     "realTimeCost": "Real-Time Cost",
     "totalPower": "Total Power",
     "target": "Target"
+  },
+  "capteur": {
+    "selector": {
+      "title": "Select Sensors",
+      "search": "Search sensors...",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "selected": "{count} selected",
+      "noResults": "No sensors found",
+      "maxSelectionWarning": "Maximum selection of 8 sensors reached. Deselect a sensor to add another.",
+      "typeSensor": "Sensor"
+    }
   },
   "temperature": {
     "zones": {
@@ -545,11 +572,13 @@
     },
     "emptyState": {
       "noMeters": "No meters selected",
-      "selectDate": "Select a date",
+      "selectDate": "No date selected",
       "noMetrics": "No metrics enabled",
       "noData": "No data available",
+      "pendingFetch": "Ready to load data",
+      "clickButton": "Press the button below to load the chart",
       "hint": "Select meters, dates, and enable metrics to view data",
-      "selectDateHint": "Select a date to view data"
+      "selectDateHint": "Choose a date or period from the calendar to get started"
     },
     "chart": {
       "title": "{resolution} Analysis by Meter",
@@ -583,6 +612,8 @@
     },
     "calendar": {
       "title": "Calendar",
+      "day": "day",
+      "days": "days",
       "daysSelected": "{count} day selected | {count} days selected",
       "maxReached": "Max 32 days",
       "weekdays": {
@@ -599,7 +630,13 @@
         "last7Days": "Last 7 days",
         "last4Weeks": "Last 4 weeks",
         "last3Months": "Last 3 months"
-      }
+      },
+      "calendarInstruction": "Select dates from calendar or use quick periods, then click Fetch Data to load chart",
+      "presetsAutoLoad": "⚡ Quick periods",
+      "interiorDateHint": "Only edge dates can be removed — click the first or last selected date to shrink the range",
+      "fetchData": "Fetch Data",
+      "fetchingData": "Loading...",
+      "pendingFetch": "Click Fetch Data to display chart"
     },
     "characteristics": {
       "title": "Characteristics"
@@ -632,6 +669,8 @@
     "meters": {
       "title": "Select meters to compare",
       "selected": "{count} meter selected | {count} meters selected",
+      "selectMeters": "No meters selected. Add meters to compare.",
+      "modify": "Modify Selection",
       "all": "All meters",
       "search": "Search meters..."
     },
@@ -672,6 +711,17 @@
       "line": "Line",
       "heatmap": "Heatmap",
       "table": "Table"
+    },
+    "charts": {
+      "sideBySide": "Side-by-Side Comparison ({count} meters, {granularity})",
+      "unified": "Unified Comparison ({count} meters, {granularity})",
+      "noData": "No data to display",
+      "selectOtherMeter": "Select another meter to compare",
+      "selectPeriod": "Select a period to compare"
+    },
+    "selectDateRange": "Select a date range using the calendar to compare meters",
+    "calendar": {
+      "fetchData": "Fetch Comparison Data"
     },
     "viewOptions": {
       "title": "Display options",
@@ -718,6 +768,11 @@
       "unknownMeter": "Unknown"
     },
     "table": {
+      "title": "Detailed Comparison Table",
+      "subtitle": {
+        "hourly": "Hourly consumption with variance and trend analysis",
+        "daily": "Daily consumption with variance and trend analysis"
+      },
       "detailed": "Detailed Comparison",
       "searchPlaceholder": "Search by label or value",
       "noResults": "No results match your search.",
@@ -740,6 +795,28 @@
       "generateReport": "Generate report",
       "selectAll": "Select all",
       "deselectAll": "Deselect all"
+    },
+    "sideBySide": {
+      "title": "Side-by-Side Meter Comparison",
+      "subtitle": "Compare {meterCount} meters across {granularity} data",
+      "timeLabel": "Time Period",
+      "periods": "periods",
+      "hourly": "hourly",
+      "daily": "daily",
+      "aboveAverage": "Above average consumption",
+      "belowAverage": "Below average consumption"
+    },
+    "details": {
+      "title": "Comparison Summary",
+      "meters": "Meters",
+      "periods": "Periods",
+      "granularity": "Granularity",
+      "dataPoints": "Data Points"
+    },
+    "charts": {
+      "sideBySide": "Side-by-Side Comparison ({count} meters, {granularity})",
+      "unified": "Unified Comparison ({count} meters, {granularity})",
+      "noData": "No data to display"
     }
   },
   "tableDetailModal": {
@@ -769,6 +846,7 @@
     },
     "zone": "Zone {number}",
     "currentTemp": "Temperature",
+    "humidity": "Humidity",
     "maxTemp": "Max Temp",
     "minTemp": "Min Temp",
     "manuel": "Manual",
@@ -976,6 +1054,8 @@
     }
   },
   "globalMeters": {
+    "barChart": "Bar Chart",
+    "lineChart": "Line Chart",
     "pageTitle": "Global Meters View",
     "subtitle": "Consolidated overview of multiple meters and consumption analysis",
     "selectMeters": "Select Meters",
@@ -983,7 +1063,11 @@
     "powerTrend": "Power Trend",
     "energyTrend": "Energy Trend",
     "energyConsumption": "Energy Consumption",
+    "todayConsumption": "Today's Consumption",
+    "monthlyConsumption": "Monthly Consumption",
     "yearlyEnergyConsumption": "Yearly Energy Consumption",
+    "barChart": "Bar Chart",
+    "lineChart": "Line Chart",
     "dailyAverage": "Daily Average",
     "energyOverTime": "Energy consumption over time",
     "instantaneousComparison": "Real-time power comparison",
@@ -1020,6 +1104,26 @@
     "autoRefresh": "Auto-refreshing every 5 seconds",
     "tvDisplayMode": "Factory Display Mode",
     "noTemperatureSensors": "No temperature sensors available",
-    "temperature24Hours": "Temperature over 24 hours (Hourly Averages)"
+    "temperature24Hours": "Temperature over 24 hours (Hourly Averages)",
+    "currentTemp": "Current Temperature",
+    "humidity": "Humidity",
+    "dewPoint": "Dew Point",
+    "sensorActive": "Active",
+    "sensorInactive": "Inactive",
+    "targetRange": "Target Range",
+    "modeManuel": "Manual",
+    "modeAuto": "Auto",
+    "noMode": "Not configured",
+    "addSensors": "Add Sensors",
+    "manageSensors": "Manage Sensors",
+    "temperature24h": "24h Temperature",
+    "temperatureMonthlyInfo": "Min/Max temperature over last 30 days",
+    "temperatureMonthly": "30 Day Temperature",
+    "noSensorsSelected": {
+      "title": "No sensors selected",
+      "description": "Select sensors to display temperature data",
+      "action": "Add sensors"
+    },
+    "loadingTemperature": "Loading thermal data..."
   }
 }

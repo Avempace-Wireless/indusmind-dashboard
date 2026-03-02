@@ -200,9 +200,48 @@
         </div>
 
         <!-- Unified Zone Cards Grid - All sensors combined with visual differentiation -->
-        <div
-          class="grid gap-3 sm:gap-4"
-          :style="{ gridTemplateColumns: gridColumns }">
+        <div v-if="isFetchingThermal" class="grid gap-3 sm:gap-4" :style="{ gridTemplateColumns: gridColumns }">
+          <div
+            v-for="idx in skeletonCardCount"
+            :key="`zone-skeleton-${idx}`"
+            class="overflow-hidden rounded-lg sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-sm border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+          >
+            <div class="mb-4 sm:mb-5 lg:mb-6">
+              <div class="tm-shimmer h-4 w-32 rounded-full"></div>
+              <div class="tm-shimmer h-3 w-20 rounded-full mt-2" style="animation-delay: 0.1s;"></div>
+              <div class="flex gap-2 mt-3">
+                <span class="tm-shimmer h-4 w-16 rounded-full" style="animation-delay: 0.2s;"></span>
+                <span class="tm-shimmer h-4 w-12 rounded-full" style="animation-delay: 0.25s;"></span>
+              </div>
+            </div>
+
+            <div class="mb-2 sm:mb-3 lg:mb-4 rounded-md sm:rounded-lg lg:rounded-xl border border-slate-200 bg-slate-100/60 dark:border-slate-700 dark:bg-slate-800/50 p-2 sm:p-3 lg:p-5">
+              <div class="tm-shimmer h-3 w-24 rounded-full mb-2" style="animation-delay: 0.3s;"></div>
+              <div class="flex items-baseline gap-2">
+                <span class="tm-shimmer tm-shimmer--accent h-8 w-20 rounded"></span>
+                <span class="tm-shimmer h-4 w-8 rounded-full" style="animation-delay: 0.35s;"></span>
+              </div>
+            </div>
+
+            <div class="mt-3 space-y-2">
+              <div class="h-16 bg-slate-100 dark:bg-slate-800 rounded flex items-end gap-1 px-2">
+                <div class="tm-shimmer tm-shimmer--accent flex-1 rounded-t" style="height: 45%; animation-delay: 0.4s;"></div>
+                <div class="tm-shimmer tm-shimmer--accent flex-1 rounded-t" style="height: 70%; animation-delay: 0.45s;"></div>
+                <div class="tm-shimmer tm-shimmer--accent flex-1 rounded-t" style="height: 55%; animation-delay: 0.5s;"></div>
+                <div class="tm-shimmer tm-shimmer--accent flex-1 rounded-t" style="height: 80%; animation-delay: 0.55s;"></div>
+                <div class="tm-shimmer tm-shimmer--accent flex-1 rounded-t" style="height: 60%; animation-delay: 0.6s;"></div>
+                <div class="tm-shimmer tm-shimmer--accent flex-1 rounded-t" style="height: 35%; animation-delay: 0.65s;"></div>
+              </div>
+              <div class="flex justify-between px-1">
+                <span class="tm-shimmer h-2 w-8 rounded-full" style="animation-delay: 0.7s;"></span>
+                <span class="tm-shimmer h-2 w-8 rounded-full" style="animation-delay: 0.75s;"></span>
+                <span class="tm-shimmer h-2 w-8 rounded-full" style="animation-delay: 0.8s;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="grid gap-3 sm:gap-4" :style="{ gridTemplateColumns: gridColumns }">
           <div
             v-for="zone in displayedZones"
             :key="zone.id"
@@ -710,6 +749,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useViewLifecycle } from '@/composables/useViewLifecycle'
 import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
 import { dataMode } from '@/config/dataMode'
 import { fetchThermalDashboardData, updateSensorMode } from '@/services/thermalTelemetryAPI'
@@ -725,6 +765,7 @@ import VueApexCharts from 'vue3-apexcharts'
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 
 const { t } = useI18n()
+const { isActive, guard } = useViewLifecycle()
 const sensorsStore = useSensorsStore()
 
 // Thermal API state
@@ -2447,7 +2488,7 @@ async function silentRefreshThermalData() {
 
     if (thermalData.status === 'success' && thermalData.sensors.length > 0) {
       buildZonesFromThermalAPI(thermalData)
-      await loadChartData()
+      // NOTE: chart data is NOT refreshed during silent refresh — it's heavy and cached on the backend
     }
   } catch (error) {
     // Silent refresh — don't show errors to user
@@ -2546,11 +2587,20 @@ onMounted(async () => {
     isFetchingThermal.value = false
   }
 
+  if (!guard()) return // Component unmounted during fetch
+
   // Set up silent auto-refresh every 15 seconds (no loader)
-  thermalAutoRefreshInterval = setInterval(silentRefreshThermalData, 15000)
+  thermalAutoRefreshInterval = setInterval(() => {
+    if (!isActive.value) return // Skip if component unmounted
+    silentRefreshThermalData()
+  }, 15000)
 })
 
 const sensorDisplayKey = computed(() => sensorsForDisplay.value.map((s) => s.id).join('|'))
+
+const skeletonCardCount = computed(() => {
+  return Math.max(4, columnsPerRow.value * 2)
+})
 
 watch(
   () => sensorDisplayKey.value,
@@ -2582,4 +2632,59 @@ const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(ma
 }
 
 /* Desktop (1024px+): uses the columnsPerRow slider value from inline style */
+
+@keyframes tmShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.tm-shimmer {
+  display: inline-block;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.08) 0%,
+    rgba(148, 163, 184, 0.18) 20%,
+    rgba(148, 163, 184, 0.28) 50%,
+    rgba(148, 163, 184, 0.18) 80%,
+    rgba(148, 163, 184, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: tmShimmer 1.8s ease-in-out infinite;
+}
+
+.tm-shimmer--accent {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.06) 0%,
+    rgba(59, 130, 246, 0.15) 20%,
+    rgba(59, 130, 246, 0.22) 50%,
+    rgba(59, 130, 246, 0.15) 80%,
+    rgba(59, 130, 246, 0.06) 100%
+  );
+  background-size: 200% 100%;
+}
+
+:root.dark .tm-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(100, 116, 139, 0.1) 0%,
+    rgba(100, 116, 139, 0.22) 20%,
+    rgba(100, 116, 139, 0.35) 50%,
+    rgba(100, 116, 139, 0.22) 80%,
+    rgba(100, 116, 139, 0.1) 100%
+  );
+  background-size: 200% 100%;
+}
+
+:root.dark .tm-shimmer--accent {
+  background: linear-gradient(
+    90deg,
+    rgba(96, 165, 250, 0.08) 0%,
+    rgba(96, 165, 250, 0.2) 20%,
+    rgba(96, 165, 250, 0.3) 50%,
+    rgba(96, 165, 250, 0.2) 80%,
+    rgba(96, 165, 250, 0.08) 100%
+  );
+  background-size: 200% 100%;
+}
 </style>

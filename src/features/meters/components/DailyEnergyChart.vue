@@ -1,12 +1,12 @@
 <template>
   <div class="w-full h-full">
-    <div v-if="loading" class="flex items-center justify-center h-64">
+    <div v-if="loading" class="flex items-center justify-center h-full">
       <div class="text-center">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mb-3"></div>
         <p class="text-slate-500 dark:text-slate-400">{{ $t('common.loading') }}</p>
       </div>
     </div>
-    <div v-else-if="meters.length === 0" class="flex items-center justify-center h-64">
+    <div v-else-if="meters.length === 0" class="flex items-center justify-center h-full">
       <div class="text-center text-slate-500 dark:text-slate-400">
         <span class="material-symbols-outlined text-4xl mb-2 block opacity-50">bar_chart</span>
         <p>{{ $t('globalMeters.selectMetersToVisualize') }}</p>
@@ -17,11 +17,6 @@
       <div class="flex-1 min-h-0">
         <BarChart v-if="chartType === 'bar'" :data="chartData" :options="chartOptions" />
         <LineChart v-else :data="lineChartData" :options="lineChartOptions" />
-      </div>
-
-      <!-- Chart Info -->
-      <div class="mt-1 text-center text-xs text-slate-600 dark:text-slate-400 flex-shrink-0">
-        <p>{{ $t('globalMeters.yearlyEnergyConsumption') }} - Consommation Mensuelle</p>
       </div>
     </div>
   </div>
@@ -53,18 +48,10 @@ interface ChartDataPoint {
   value: number
 }
 
-interface ChartDataPoint {
-  ts: number
-  value: number
-  accumulated?: number
-  previousAccumulated?: number
-  readableTime?: string
-}
-
 interface Meter {
   id: string
   name: string
-  yearlyDataDifferential: ChartDataPoint[]
+  hourlyDataDifferential: ChartDataPoint[]
 }
 
 const props = defineProps<{
@@ -76,9 +63,9 @@ const props = defineProps<{
 // Default chart type to bar
 const chartType = computed(() => props.chartType || 'bar')
 
-// Filter meters that have yearly data
+// Filter meters that have hourly data
 const metersWithData = computed(() => {
-  return props.meters.filter(m => m.yearlyDataDifferential && m.yearlyDataDifferential.length > 0)
+  return props.meters.filter(m => m.hourlyDataDifferential && m.hourlyDataDifferential.length > 0)
 })
 
 // Color palette for meters
@@ -91,29 +78,32 @@ const getMeterColor = (index: number, name?: string) => {
 }
 
 // Extract all timestamps and labels for use in chart and tooltips
+// Normalize timestamps to the hour level to avoid duplicates
 const chartTimestamps = computed(() => {
   if (metersWithData.value.length === 0) return []
 
-  const allTimestamps = new Set<number>()
+  const hourTimestamps = new Set<number>()
   metersWithData.value.forEach(meter => {
-    meter.yearlyDataDifferential.forEach(point => {
-      allTimestamps.add(point.ts)
+    meter.hourlyDataDifferential.forEach(point => {
+      // Normalize to the start of the hour
+      const date = new Date(point.ts)
+      date.setMinutes(0, 0, 0)
+      hourTimestamps.add(date.getTime())
     })
   })
 
-  return Array.from(allTimestamps).sort((a, b) => a - b)
+  return Array.from(hourTimestamps).sort((a, b) => a - b)
 })
 
-const monthLabels = computed(() => {
+const hourLabels = computed(() => {
   return chartTimestamps.value.map(ts => {
     const date = new Date(ts)
-    const month = (date.getMonth() + 1).toString().padStart(2, '0')
-    const year = date.getFullYear()
-    return `${month}/${year}`
+    const hours = date.getHours().toString().padStart(2, '0')
+    return `${hours}h`
   })
 })
 
-// Prepare chart data - display all monthly data points
+// Prepare chart data - display all hourly data points
 const chartData = computed(() => {
   if (metersWithData.value.length === 0) {
     return {
@@ -123,20 +113,27 @@ const chartData = computed(() => {
   }
 
   const sortedTimestamps = chartTimestamps.value
-  const labels = monthLabels.value
+  const labels = hourLabels.value
 
   // Create datasets for each meter
   const datasets = metersWithData.value.map((meter, index) => {
     const colors = getMeterColor(index, meter.name)
 
-    // Create a map of timestamp -> value for this meter
+    // Create a map of normalized timestamp -> value for this meter
+    // Aggregate values that fall within the same hour
     const valueMap = new Map<number, number>()
-    meter.yearlyDataDifferential.forEach(point => {
-      // Store value (0 if null/undefined to display all months)
-      valueMap.set(point.ts, point.value ?? 0)
+    meter.hourlyDataDifferential.forEach(point => {
+      // Normalize to the start of the hour
+      const date = new Date(point.ts)
+      date.setMinutes(0, 0, 0)
+      const normalizedTs = date.getTime()
+
+      // Aggregate values for the same hour (sum them)
+      const existingValue = valueMap.get(normalizedTs) || 0
+      valueMap.set(normalizedTs, existingValue + (point.value ?? 0))
     })
 
-    // Map data to match all timestamps (0 if meter doesn't have data for that month)
+    // Map data to match all timestamps
     const data = sortedTimestamps.map(ts => valueMap.get(ts) ?? 0)
 
     return {
@@ -145,10 +142,10 @@ const chartData = computed(() => {
       backgroundColor: colors.bg,
       borderColor: colors.border,
       borderWidth: 2,
-      borderRadius: 6,
+      borderRadius: 4,
       borderSkipped: false,
       barThickness: 'flex' as const,
-      maxBarThickness: 60,
+      maxBarThickness: 30,
     }
   })
 
@@ -162,28 +159,20 @@ const chartData = computed(() => {
 const maxDataValue = computed(() => {
   let max = 0
   metersWithData.value.forEach(meter => {
-    meter.yearlyDataDifferential.forEach(point => {
+    meter.hourlyDataDifferential.forEach(point => {
       if (point.value > max) max = point.value
     })
   })
 
+  if (max === 0) return 100
+
   // Round up to nearest nice number
-  if (max === 0) return 100000
-
-  // Calculate appropriate rounding based on magnitude
   const magnitude = Math.pow(10, Math.floor(Math.log10(max)))
-
-  // For large values (100k+), round to nearest 100k or 500k
-  if (max >= 100000) {
-    const roundTo = magnitude >= 1000000 ? 500000 : 100000
-    return Math.ceil(max / roundTo) * roundTo
-  }
-
-  const roundTo = magnitude >= 1000 ? 5000 : magnitude >= 100 ? 1000 : magnitude >= 10 ? 100 : 10
+  const roundTo = magnitude >= 100 ? 100 : magnitude >= 10 ? 10 : 1
   return Math.ceil(max / roundTo) * roundTo
 })
 
-// Chart options with better scaling
+// Chart options
 const chartOptions = computed<ChartOptions<'bar'>>(() => {
   return {
     responsive: true,
@@ -192,8 +181,8 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
       padding: {
         top: 10,
         bottom: 5,
-        left: 10,
-        right: 10,
+        left: 5,
+        right: 5,
       }
     },
     interaction: {
@@ -220,16 +209,14 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
         padding: 12,
         callbacks: {
           title: function(context) {
-            // Display day and month in tooltip (e.g., "31 Oct")
             const index = context[0].dataIndex
-            return monthLabels.value[index] || context[0].label
+            return hourLabels.value[index] || context[0].label
           },
           label: function(context) {
             const label = context.dataset.label || ''
             const value = context.parsed.y
             if (value === null || value === undefined) return `${label}: --`
 
-            // Format large numbers with thousand separators
             const formattedValue = value.toLocaleString('fr-FR', {
               minimumFractionDigits: 0,
               maximumFractionDigits: 2
@@ -246,47 +233,42 @@ const chartOptions = computed<ChartOptions<'bar'>>(() => {
           display: false,
         },
         ticks: {
-          maxRotation: 45,
-          minRotation: 45,
+          maxRotation: 0,
+          minRotation: 0,
           autoSkip: true,
-          maxTicksLimit: 6,
+          maxTicksLimit: 12,
           font: {
-            size: 10,
+            size: 9,
             weight: 'normal'
           },
-          color: 'rgba(71, 85, 105, 1)', // slate-600
+          color: 'rgba(71, 85, 105, 1)',
         }
       },
       y: {
         stacked: false,
         beginAtZero: true,
         grid: {
-          color: 'rgba(203, 213, 225, 0.3)', // slate-300 with opacity
+          color: 'rgba(203, 213, 225, 0.3)',
           drawTicks: false,
         },
         border: {
           display: false,
         },
         ticks: {
-          maxTicksLimit: 8,
+          maxTicksLimit: 5,
           callback: function(value) {
             const numValue = Number(value)
-            // Use abbreviations for large numbers (e.g., 750k, 1.6M)
-            if (numValue >= 1000000) {
-              return (numValue / 1000000).toFixed(1) + 'M'
-            }
             if (numValue >= 1000) {
-              return (numValue / 1000).toFixed(0) + 'k'
+              return (numValue / 1000).toFixed(1) + 'k'
             }
             return numValue.toFixed(0)
           },
           font: {
-            size: 10
+            size: 9
           },
-          padding: 8,
-          color: 'rgba(100, 116, 139, 1)', // slate-500
+          padding: 4,
+          color: 'rgba(100, 116, 139, 1)',
         },
-        // Better scaling for large values
         suggestedMin: 0,
         suggestedMax: maxDataValue.value,
       }
@@ -304,14 +286,23 @@ const lineChartData = computed(() => {
   }
 
   const sortedTimestamps = chartTimestamps.value
-  const labels = monthLabels.value
+  const labels = hourLabels.value
 
   const datasets = metersWithData.value.map((meter, index) => {
     const colors = getMeterColor(index, meter.name)
 
+    // Create a map of normalized timestamp -> value for this meter
+    // Aggregate values that fall within the same hour
     const valueMap = new Map<number, number>()
-    meter.yearlyDataDifferential.forEach(point => {
-      valueMap.set(point.ts, point.value ?? 0)
+    meter.hourlyDataDifferential.forEach(point => {
+      // Normalize to the start of the hour
+      const date = new Date(point.ts)
+      date.setMinutes(0, 0, 0)
+      const normalizedTs = date.getTime()
+
+      // Aggregate values for the same hour (sum them)
+      const existingValue = valueMap.get(normalizedTs) || 0
+      valueMap.set(normalizedTs, existingValue + (point.value ?? 0))
     })
 
     const data = sortedTimestamps.map(ts => valueMap.get(ts) ?? 0)
@@ -324,8 +315,8 @@ const lineChartData = computed(() => {
       borderWidth: 2,
       fill: false,
       tension: 0.3,
-      pointRadius: 4,
-      pointHoverRadius: 6,
+      pointRadius: 3,
+      pointHoverRadius: 5,
       pointBackgroundColor: colors.border,
     }
   })
@@ -345,8 +336,8 @@ const lineChartOptions = computed<ChartOptions<'line'>>(() => {
       padding: {
         top: 10,
         bottom: 5,
-        left: 10,
-        right: 10,
+        left: 5,
+        right: 5,
       }
     },
     interaction: {
@@ -374,7 +365,7 @@ const lineChartOptions = computed<ChartOptions<'line'>>(() => {
         callbacks: {
           title: function(context) {
             const index = context[0].dataIndex
-            return monthLabels.value[index] || context[0].label
+            return hourLabels.value[index] || context[0].label
           },
           label: function(context) {
             const label = context.dataset.label || ''
@@ -396,12 +387,12 @@ const lineChartOptions = computed<ChartOptions<'line'>>(() => {
           display: false,
         },
         ticks: {
-          maxRotation: 45,
-          minRotation: 45,
+          maxRotation: 0,
+          minRotation: 0,
           autoSkip: true,
-          maxTicksLimit: 6,
+          maxTicksLimit: 12,
           font: {
-            size: 10,
+            size: 9,
             weight: 'normal'
           },
           color: 'rgba(71, 85, 105, 1)',
@@ -417,21 +408,18 @@ const lineChartOptions = computed<ChartOptions<'line'>>(() => {
           display: false,
         },
         ticks: {
-          maxTicksLimit: 8,
+          maxTicksLimit: 5,
           callback: function(value) {
             const numValue = Number(value)
-            if (numValue >= 1000000) {
-              return (numValue / 1000000).toFixed(1) + 'M'
-            }
             if (numValue >= 1000) {
-              return (numValue / 1000).toFixed(0) + 'k'
+              return (numValue / 1000).toFixed(1) + 'k'
             }
             return numValue.toFixed(0)
           },
           font: {
-            size: 10
+            size: 9
           },
-          padding: 8,
+          padding: 4,
           color: 'rgba(100, 116, 139, 1)',
         },
         suggestedMin: 0,

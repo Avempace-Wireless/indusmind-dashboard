@@ -16,6 +16,7 @@ export interface EnergyHistoryQuery {
   hourFrom?: number
   hourTo?: number
   selectedDates?: string[] // Optional array of date strings (YYYY-MM-DD)
+  timezoneOffset?: number // Client timezone offset in minutes (from getTimezoneOffset())
 }
 
 export interface DataPoint {
@@ -113,6 +114,10 @@ export function useEnergyHistory() {
       if (query.hourTo !== undefined) {
         params.append('hourTo', query.hourTo.toString())
       }
+
+      // Always send timezone offset for proper interval alignment
+      const tzOffset = query.timezoneOffset ?? new Date().getTimezoneOffset()
+      params.append('timezoneOffset', tzOffset.toString())
 
       const endpoint = `${apiBaseUrl}/telemetry/energy-history?${params.toString()}`
       console.log(`[useEnergyHistory] Fetching from: ${endpoint}`)

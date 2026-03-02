@@ -210,8 +210,16 @@ export const CHART_CONFIGS: Record<string, ChartConfig> = {
     limit: 12
   },
 
-  // Today's consumption
+  // Today's consumption (hourly)
   today: {
+    keys: ['deltaHourEnergyConsumtion'],
+    interval: 60 * 60 * 1000, // 1 hour
+    agg: 'SUM',
+    limit: 24
+  },
+
+  // Yesterday's consumption (hourly)
+  yesterday: {
     keys: ['deltaHourEnergyConsumtion'],
     interval: 60 * 60 * 1000, // 1 hour
     agg: 'SUM',
@@ -306,9 +314,15 @@ export function getChartConfigForPeriod(period: 'today' | 'yesterday' | '7days' 
   // Energy mode
   switch (period) {
     case 'today':
-    case 'yesterday':
       return {
         ...CHART_CONFIGS.today,
+        startTs,
+        endTs
+      }
+
+    case 'yesterday':
+      return {
+        ...CHART_CONFIGS.yesterday,
         startTs,
         endTs
       }
