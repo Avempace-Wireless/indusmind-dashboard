@@ -728,6 +728,11 @@
       "heatmap": "Heatmap",
       "table": "Table"
     },
+    "heatmap": {
+      "low": "Low",
+      "high": "High",
+      "delta": "Δ kWh"
+    },
     "charts": {
       "sideBySide": "Side-by-Side Comparison ({count} meters, {granularity})",
       "unified": "Unified Comparison ({count} meters, {granularity})",

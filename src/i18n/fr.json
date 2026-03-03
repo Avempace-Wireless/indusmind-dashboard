@@ -731,6 +731,11 @@
       "heatmap": "Carte thermique",
       "table": "Tableau"
     },
+    "heatmap": {
+      "low": "Faible",
+      "high": "Eleve",
+      "delta": "Delta kWh"
+    },
     "charts": {
       "sideBySide": "Comparaison Côte à Côte ({count} compteurs, {granularity})",
       "unified": "Comparaison Unifiée ({count} compteurs, {granularity})",

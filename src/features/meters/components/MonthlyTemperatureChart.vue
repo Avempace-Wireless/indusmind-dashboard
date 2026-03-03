@@ -20,8 +20,14 @@
         </select>
       </div>
 
-      <div class="flex-1 min-h-0">
+      <div class="flex-1 min-h-0 relative">
+        <div v-if="!hasChartData" class="absolute inset-0 flex items-center justify-center">
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            {{ $t('common.noData', 'No data available') }}
+          </p>
+        </div>
         <component
+          v-else
           :is="chartType === 'bar' ? BarChart : LineChart"
           :data="chartData"
           :options="chartOptions"
@@ -134,6 +140,10 @@ watch(localSelectedSensorId, (newId, oldId) => {
 // Get currently selected sensor data
 const selectedSensor = computed(() => {
   return sensorsWithData.value.find(s => s.deviceUUID === localSelectedSensorId.value) || sensorsWithData.value[0]
+})
+
+const hasChartData = computed(() => {
+  return !!selectedSensor.value && selectedSensor.value.data && selectedSensor.value.data.length > 0
 })
 
 // Color palette for min / max

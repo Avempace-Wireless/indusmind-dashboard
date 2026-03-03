@@ -138,7 +138,10 @@
           </div>
 
           <!-- Single Unified Chart -->
-          <div class="relative rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 h-[300px] sm:h-[400px] md:h-[450px] flex items-center justify-center">
+          <div
+            class="relative rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30"
+            :class="isChartVisualization ? 'h-[300px] sm:h-[400px] md:h-[450px] flex items-center justify-center' : 'min-h-[220px] p-3 sm:p-4'"
+          >
             <!-- Loading Overlay -->
             <div v-if="isChartVisualization && isLoading" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-20 rounded-2xl">
               <div class="flex flex-col items-center gap-3">
@@ -310,7 +313,7 @@
             <canvas v-show="(chartType === 'bar' || chartType === 'line') && !validationError" ref="unifiedChartCanvas"></canvas>
 
             <!-- Heatmap View -->
-            <div v-if="chartType === 'heatmap' && !validationError" class="h-full overflow-auto">
+            <div v-if="chartType === 'heatmap' && !validationError" class="w-full">
               <!-- Heatmap: No data state -->
               <div v-if="!hasChartData" class="h-full flex flex-col items-center justify-center">
                 <div v-if="fetchedButEmpty" class="flex flex-col items-center gap-4 max-w-md text-center px-6">
@@ -349,57 +352,75 @@
                   </div>
                 </div>
               </div>
-              <!-- Heatmap: Data table -->
-              <div v-else class="p-4 space-y-4">
-                <table class="w-full border-collapse overflow-hidden rounded-lg shadow-sm">
-                  <thead>
-                    <tr>
-                      <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-600">
-                        {{ t('comparison.periods.period') }}
-                      </th>
-                      <th
-                        v-for="period in heatmapPeriods"
+              <!-- Heatmap: Data table (transposed: periods as rows) -->
+              <div v-else class="flex flex-col">
+                <div class="w-full">
+                  <table class="w-full table-fixed border-collapse text-xs">
+                    <thead class="sticky top-0 z-10">
+                      <tr>
+                        <th class="px-2.5 py-2 text-center font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                          {{ t('comparison.periods.period') }}
+                        </th>
+                        <th class="px-2.5 py-2 text-center font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                          <div class="flex items-center justify-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-sm inline-block shrink-0" :style="{ backgroundColor: selectedMeter ? metersStore.getMeterColor(selectedMeter.id) : '#3b82f6' }"></span>
+                            {{ t('comparison.periods.reference') }}
+                          </div>
+                        </th>
+                        <th class="px-2.5 py-2 text-center font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                          <div class="flex items-center justify-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-sm bg-purple-500 inline-block shrink-0"></span>
+                            {{ t('comparison.periods.comparison') }}
+                          </div>
+                        </th>
+                        <th class="px-2.5 py-2 text-center font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                          {{ t('comparison.heatmap.delta') }}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="(period, idx) in heatmapPeriods"
                         :key="period"
-                        class="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-600"
+                        :class="idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/60 dark:bg-gray-800/40'"
+                        class="hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors"
                       >
-                        {{ period }}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                      <td class="px-4 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/30 border-r border-gray-200 dark:border-gray-700">
-                        {{ t('comparison.periods.reference') }}
-                      </td>
-                      <td
-                        v-for="period in heatmapPeriods"
-                        :key="`reference-${period}`"
-                        class="px-4 py-3 text-center text-xs font-semibold text-gray-900 dark:text-white transition-all"
-                        :style="{ backgroundColor: getHeatmapColor('reference', period) }"
-                      >
-                        {{ getHeatmapValue('reference', period) }}
-                      </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                      <td class="px-4 py-3 text-xs font-bold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/30 border-r border-gray-200 dark:border-gray-700">
-                        {{ t('comparison.periods.comparison') }}
-                      </td>
-                      <td
-                        v-for="period in heatmapPeriods"
-                        :key="`comparison-${period}`"
-                        class="px-4 py-3 text-center text-xs font-semibold text-gray-900 dark:text-white transition-all"
-                        :style="{ backgroundColor: getHeatmapColor('comparison', period) }"
-                      >
-                        {{ getHeatmapValue('comparison', period) }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                        <td class="px-2.5 py-2 font-medium text-gray-800 dark:text-gray-200 text-center whitespace-nowrap">
+                          {{ period }}
+                        </td>
+                        <td
+                          class="px-2.5 py-2 text-center font-semibold text-gray-900 dark:text-white"
+                          :style="{ backgroundColor: getHeatmapColor('reference', period) }"
+                        >
+                          {{ getHeatmapValue('reference', period) }}
+                        </td>
+                        <td
+                          class="px-2.5 py-2 text-center font-semibold text-gray-900 dark:text-white"
+                          :style="{ backgroundColor: getHeatmapColor('comparison', period) }"
+                        >
+                          {{ getHeatmapValue('comparison', period) }}
+                        </td>
+                        <td class="px-2.5 py-2 text-center font-semibold">
+                          <span :class="getHeatmapDeltaClass(period)">{{ getHeatmapDelta(period) }}</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <!-- Color intensity legend -->
+                <div class="flex items-center justify-between px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
+                  <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400">{{ heatmapPeriods.length }} {{ t('comparison.periods.period').toLowerCase() }}s</span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ t('comparison.heatmap.low') }}</span>
+                    <div class="w-16 h-2 rounded-full bg-gradient-to-r from-blue-100 to-blue-600 dark:from-blue-900 dark:to-blue-400 ring-1 ring-gray-200 dark:ring-gray-700"></div>
+                    <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ t('comparison.heatmap.high') }}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Table View -->
-            <div v-if="chartType === 'table' && !validationError" class="h-full overflow-auto">
+            <div v-if="chartType === 'table' && !validationError" class="h-full w-full overflow-auto">
               <!-- Table: No data state -->
               <div v-if="!hasChartData" class="h-full flex flex-col items-center justify-center">
                 <div v-if="fetchedButEmpty" class="flex flex-col items-center gap-4 max-w-md text-center px-6">
@@ -440,30 +461,36 @@
               </div>
               <!-- Table: Data view -->
               <template v-else>
-              <div class="p-4">
-              <table class="w-full overflow-hidden rounded-lg">
-                <thead class="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-700 sticky top-0 shadow-sm">
+              <div class="flex flex-col h-full">
+              <div class="flex-1 overflow-auto min-h-0 px-3 pt-2">
+              <table class="w-full border-collapse text-xs">
+                <thead class="sticky top-0 z-10">
                   <tr>
-                    <th class="px-4 py-4 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600">
+                    <th class="px-3 py-2.5 text-left font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                       {{ t('comparison.table.meter') }}
                     </th>
-                    <th class="px-4 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600">
+                    <th class="px-3 py-2.5 text-right font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                       {{ t('comparison.table.value') }}
                     </th>
-                    <th class="px-4 py-4 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600">
+                    <th class="px-3 py-2.5 text-right font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                       {{ t('comparison.table.variance') }}
                     </th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700/50">
-                  <tr v-for="(row, rowIndex) in paginatedComparisonTable" :key="`${row.label}-${rowIndex}`" class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                <tbody>
+                  <tr
+                    v-for="(row, rowIndex) in paginatedComparisonTable"
+                    :key="`${row.label}-${rowIndex}`"
+                    :class="rowIndex % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/60 dark:bg-gray-800/40'"
+                    class="hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors"
+                  >
+                    <td class="px-3 py-2.5 text-sm font-medium text-gray-900 dark:text-white">
                       {{ row.label }}
                     </td>
-                    <td class="px-4 py-4 text-sm text-right text-gray-900 dark:text-white font-semibold">
+                    <td class="px-3 py-2.5 text-sm text-right text-gray-900 dark:text-white font-semibold tabular-nums">
                       {{ row.value }}
                     </td>
-                    <td class="px-4 py-4 text-sm text-right">
+                    <td class="px-3 py-2.5 text-sm text-right">
                       <span
                         :class="row.variance > 0 ? 'text-green-600 dark:text-green-400 font-semibold' : row.variance < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-600 dark:text-gray-400'"
                         :title="row.varianceTooltip"
@@ -476,14 +503,14 @@
                     </td>
                   </tr>
                   <tr v-if="paginatedComparisonTable.length === 0">
-                    <td colspan="3" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <td colspan="3" class="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
                       {{ t('comparison.table.noResults') }}
                     </td>
                   </tr>
                 </tbody>
               </table>
               </div>
-              <div class="mt-3 flex flex-col gap-3 px-4 py-2 border-t border-gray-200 dark:border-gray-700 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex flex-col gap-2 px-3 py-2 border-t border-gray-200 dark:border-gray-700 shrink-0 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex flex-wrap items-center gap-3">
                   <span class="text-xs text-gray-600 dark:text-gray-400">
                     {{ t('comparison.table.pagination.range', {
@@ -522,6 +549,7 @@
                     {{ t('common.next') }} →
                   </button>
                 </div>
+              </div>
               </div>
               </template>
             </div>
@@ -594,13 +622,45 @@
         <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 md:p-4">
           <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">{{ t('comparison.periods.title') }}</h3>
 
-          <!-- Reference Period Display -->
-          <div v-if="referencePeriod" class="mb-4 p-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="material-symbols-outlined text-base text-blue-600 dark:text-blue-400">calendar_today</span>
-              <p class="text-xs font-medium text-blue-700 dark:text-blue-300">{{ t('comparison.periods.reference') }}</p>
+          <!-- Period Summary (Reference + Comparison) -->
+          <div v-if="referencePeriod || comparisonPeriod" class="mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50/60 to-emerald-50/60 dark:from-blue-900/20 dark:to-emerald-900/20 p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="material-symbols-outlined text-base text-slate-600 dark:text-slate-300">event</span>
+              <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">{{ t('comparison.periods.title') }}</p>
             </div>
-            <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">{{ referencePeriod }}</p>
+            <div class="grid grid-cols-1 gap-2">
+              <div
+                class="flex items-center gap-2 rounded-md bg-white/70 dark:bg-gray-900/50 px-3 py-2 border"
+                :style="{ borderColor: selectedMeter ? metersStore.getMeterColor(selectedMeter.id) : '#3b82f6' }"
+              >
+                <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: selectedMeter ? metersStore.getMeterColor(selectedMeter.id) : '#3b82f6' }"></span>
+                <div class="min-w-0">
+                  <p
+                    class="text-[10px] uppercase tracking-wide"
+                    :style="{ color: selectedMeter ? metersStore.getMeterColor(selectedMeter.id) : '#3b82f6' }"
+                  >
+                    {{ t('comparison.periods.reference') }}
+                  </p>
+                  <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 truncate">
+                    {{ referencePeriod || t('comparison.periods.selectDate') }}
+                  </p>
+                </div>
+              </div>
+              <div
+                class="flex items-center gap-2 rounded-md bg-white/70 dark:bg-gray-900/50 px-3 py-2 border"
+                :style="{ borderColor: '#A855F7' }"
+              >
+                <span class="w-2.5 h-2.5 rounded-full" :style="{ backgroundColor: '#A855F7' }"></span>
+                <div class="min-w-0">
+                  <p class="text-[10px] uppercase tracking-wide" :style="{ color: '#A855F7' }">
+                    {{ t('comparison.periods.comparison') }}
+                  </p>
+                  <p class="text-sm font-semibold text-emerald-900 dark:text-emerald-100 truncate">
+                    {{ comparisonPeriod || t('comparison.periods.selectDate') }}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Comparison Type Selection -->
@@ -862,7 +922,24 @@ const showCompCalendar = ref(false)
 // Single Meter selection
 const selectedMeterId = ref<string>('')
 const validSelectedMeterIds = computed(() => {
-  return metersStoreSelectedIds.value.filter((id: string) => allCompteurs.value.some((c: any) => c.id === id))
+  const priorityOrder = ['tgbt', 'climatisation', 'compressor']
+  const priorityIndex = (name: string) => {
+    const lower = name.toLowerCase()
+    const index = priorityOrder.findIndex(key => lower.includes(key))
+    return index === -1 ? priorityOrder.length : index
+  }
+
+  return metersStoreSelectedIds.value
+    .filter((id: string) => allCompteurs.value.some((c: any) => c.id === id))
+    .sort((a: string, b: string) => {
+      const nameA = getMeterName(a)
+      const nameB = getMeterName(b)
+      const priorityA = priorityIndex(nameA)
+      const priorityB = priorityIndex(nameB)
+
+      if (priorityA !== priorityB) return priorityA - priorityB
+      return nameA.localeCompare(nameB)
+    })
 })
 
 const selectedMeter = computed(() => {
@@ -1088,9 +1165,12 @@ const totalChartTablePages = computed(() => {
 
 // Heatmap data structure: periods as rows, reference vs comparison as columns
 const heatmapPeriods = computed(() => {
-  // Get unique periods from the reference data
+  // Use the longer dataset so all periods are shown
+  const longer = referenceData.value.length >= comparisonData.value.length
+    ? referenceData.value
+    : comparisonData.value
   const periods: string[] = []
-  for (const point of referenceData.value) {
+  for (const point of longer) {
     const timeLabel = effectiveResolution.value === 'hourly'
       ? new Date(point.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
       : new Date(point.timestamp).toLocaleDateString('en-US')
@@ -1238,7 +1318,7 @@ function selectComparisonDate(day: any) {
   refCalendarYear.value = selectedDate.getFullYear()
 }
 
-function getHeatmapValue(periodType: 'reference' | 'comparison', period: string): string {
+function getHeatmapNumericValue(periodType: 'reference' | 'comparison', period: string): number | null {
   const data = periodType === 'reference' ? referenceData.value : comparisonData.value
   const point = data.find(p => {
     const timeLabel = effectiveResolution.value === 'hourly'
@@ -1246,8 +1326,31 @@ function getHeatmapValue(periodType: 'reference' | 'comparison', period: string)
       : new Date(p.timestamp).toLocaleDateString('en-US')
     return timeLabel === period
   })
+  return point?.value ?? null
+}
 
-  return point ? `${(point.value || 0).toFixed(2)}` : '—'
+function getHeatmapValue(periodType: 'reference' | 'comparison', period: string): string {
+  const val = getHeatmapNumericValue(periodType, period)
+  return val !== null ? val.toFixed(2) : '—'
+}
+
+function getHeatmapDelta(period: string): string {
+  const refVal = getHeatmapNumericValue('reference', period)
+  const compVal = getHeatmapNumericValue('comparison', period)
+  if (refVal === null || compVal === null) return '—'
+  const delta = compVal - refVal
+  const sign = delta > 0 ? '+' : ''
+  return `${sign}${delta.toFixed(2)}`
+}
+
+function getHeatmapDeltaClass(period: string): string {
+  const refVal = getHeatmapNumericValue('reference', period)
+  const compVal = getHeatmapNumericValue('comparison', period)
+  if (refVal === null || compVal === null) return 'text-gray-400 dark:text-gray-500'
+  const delta = compVal - refVal
+  if (delta > 0) return 'text-red-600 dark:text-red-400'
+  if (delta < 0) return 'text-green-600 dark:text-green-400'
+  return 'text-gray-500 dark:text-gray-400'
 }
 
 function getHeatmapColor(periodType: 'reference' | 'comparison', period: string): string {
@@ -1307,10 +1410,15 @@ function resetChartState() {
   }
 }
 
-function selectSingleMeter(meterId: string) {
+async function selectSingleMeter(meterId: string) {
   selectedMeterId.value = meterId
   resetChartState()
   currentTablePage.value = 1
+
+  if (canFetch.value) {
+    await nextTick()
+    validateAndFetch()
+  }
 }
 
 function handleCompteurSelection(selectedIds: string[]) {
@@ -1969,6 +2077,12 @@ watch(() => selectedMeterId.value, () => {
 
 watch(() => itemsPerPage.value, () => {
   currentTablePage.value = 1
+})
+
+watch(() => locale.value, async () => {
+  if (!hasChartData.value || !isChartVisualization.value) return
+  await nextTick()
+  renderCharts()
 })
 
 onMounted(async () => {
