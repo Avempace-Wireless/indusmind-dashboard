@@ -10,13 +10,15 @@
 import { onMounted } from 'vue'
 import ThemeProvider from './components/layout/ThemeProvider.vue'
 import SidebarProvider from './components/layout/SidebarProvider.vue'
-import { useMetersStore } from './stores/useDeviceMetersStore'
+import { useMetersStore } from './stores/useMetersStore'
 import { useAuthStore } from './features/auth/store/useAuthStore'
+import { useDashboardStore } from './features/dashboard/store/useDashboardStore'
 
 const metersStore = useMetersStore()
 const authStore = useAuthStore()
+const dashboardStore = useDashboardStore()
 
-// On app startup, load meters from customer devices API and clean up localStorage
+// On app startup, load meters from customer devices API and restore selection
 onMounted(async () => {
   // Restore user data from sessionStorage on app load
   try {
@@ -24,16 +26,18 @@ onMounted(async () => {
     if (storedUser) {
       const user = JSON.parse(storedUser)
       authStore.setUser(user)
-      console.log('[App] User data restored on app load:', user)
     }
   } catch (error) {
     console.error('[App] Failed to restore user data:', error)
   }
 
-  // Fetch meters from API (now uses customer devices API)
-  await metersStore.fetchMeters()
+  // Load compteurs from API so meters can be hydrated
+  await dashboardStore.loadCompteurs()
 
-  // Clean up and restore selection
+  // Hydrate meters store from compteurs and restore selection
+  if (dashboardStore.compteurs.length > 0) {
+    metersStore.setAllMetersFromCompteurs(dashboardStore.compteurs)
+  }
   metersStore.restoreSelection()
 })
 </script>

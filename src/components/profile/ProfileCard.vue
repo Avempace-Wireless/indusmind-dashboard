@@ -10,7 +10,7 @@
             <h4
               class="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left"
             >
-              {{ authStore.user?.name || 'Manager' }}
+              {{ authStore.user?.name || t('user.manager') }}
             </h4>
           </div>
           <div class="flex items-center order-2 gap-3 grow xl:order-3 xl:justify-end">
