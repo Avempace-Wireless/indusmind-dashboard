@@ -17,6 +17,7 @@ import type { Sensor } from '@/data/mockData'
 import { getAllIndusmindCustomerDevices } from '@/services/deviceAPI'
 import { fetchThermalDashboardData, type ThermalDashboardData } from '@/services/thermalTelemetryAPI'
 import { useApiData, useMockData } from '@/config/dataMode'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 
 /**
  * Maximum number of sensors that can be selected for visualization
@@ -31,6 +32,13 @@ export const useSensorsStore = defineStore('sensors', () => {
   // ===========================
   // STATE
   // ===========================
+
+  const getStorageKey = () => {
+    const customerName = getCustomerNameFromSession() || 'default'
+    return `dashboard:sensors:selected:${customerName}`
+  }
+
+  const getLegacyStorageKey = () => 'dashboard:sensors:selected'
 
   const allSensors = ref<Sensor[]>([])
   const selectedSensorIds = ref<string[]>([])
@@ -67,41 +75,32 @@ export const useSensorsStore = defineStore('sensors', () => {
         // Fetch from API and filter for temperature sensors
         const devices = await getAllIndusmindCustomerDevices()
 
-        if (devices && devices.length > 0) {
-          // Filter devices: only keep temperature sensors
-          const tempSensors = devices.filter((device: any) =>
-            device.name.includes('T_Sensor') || device.label?.includes('Zone')
-          )
+        // Filter devices: only keep temperature sensors
+        const tempSensors = devices.filter((device: any) =>
+          device.name.includes('T_Sensor') || device.label?.includes('Zone')
+        )
 
-          // Map API devices to Sensor format
-          allSensors.value = tempSensors.map((device: any, index: number) => ({
-            id: device.id?.toString() || device.deviceUUID,
-            name: device.name,
-            label: device.label || device.name,
-            deviceUUID: device.deviceUUID,
-            accessToken: device.accessToken,
-            zone: device.label || `Zone ${index + 1}`,
-            minTemp: 18, // Default values, could be fetched from telemetry
-            maxTemp: 28,
-            avgTemp: 22,
-            readings: [],
-            timeSeries: { hourly: [], daily: [], monthly: [] },
-            assignedToCustomer: device.assignedToCustomer || false,
-            customerId: device.customerId || 0,
-            createdAt: device.createdAt || new Date().toISOString(),
-            updatedAt: device.updatedAt || new Date().toISOString()
-          }))
-
-          console.log('[SensorsStore] Fetched temperature sensors from API:', allSensors.value.length)
-        } else {
-          // Fallback to mock data if API fails
-          console.warn('[SensorsStore] API returned no data, using mock sensors')
-          allSensors.value = getAllSensors()
-        }
+        // Map API devices to Sensor format
+        allSensors.value = tempSensors.map((device: any, index: number) => ({
+          id: device.id?.toString() || device.deviceUUID,
+          name: device.name,
+          label: device.label || device.name,
+          deviceUUID: device.deviceUUID,
+          accessToken: device.accessToken,
+          zone: device.label || `Zone ${index + 1}`,
+          minTemp: 18, // Default values, could be fetched from telemetry
+          maxTemp: 28,
+          avgTemp: 22,
+          readings: [],
+          timeSeries: { hourly: [], daily: [], monthly: [] },
+          assignedToCustomer: device.assignedToCustomer || false,
+          customerId: device.customerId || 0,
+          createdAt: device.createdAt || new Date().toISOString(),
+          updatedAt: device.updatedAt || new Date().toISOString()
+        }))
       } else {
         // Use mock data
         allSensors.value = getAllSensors()
-        console.log('[SensorsStore] Using mock sensors:', allSensors.value.length)
       }
 
       // Restore previously selected sensors if available
@@ -109,8 +108,14 @@ export const useSensorsStore = defineStore('sensors', () => {
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch sensors'
       console.error('[SensorsStore] Error fetching sensors:', err)
-      // Fallback to mock data on error
-      allSensors.value = getAllSensors()
+      // Fallback to mock data ONLY on actual error (not when API returns empty array)
+      if (!useApiData()) {
+        allSensors.value = getAllSensors()
+      } else {
+        // In API mode, if error occurs, set to empty array instead of fallback
+        allSensors.value = []
+        console.error('[SensorsStore] API error - no sensors loaded')
+      }
     } finally {
       isLoading.value = false
     }
@@ -129,7 +134,6 @@ export const useSensorsStore = defineStore('sensors', () => {
       const sensorsToFetch = useApiData() ? allSensors.value : []
 
       if (sensorsToFetch.length === 0) {
-        console.log('[SensorsStore] No sensors to fetch telemetry for')
         thermalData.value = null
         return
       }
@@ -147,7 +151,6 @@ export const useSensorsStore = defineStore('sensors', () => {
         updatedAt: sensor.updatedAt,
       }))
 
-      console.log('[SensorsStore] Fetching telemetry for', devices.length, 'sensors')
       thermalData.value = await fetchThermalDashboardData(false)
 
       if (thermalData.value.status === 'error') {
@@ -156,8 +159,6 @@ export const useSensorsStore = defineStore('sensors', () => {
       } else if (thermalData.value.status === 'partial') {
         console.warn('[SensorsStore] Partial telemetry data:', thermalData.value.message)
       }
-
-      console.log('[SensorsStore] Telemetry fetched:', thermalData.value.sensors.length, 'sensors')
     } catch (err) {
       telemetryError.value = err instanceof Error ? err.message : 'Failed to fetch telemetry'
       console.error('[SensorsStore] Error fetching telemetry:', err)
@@ -216,6 +217,14 @@ export const useSensorsStore = defineStore('sensors', () => {
   }
 
   /**
+   * Clear selection in memory without overwriting localStorage
+   */
+  function clearSelectionInMemory() {
+    selectedSensorIds.value = []
+    lastModified.value = new Date()
+  }
+
+  /**
    * Select all available sensors (up to max 8)
    */
   function selectAllSensors() {
@@ -231,22 +240,31 @@ export const useSensorsStore = defineStore('sensors', () => {
    */
   function restoreSelection() {
     try {
-      const saved = localStorage.getItem('dashboard:sensors:selected')
-      if (saved) {
-        const ids = JSON.parse(saved)
+      if (allSensors.value.length === 0) {
+        return
+      }
+      const saved = localStorage.getItem(getStorageKey())
+      const legacySaved = saved ? null : localStorage.getItem(getLegacyStorageKey())
+      const restoredRaw = saved || legacySaved
+      if (restoredRaw) {
+        const ids = JSON.parse(restoredRaw)
         // Validate that saved IDs still exist
         const validIds = ids.filter((id: string) =>
           allSensors.value.some(s => s.id === id)
         )
         if (validIds.length > 0) {
           selectedSensorIds.value = validIds
+          if (legacySaved) {
+            persistSelection()
+          }
           return
         }
       }
     } catch (e) {
       console.warn('Failed to restore sensor selection:', e)
     }
-    // No valid saved selection, start empty
+    // No valid saved selection, start empty without persisting
+    // This preserves any existing localStorage for next login attempt
     selectedSensorIds.value = []
   }
 
@@ -256,7 +274,7 @@ export const useSensorsStore = defineStore('sensors', () => {
   function persistSelection() {
     try {
       localStorage.setItem(
-        'dashboard:sensors:selected',
+        getStorageKey(),
         JSON.stringify(selectedSensorIds.value)
       )
     } catch (e) {
@@ -269,7 +287,7 @@ export const useSensorsStore = defineStore('sensors', () => {
    */
   function clearPersisted() {
     try {
-      localStorage.removeItem('dashboard:sensors:selected')
+      localStorage.removeItem(getStorageKey())
     } catch (e) {
       console.warn('Failed to clear persisted sensor selection:', e)
     }
@@ -368,6 +386,7 @@ export const useSensorsStore = defineStore('sensors', () => {
     restoreSelection,
     persistSelection,
     clearPersisted,
+    clearSelectionInMemory,
     searchSensors,
 
     // Getters
