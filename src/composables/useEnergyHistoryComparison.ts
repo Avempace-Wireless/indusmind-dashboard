@@ -177,7 +177,7 @@ export function useEnergyHistoryComparison() {
             deviceUUID,
             meterLabel,
             label: meterLabel,
-            value: parseFloat(point.value),
+            value: Math.max(0, parseFloat(point.value)),
             color,
             periodLabel,
             periodId: periodLabel

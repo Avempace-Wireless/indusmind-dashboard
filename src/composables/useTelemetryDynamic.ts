@@ -26,6 +26,7 @@ import { ref } from 'vue'
 import type { AggregationType, TelemetryFetchConfig } from '@/config/telemetryConfig'
 import { TIME_INTERVALS } from '@/config/telemetryConfig'
 import { useApiOnly, useApiData } from '@/config/dataMode'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 
 export interface TelemetryDataPoint {
   ts: number
@@ -174,7 +175,9 @@ export function useTelemetryDynamic() {
     try {
       console.log('[BATCH CALL] fetchBatchTelemetryOptimized')
       const start = performance.now()
-      const response = await fetch(`${backendUrl}/telemetry/batch`, {
+      const customerName = getCustomerNameFromSession()
+      const query = customerName ? `?customerName=${encodeURIComponent(customerName)}` : ''
+      const response = await fetch(`${backendUrl}/telemetry/batch${query}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(batchPayload)
@@ -222,6 +225,9 @@ export function useTelemetryDynamic() {
                     console.warn(`[useTelemetryDynamic] Skipping NaN value for ${key}:`, point.value)
                     continue
                   }
+
+                  // Clamp negative values to 0
+                  numValue = Math.max(0, numValue)
 
                   dataPoints.push({
                     ts: point.ts as number,
@@ -837,7 +843,9 @@ export function useTelemetryDynamic() {
         }]
       }
 
-      const response = await fetch(`${backendUrl}/telemetry/batch`, {
+      const customerName = getCustomerNameFromSession()
+      const query = customerName ? `?customerName=${encodeURIComponent(customerName)}` : ''
+      const response = await fetch(`${backendUrl}/telemetry/batch${query}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(batchPayload)
@@ -858,9 +866,10 @@ export function useTelemetryDynamic() {
         if (Array.isArray(keyData)) {
           for (const point of keyData) {
             if (point && typeof point === 'object' && 'ts' in point && 'value' in point) {
+              const rawValue = typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number)
               dataPoints.push({
                 ts: point.ts as number,
-                value: typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number),
+                value: Math.max(0, rawValue), // Clamp negative values to 0
                 key
               })
             }
@@ -1134,7 +1143,8 @@ export function useTelemetryDynamic() {
             if (Array.isArray(values)) {
               for (const point of values) {
                 if (point && typeof point === 'object' && 'ts' in point && 'value' in point) {
-                  dataPoints.push({ ts: point.ts as number, value: typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number), key })
+                  const rawValue = typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number)
+                  dataPoints.push({ ts: point.ts as number, value: Math.max(0, rawValue), key }) // Clamp negative values to 0
                 }
               }
             }
@@ -1241,7 +1251,14 @@ export function useTelemetryDynamic() {
       })
 
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-      const response = await fetch(`${apiBaseUrl}/api/telemetry/chartBatch`, {
+      const params = new URLSearchParams()
+      const customerName = getCustomerNameFromSession()
+      if (customerName) {
+        params.set('customerName', customerName)
+      }
+      const endpoint = `${apiBaseUrl}/api/telemetry/chartBatch${params.toString() ? `?${params.toString()}` : ''}`
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ requests })
@@ -1264,9 +1281,10 @@ export function useTelemetryDynamic() {
           if (Array.isArray(values)) {
             for (const point of values) {
               if (point && typeof point === 'object' && 'ts' in point && 'value' in point) {
+                const rawValue = typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number)
                 dataPoints.push({
                   ts: point.ts as number,
-                  value: typeof point.value === 'string' ? parseFloat(point.value as string) : (point.value as number),
+                  value: Math.max(0, rawValue), // Clamp negative values to 0
                   key,
                   date: point.date,
                   currentValue: point.currentValue,
