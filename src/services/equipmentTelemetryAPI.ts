@@ -4,6 +4,8 @@
  * Uses a single bulk API endpoint for all devices
  */
 
+import { getCustomerNameFromSession } from '@/utils/customerName'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 
 export interface LatestTelemetry {
@@ -34,8 +36,15 @@ export async function fetchAllDevicesLatestTelemetry(
   keys?: string[]
 ): Promise<DeviceTelemetryData[]> {
   try {
-    const keysParam = keys ? `?keys=${keys.join(',')}` : ''
-    const url = `${API_BASE_URL}/api/telemetry/equipmentTelemetry${keysParam}`
+    const params = new URLSearchParams()
+    if (keys && keys.length > 0) {
+      params.set('keys', keys.join(','))
+    }
+    const customerName = getCustomerNameFromSession()
+    if (customerName) {
+      params.set('customerName', customerName)
+    }
+    const url = `${API_BASE_URL}/api/telemetry/equipmentTelemetry${params.toString() ? `?${params.toString()}` : ''}`
 
     const response = await fetch(url, {
       method: 'GET',
@@ -66,8 +75,15 @@ export async function fetchDeviceLatestTelemetry(
   keys?: string[]
 ): Promise<DeviceTelemetryData> {
   try {
-    const keysParam = keys ? `?keys=${keys.join(',')}` : ''
-    const url = `${API_BASE_URL}/api/telemetry/${deviceUUID}/latest${keysParam}`
+    const params = new URLSearchParams()
+    if (keys && keys.length > 0) {
+      params.set('keys', keys.join(','))
+    }
+    const customerName = getCustomerNameFromSession()
+    if (customerName) {
+      params.set('customerName', customerName)
+    }
+    const url = `${API_BASE_URL}/api/telemetry/${deviceUUID}/latest${params.toString() ? `?${params.toString()}` : ''}`
 
     const response = await fetch(url, {
       method: 'GET',
