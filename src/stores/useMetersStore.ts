@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { MOCK_METERS, type Meter, type MeterElement } from '../data/mockData'
 import type { Compteur } from '@/services/deviceAPI'
 import { getMeterColorByName, getMeterOrderRank } from '@/utils/meterColors'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 
 /**
  * Meter Metadata Interface
@@ -41,6 +42,13 @@ export const useMetersStore = defineStore('meters', () => {
   // ===========================
   // STATE - Single Source of Truth
   // ===========================
+
+  const getStorageKey = () => {
+    const customerName = getCustomerNameFromSession() || 'default'
+    return `meters:selected:${customerName}`
+  }
+
+  const getLegacyStorageKey = () => 'meters:selected'
 
   /**
    * All available meters in the system
@@ -161,69 +169,52 @@ export const useMetersStore = defineStore('meters', () => {
   }
 
   /**
+   * Clear selection in memory without overwriting localStorage
+   */
+  function clearSelectionInMemory() {
+    selectedMeterIds.value = []
+    lastModified.value = new Date()
+  }
+
+  /**
    * Restore selection from localStorage
    * Called on app startup (in router guard or App.vue onMounted)
    * Validates and cleans up invalid IDs (e.g., old 'compteur-X' format)
-   * Falls back to first 8 meters if no valid selection found
+   * Leaves selection empty if nothing valid is saved
    */
   function restoreSelection() {
     try {
-      const saved = localStorage.getItem('meters:selected')
-      if (saved) {
-        const restored = JSON.parse(saved)
+      if (allMeters.value.length === 0) {
+        return
+      }
+      const saved = localStorage.getItem(getStorageKey())
+      const legacySaved = saved ? null : localStorage.getItem(getLegacyStorageKey())
+      const restoredRaw = saved || legacySaved
+      if (restoredRaw) {
+        const restored = JSON.parse(restoredRaw)
         if (Array.isArray(restored)) {
           // Validate that restored IDs still exist in current meter list
           const validIds = restored.filter((id: string) =>
             allMeters.value.some(m => m.id === id)
           )
 
-          // If we have valid IDs and some were filtered out, clean up localStorage
-          if (validIds.length > 0 && validIds.length < restored.length) {
-            console.warn('Cleaning up invalid meter IDs from localStorage:', restored.filter(id => !validIds.includes(id)))
-            // If less than 8 valid IDs remain, fill with additional meters
-            if (validIds.length < 8) {
-              const additionalIds = allMeters.value
-                .filter(m => !validIds.includes(m.id))
-                .slice(0, 8 - validIds.length)
-                .map(m => m.id)
-              selectedMeterIds.value = [...validIds, ...additionalIds]
-            } else {
-              selectedMeterIds.value = validIds
-            }
-            persistSelection() // Save cleaned list
-            return
-          }
-
-          // If all IDs are valid and we have at least 8, use them
-          if (validIds.length >= 8) {
+          // If we have valid IDs, use them and clean up localStorage if needed
+          if (validIds.length > 0) {
             selectedMeterIds.value = validIds
-            return
-          }
-
-          // If we have some valid IDs but less than 8, add more
-          if (validIds.length > 0 && validIds.length < 8) {
-            const additionalIds = allMeters.value
-              .filter(m => !validIds.includes(m.id))
-              .slice(0, 8 - validIds.length)
-              .map(m => m.id)
-            selectedMeterIds.value = [...validIds, ...additionalIds]
-            persistSelection()
+            if (legacySaved) {
+              persistSelection()
+            }
             return
           }
         }
       }
-      // Default: select first 8 meters if no valid saved selection
-      selectedMeterIds.value = allMeters.value.slice(0, 8).map(m => m.id)
-      persistSelection()
+      // Default: keep selection empty if no valid saved selection
+      // Do NOT persist - this preserves any existing localStorage for next login attempt
+      selectedMeterIds.value = []
     } catch (e) {
       console.warn('Failed to restore meter selection:', e)
-      // On error, select first 8 as fallback
-      selectedMeterIds.value = allMeters.value.slice(0, 8).map(m => m.id)
-      try {
-        persistSelection()
-      } catch (e2) {
-        console.warn('Failed to save fallback selection:', e2)
-      }
+      // On error, keep selection empty without persisting
+      selectedMeterIds.value = []
     }
   }
 
@@ -238,7 +229,7 @@ export const useMetersStore = defineStore('meters', () => {
       const validIds = selectedMeterIds.value.filter((id: string) =>
         allMeters.value.some(m => m.id === id)
       )
-      localStorage.setItem('meters:selected', JSON.stringify(validIds))
+      localStorage.setItem(getStorageKey(), JSON.stringify(validIds))
     } catch (e) {
       console.warn('Failed to persist meter selection:', e)
       // Quota exceeded or other error, continue without persistence
@@ -251,7 +242,7 @@ export const useMetersStore = defineStore('meters', () => {
    */
   function clearPersisted() {
     try {
-      localStorage.removeItem('meters:selected')
+      localStorage.removeItem(getStorageKey())
     } catch (e) {
       console.warn('Failed to clear persisted meter selection:', e)
     }
@@ -410,5 +401,6 @@ export const useMetersStore = defineStore('meters', () => {
     getMeterColor,
     getMetersByCategory,
     isMeterSelected,
+    clearSelectionInMemory,
   }
 })
