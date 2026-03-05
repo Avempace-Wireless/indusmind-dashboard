@@ -94,7 +94,7 @@
           'grid gap-6',
           gridLayoutClass
         ]">
-          <div v-if="selectedCompteurs.length === 0" class="col-span-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#0f1419] p-12 text-center">
+          <div v-if="selectedCompteurs.length === 0" class="col-span-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#0f1419] p-12 text-center w-full min-h-[280px]">
             <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-5xl mb-4">
               dashboard
             </span>
@@ -134,7 +134,7 @@
         </div>
 
         <!-- Energy Charts Side by Side -->
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div v-if="selectedCompteurs.length > 0" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <!-- Consommation Énergétique d'aujourd'hui -->
           <div>
             <Suspense>
@@ -175,31 +175,24 @@
 
       <!-- ===== TEMPERATURE VIEW ===== -->
       <template v-else-if="dashboardViewMode === 'temperature'">
-        <!-- Loading State -->
-        <div v-if="isLoadingThermal && enrichedThermalSensors.length === 0" class="w-full h-96 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 flex flex-col items-center justify-center text-slate-600 dark:text-slate-300 gap-4">
-          <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 dark:border-slate-700 border-t-purple-600 dark:border-t-purple-400"></div>
-          <p class="text-lg font-medium">{{ $t('common.loading') }}</p>
+        <!-- Empty State when no sensors selected -->
+        <div v-if="sensorsToDisplay.length === 0" class="flex-1 flex items-center justify-center p-8 w-full min-h-[280px]">
+          <div class="text-center">
+            <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-6xl mb-4">thermostat</span>
+            <p class="text-gray-900 dark:text-white text-xl font-semibold mb-2">{{ $t('thermal.noSensorsSelected.title', 'No sensors selected') }}</p>
+            <p class="text-gray-600 dark:text-text-muted text-sm mb-6">{{ $t('thermal.noSensorsSelected.description', 'Select sensors to view temperature data') }}</p>
+            <button @click="showCapteurSelector = true" class="inline-flex items-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-700 px-4 py-3 text-sm font-bold text-white transition-colors shadow-lg">
+              <span class="material-symbols-outlined text-lg">add</span>
+              {{ $t('thermal.noSensorsSelected.action', 'Select Sensors') }}
+            </button>
+          </div>
         </div>
 
         <!-- Sensor Widget Grid (matches energy CompteurWidget layout) -->
         <div v-else :class="['grid gap-6', thermalGridLayoutClass]">
-          <!-- Empty State -->
-          <div v-if="enrichedThermalSensors.length === 0" class="col-span-full flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 dark:border-border-dark bg-gray-50 dark:bg-[#0f1419] p-12 text-center">
-            <span class="material-symbols-outlined text-gray-400 dark:text-text-muted text-5xl mb-4">thermostat</span>
-            <p class="text-gray-900 dark:text-white text-lg font-semibold mb-2">{{ $t('globalMeters.noSensorsSelected.title', 'No sensors selected') }}</p>
-            <p class="text-gray-600 dark:text-text-muted text-sm mb-6">{{ $t('globalMeters.noSensorsSelected.description', 'Select sensors to view temperature data') }}</p>
-            <button
-              @click="showCapteurSelector = true"
-              class="inline-flex items-center gap-2 rounded-lg bg-purple-600 hover:bg-purple-700 px-4 py-3 text-sm font-bold text-white transition-colors shadow-lg"
-            >
-              <span class="material-symbols-outlined text-lg">add</span>
-              {{ $t('globalMeters.addSensors', 'Add Sensors') }}
-            </button>
-          </div>
-
           <!-- Temperature Sensor Widget Cards (CompteurWidget style) -->
           <div
-            v-for="(sensor, index) in enrichedThermalSensors"
+            v-for="(sensor, index) in sensorsToDisplay"
             :key="sensor.id"
             class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
           >
@@ -314,7 +307,7 @@
         </div>
 
         <!-- Temperature Charts (below widgets, like energy charts) -->
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div v-if="sensorsToDisplay.length > 0" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <!-- 24h Temperature Chart -->
           <div class="rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex flex-col">
             <div class="px-4 py-3 border-b border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 flex-shrink-0">
@@ -629,6 +622,7 @@ import { useRealtimeData } from '@/composables/useRealtimeData'
 import { useCompteurSelection, type CompteurMode } from '@/composables/useCompteurSelection'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
+import { useAuthStore } from '@/features/auth/store/useAuthStore'
 import { useTelemetryDynamic } from '@/composables/useTelemetryDynamic'
 import { usePuissance } from '@/composables/usePuissance'
 import { DEFAULT_WIDGET_CONFIG, getTimeRange } from '@/config/telemetryConfig'
@@ -651,7 +645,6 @@ import {
 // ============================================================================
 
 const useNewWidgetSystem = ref(isFeatureEnabled('useNewWidgetSystem'))
-console.log('[DashboardView] Using new widget system:', useNewWidgetSystem.value)
 
 // ============================================================================
 // COMPOSABLES & STORES
@@ -695,6 +688,9 @@ const dashboardMonthlyTemperatureChartType = ref<'bar' | 'line'>('line')
 // Get stores for syncing selections (must be before computed that use them)
 const metersStore = useMetersStore()
 const sensorsStore = useSensorsStore()
+const authStore = useAuthStore()
+
+const customerName = computed(() => authStore.user?.customerName || '')
 
 // Available sensors for monthly chart selector
 const availableMonthlySensors = computed(() => {
@@ -707,16 +703,10 @@ const availableMonthlySensors = computed(() => {
 
 // Auto-select first sensor and fetch monthly data when sensors become available
 watch(availableMonthlySensors, (sensors) => {
-  console.log('[DashboardView] availableMonthlySensors watcher fired - sensors:', sensors.length, 'selectedMonthlySensorId:', selectedMonthlySensorId.value)
   if (sensors.length > 0 && !selectedMonthlySensorId.value) {
     const firstSensorId = sensors[0].deviceUUID
-    console.log('[DashboardView] Auto-selecting first sensor:', firstSensorId)
     selectedMonthlySensorId.value = firstSensorId
     fetchMonthlyTemperatureData(firstSensorId)
-  } else if (sensors.length === 0) {
-    console.log('[DashboardView] No sensors available yet')
-  } else {
-    console.log('[DashboardView] Sensor already selected, skipping auto-select')
   }
 }, { immediate: true })
 
@@ -742,6 +732,50 @@ const {
   setCompteurMode,
   initialize: initializeCompteurSelection,
 } = useCompteurSelection()
+
+watch(customerName, async (newName, oldName) => {
+  if (!newName || newName === oldName) {
+    return
+  }
+
+  const isInitialLogin = !oldName
+  stopRealtimeData()
+  dashboardStore.reset()
+  if (!isInitialLogin) {
+    // Only clear persisted selections on actual customer switch
+    metersStore.clearSelection()
+    sensorsStore.clearSelection()
+  }
+
+  telemetryCache.value = {}
+  temperatureTelemetryCache.value = new Map()
+  temperatureChartData.value = []
+  monthlyChartData.value = []
+  thermalZones.value = []
+  thermalSummary.value = null
+  selectedMonthlySensorId.value = ''
+  telemetryInitialized.value = false
+
+  await dashboardStore.loadCompteurs()
+  await initializeCompteurSelection()
+  await sensorsStore.fetchSensors()
+  await initializeRealtimeData()
+})
+
+// Watch for sensor selection changes and fetch thermal data
+watch(() => sensorsStore.selectedSensors, async (newSelectedSensors) => {
+  if (newSelectedSensors.length === 0) {
+    // Clear thermal data when no sensors selected
+    thermalZones.value = []
+    temperatureChartData.value = []
+    monthlyChartData.value = []
+    selectedMonthlySensorId.value = ''
+  } else {
+    // Fetch thermal data for selected sensors
+    await fetchThermalSensorData(false)
+    await fetchTemperatureData()
+  }
+}, { deep: true })
 
 // Telemetry composable for real API data
 const {
@@ -1013,17 +1047,26 @@ const enrichedThermalSensors = computed(() => {
   })
 })
 
+// Display only explicitly selected sensors (empty selection = empty display)
+const sensorsToDisplay = computed(() => {
+  return enrichedThermalSensors.value
+})
+
 /**
  * Temperature grid layout class based on sensor count (mirrors gridLayoutClass for energy)
  */
-// Filtered chart data: only show selected sensors
+// Filtered chart data: show all when no sensors selected, only selected when some are selected
 const selectedSensorUUIDs = computed(() => {
   const sensors = sensorsStore.selectedSensors
   return new Set(sensors.map(s => s.deviceUUID))
 })
 
 const filteredTemperatureChartData = computed(() => {
-  if (selectedSensorUUIDs.value.size === 0) return temperatureChartData.value
+  if (selectedSensorUUIDs.value.size === 0) {
+    // Show all available sensors in chart when none selected
+    return temperatureChartData.value
+  }
+  // Show only selected sensors when some are selected
   return temperatureChartData.value.filter(s => selectedSensorUUIDs.value.has(s.deviceUUID))
 })
 
@@ -1055,7 +1098,7 @@ const filteredMonthlyChartData = computed(() => {
 })
 
 const thermalGridLayoutClass = computed(() => {
-  const count = enrichedThermalSensors.value.length
+  const count = sensorsToDisplay.value.length
   if (count === 0) return 'grid-cols-1'
   if (count === 1) return 'grid-cols-1 md:grid-cols-1'
   if (count === 2) return 'grid-cols-1 md:grid-cols-2'
@@ -1111,9 +1154,6 @@ async function fetchTelemetryData() {
   }
 
   telemetryFetchStatus.value = 'loading'
-  console.log('[DashboardView] Fetching telemetry for', compteursWithUUID.length, 'devices')
-  console.log('[DashboardView] Strategy: Batch API (instantaneous) + Puissance API (consumption)')
-  console.log('[DashboardView] API-only mode:', isApiOnlyMode.value)
 
   try {
     // Get instantaneous config from telemetryConfig
@@ -1152,10 +1192,6 @@ async function fetchTelemetryData() {
       }
     ])
 
-    console.log(`[DashboardView] 🎯 Request breakdown:`)
-    console.log(`  - Batch API: ${batchRequests.length} requests (current power + instantaneous chart)`)
-    console.log(`  - Puissance API: ${compteursWithUUID.length} requests (1 per meter for consumption)`)
-
     // ========================================================================
     // STEP 2: Execute BOTH in parallel
     // - Batch API: instantaneous data
@@ -1171,8 +1207,6 @@ async function fetchTelemetryData() {
           })
       )
     ])
-
-    console.log('[DashboardView] ✓ Both APIs returned data')
 
     // ========================================================================
     // STEP 3: Merge results from both APIs into telemetry cache
@@ -1221,34 +1255,12 @@ async function fetchTelemetryData() {
             key: 'AccumulatedActiveEnergyDelivered'
           }))
         }
-
-        console.log(`[DashboardView] Puissance data for ${compteur.name}:`, {
-          consumedToday: todayEnergyTotal,
-          consumedYesterday: yesterdayEnergyTotal,
-          hourlyPoints: todayReadings.length,
-          hourlyData: todayReadings.map(d => ({
-            time: new Date(d.ts).toLocaleTimeString(),
-            value: d.value.toFixed(2)
-          })),
-          source: 'Puissance API (same as Puissance view)'
-        })
-      } else {
-        console.warn(`[DashboardView] ⚠️ Puissance API returned no data for ${compteur.name}`)
       }
 
       // Use Puissance API instantaneous power if batch didn't return it
       const currentPower = currentPowerData.length > 0
         ? currentPowerData[0].value
         : (puissanceData?.data?.instantaneousPower ?? 0)
-
-      console.log(`[DashboardView] Extracted data for ${compteur.name}:`, {
-        currentPower,
-        todayEnergyTotal,
-        todayEnergySource: 'Puissance API (sum of hourly differentials)',
-        yesterdayEnergyTotal,
-        todayReadingsCount: todayReadings.length,
-        instantReadingsCount: instantReadings.length
-      })
 
       const telemetryData = {
         id: compteur.id,
@@ -1262,20 +1274,10 @@ async function fetchTelemetryData() {
       }
 
       telemetryCache.value[compteur.id] = telemetryData
-
-      console.log(`[DashboardView] ✓ Telemetry cached for ${compteur.name}:`, {
-        currentPower: typeof currentPower === 'number' ? currentPower.toFixed(2) : currentPower,
-        todayEnergy: telemetryData.todayEnergy.toFixed(2),
-        yesterdayEnergy: telemetryData.yesterdayEnergy.toFixed(2),
-        todayReadingsCount: todayReadings.length,
-        instantReadingsCount: instantReadings.length,
-        source: 'Puissance API + Batch API'
-      })
     })
 
     // Set status based on whether we got any data
     telemetryFetchStatus.value = hasAnyData ? 'success' : 'no-data'
-    console.log('[DashboardView] ✓ Telemetry fetch complete, status:', telemetryFetchStatus.value)
 
     // Update last data refresh timestamp
     lastDataUpdateTime.value = new Date()
@@ -1319,7 +1321,6 @@ async function fetchTemperatureData() {
     const response = await fetchTemperatureChart24h()
     if (response && response.success && response.data?.sensors) {
       temperatureChartData.value = response.data.sensors
-      console.log('[DashboardView] 24h temperature chart loaded:', response.data.sensors.length, 'sensors')
     } else {
       temperatureChartData.value = []
     }
@@ -1337,7 +1338,6 @@ async function fetchTemperatureData() {
  */
 async function fetchMonthlyTemperatureData(sensorId?: string) {
   const sensorIds = sensorId ? [sensorId] : undefined
-  console.log('[DashboardView] fetchMonthlyTemperatureData called with sensorId:', sensorId)
 
   // Show loading indicator and clear previous data
   isLoadingMonthlyChart.value = true
@@ -1348,7 +1348,6 @@ async function fetchMonthlyTemperatureData(sensorId?: string) {
     await fetchTemperatureChartMonthly((sensors) => {
       // Called after each week loads — update chart progressively
       // Deep clone to ensure Vue reactivity detects changes
-      console.log('[DashboardView] onWeekReady callback - received', sensors.length, 'sensors with', sensors.reduce((n, s) => n + s.data.length, 0), 'total points')
       monthlyChartData.value = sensors.map(s => ({
         ...s,
         data: [...s.data]
@@ -1358,9 +1357,7 @@ async function fetchMonthlyTemperatureData(sensorId?: string) {
         isLoadingMonthlyChart.value = false
         isFirstCallback = false
       }
-      console.log('[DashboardView] monthlyChartData updated, length:', monthlyChartData.value.length, 'data points:', monthlyChartData.value[0]?.data?.length)
     }, sensorIds)
-    console.log('[DashboardView] Monthly temperature chart fully loaded:', monthlyChartData.value.length, 'sensors')
   } catch (error) {
     console.error('[DashboardView] Failed to fetch monthly temperature chart:', error)
     isLoadingMonthlyChart.value = false
@@ -1371,14 +1368,10 @@ async function fetchMonthlyTemperatureData(sensorId?: string) {
  * Handle sensor selection change from MonthlyTemperatureChart
  */
 function handleMonthlySensorSelected(sensorId: string) {
-  console.log('[DashboardView] Monthly sensor selected:', sensorId, 'current:', selectedMonthlySensorId.value)
   if (sensorId && sensorId !== selectedMonthlySensorId.value) {
     selectedMonthlySensorId.value = sensorId
     // Refetch data for only this sensor
-    console.log('[DashboardView] Fetching monthly data for sensor:', sensorId)
     fetchMonthlyTemperatureData(sensorId)
-  } else {
-    console.log('[DashboardView] Sensor already selected or invalid, skipping fetch')
   }
 }
 
@@ -1394,7 +1387,6 @@ async function fetchThermalSensorData(showLoader = false) {
       if (thermalData.summary) {
         thermalSummary.value = thermalData.summary
       }
-      console.log('[DashboardView] Thermal data loaded:', thermalData.sensors.length, 'sensors')
     }
   } catch (error) {
     console.error('[DashboardView] Failed to fetch thermal data:', error)
@@ -1404,14 +1396,12 @@ async function fetchThermalSensorData(showLoader = false) {
 }
 
 onMounted(async () => {
-  // Initialize compteur selection (for legacy widgets)
-  initializeCompteurSelection()
+  // Initialize compteur selection (for legacy widgets) - must await to avoid race condition
+  await initializeCompteurSelection()
 
   // Load compteurs from PM2200 devices API
   try {
     await dashboardStore.loadCompteurs()
-    console.log('Loaded compteurs:', dashboardStore.compteurs.length)
-    console.log('Compteur IDs:', dashboardStore.compteurs.map(c => c.id))
   } catch (error) {
     console.error('Failed to load compteurs:', error)
   }
@@ -1419,18 +1409,16 @@ onMounted(async () => {
   // Load sensors list from API (temperature sensors)
   try {
     await sensorsStore.fetchSensors()
-    console.log('[DashboardView] Loaded sensors:', sensorsStore.availableSensors.length)
   } catch (error) {
     console.error('[DashboardView] Failed to load sensors:', error)
   }
 
   // Validate and clean up invalid localStorage selection
   if (dashboardStore.compteurs.length > 0) {
+    // Hydrate meters store from compteurs
+    metersStore.setAllMetersFromCompteurs(dashboardStore.compteurs)
     // Restore from localStorage and clean up any invalid IDs
     metersStore.restoreSelection()
-    const savedSelection = localStorage.getItem('meters:selected')
-    console.log('Saved selection from localStorage:', savedSelection)
-    console.log('Current selection after restore:', metersStore.selectedMeterIds)
   }
 
   // Start real-time data updates
@@ -1467,7 +1455,6 @@ onMounted(async () => {
   telemetryRefreshInterval = window.setInterval(() => {
     if (!isActive.value) return // Skip if component unmounted
     if (selectedCompteurs.value.length > 0) {
-      console.log('[DashboardView] Silent telemetry refresh (20s interval)')
       fetchTelemetryData()
     }
     // Only refresh live thermal sensor data (not chart endpoints)
@@ -1738,13 +1725,8 @@ watch(selectedCompteurs, async (newCompteurs) => {
 
 // Watch for chart period changes and refetch data
 watch([energyChartPeriod, temperatureChartPeriod], async ([newEnergyPeriod, newTempPeriod]) => {
-  console.log('[DashboardView] Chart periods changed:', {
-    energy: newEnergyPeriod,
-    temperature: newTempPeriod
-  })
   // Chart period changes will be handled by UnifiedChart components
   // which will request data for the new period
-  // This is just for logging/debugging
 }, { deep: true })
 
 onUnmounted(() => {

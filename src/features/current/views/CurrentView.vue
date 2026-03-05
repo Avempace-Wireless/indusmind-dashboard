@@ -794,12 +794,27 @@ import CurrentDetailModal from '@/components/current/CurrentDetailModal.vue'
 import { useCurrent, type CurrentData, type CurrentChartData, type CurrentKPIData, type CurrentOverviewData, type CurrentChartDataResponse } from '@/composables/current/useCurrent'
 import { useCompteurSelection } from '@/composables/useCompteurSelection'
 import { useApiData } from '@/config/dataMode'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 import Chart from 'chart.js/auto'
 
 const { t } = useI18n()
 const { isActive, guard } = useViewLifecycle()
 const metersStore = useMetersStore()
 const isApiMode = useApiData()
+
+const buildCurrentUrl = (path: string) => {
+  const baseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4000'
+  const params = new URLSearchParams()
+  const customerName = getCustomerNameFromSession()
+  if (customerName) {
+    params.set('customerName', customerName)
+  }
+  if (!customerName) {
+    console.warn('[CurrentView] Skipping request: missing customerName')
+    return null
+  }
+  return `${baseUrl}${path}${params.toString() ? `?${params.toString()}` : ''}`
+}
 
 // Use the same composable as other views for consistency
 const {
@@ -1518,12 +1533,14 @@ const loadCurrentMeterDataSilently = async () => {
     if (isApiMode) {
       console.log('[CurrentView] Silent refresh: Fetching fresh current data for:', currentDeviceUUID.value)
 
-      const baseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:4000'
-
       // Fetch both endpoints in parallel without going through composable
+      const overviewUrl = buildCurrentUrl(`/api/telemetry/${currentDeviceUUID.value}/current/overview`)
+      const chartUrl = buildCurrentUrl(`/api/telemetry/${currentDeviceUUID.value}/current/chart`)
+      if (!overviewUrl || !chartUrl) return
+
       const [overviewResponse, chartResponse] = await Promise.all([
-        fetch(`${baseUrl}/api/telemetry/${currentDeviceUUID.value}/current/overview`),
-        fetch(`${baseUrl}/api/telemetry/${currentDeviceUUID.value}/current/chart`)
+        fetch(overviewUrl),
+        fetch(chartUrl)
       ])
 
       if (!overviewResponse.ok || !chartResponse.ok) {
