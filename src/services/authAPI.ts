@@ -9,6 +9,13 @@ export interface LoginResponse {
   success: boolean
   token: string
   message: string
+  user?: {
+    id: number
+    email: string
+    firstName: string
+    lastName: string
+    customerName: string
+  }
 }
 
 export interface LoginCredentials {
