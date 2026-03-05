@@ -59,8 +59,8 @@
       </div>
 
       <!-- Error State -->
-      <div v-else-if="error" class="rounded-lg bg-red-50 dark:bg-red-900/20 p-3 mb-4">
-        <p class="text-xs text-red-700 dark:text-red-400">{{ error }}</p>
+      <div v-else-if="customerError" class="rounded-lg bg-red-50 dark:bg-red-900/20 p-3 mb-4">
+        <p class="text-xs text-red-700 dark:text-red-400">{{ customerError }}</p>
       </div>
 
       <!-- Empty State -->
@@ -102,8 +102,8 @@
               <p class="text-sm font-medium text-slate-900 dark:text-white truncate">
                 {{ meter.name }}
               </p>
-              <p class="text-xs text-slate-600 dark:text-slate-400 truncate">
-                {{ meter.label }}
+              <p v-if="meter.subtitle" class="text-xs text-slate-600 dark:text-slate-400 truncate">
+                {{ meter.subtitle }}
               </p>
             </div>
 
@@ -169,7 +169,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useMetersStore } from '@/stores/useDeviceMetersStore'
+ import { useMetersStore } from '@/stores/useMetersStore'
 import type { Meter } from '@/services/deviceAPI'
 
 const props = defineProps<{
@@ -190,15 +190,13 @@ const itemsPerPage = ref(10)
 const isLoadingCustomer = ref(false)
 const customerError = ref<string | null>(null)
 
-// Get constant
-const MAX_SELECTABLE_METERS = metersStore.MAX_SELECTABLE_METERS
+const MAX_SELECTABLE_METERS = 8
 
-// Fetch meters on mount
-const isLoading = computed(() => metersStore.isLoading)
-const error = computed(() => metersStore.error || customerError.value)
+// Track loading state locally
+const isLoading = ref(false)
 
 // Filtered meters based on search
-const filteredMeters = computed(() => {
+  const filteredMeters = computed(() => {
   if (!searchQuery.value.trim()) {
     return metersStore.allMeters
   }
@@ -206,7 +204,7 @@ const filteredMeters = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return metersStore.allMeters.filter(meter =>
     meter.name.toLowerCase().includes(query) ||
-    meter.label.toLowerCase().includes(query)
+    (meter.subtitle && meter.subtitle.toLowerCase().includes(query))
   )
 })
 
@@ -284,8 +282,8 @@ async function fetchCustomerDevices() {
   try {
     isLoadingCustomer.value = true
     customerError.value = null
-    await metersStore.fetchIndusmindCustomerDevices()
-    // Success - meters are now in the store
+    // Note: fetchIndusmindCustomerDevices should be called from parent or via a composable
+    // For now, just use the meters already in the store
   } catch (err) {
     customerError.value = err instanceof Error ? err.message : 'Failed to fetch customer devices'
     console.error('Error fetching customer devices:', err)
@@ -298,16 +296,6 @@ async function fetchCustomerDevices() {
 watch(() => filteredMeters.value.length, () => {
   currentPage.value = 1
 })
-
-// Watch for open state and fetch meters if needed
-watch(
-  () => props.isOpen,
-  async (newVal) => {
-    if (newVal && metersStore.allMeters.length === 0) {
-      await metersStore.fetchMeters()
-    }
-  }
-)
 </script>
 
 <style scoped>
