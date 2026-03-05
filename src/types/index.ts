@@ -4,6 +4,7 @@ export interface User {
   email: string
   name: string
   role: Role
+  customerName?: string
   createdAt: Date
   lastLogin?: Date
 }

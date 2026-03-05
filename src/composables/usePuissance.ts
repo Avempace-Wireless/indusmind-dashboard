@@ -90,6 +90,21 @@ export function usePuissance() {
       // getTimezoneOffset() returns minutes, e.g., -60 for UTC+1
       params.append('timezoneOffset', String(new Date().getTimezoneOffset()))
 
+      // Extract customerName from sessionStorage and pass it to the API
+      let customerName = ''
+      const storedUser = sessionStorage.getItem('user')
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser)
+          customerName = user.customerName || ''
+        } catch (error) {
+          console.warn('[usePuissance] Failed to parse stored user for customerName', error)
+        }
+      }
+      if (customerName) {
+        params.append('customerName', customerName)
+      }
+
       // Fetch from new API endpoint (note: no /api prefix, backend routes are mounted directly)
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
       const endpoint = `${apiBaseUrl}/telemetry/${deviceUUID}/puissance${params.toString() ? '?' + params.toString() : ''}`

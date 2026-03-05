@@ -11,6 +11,8 @@
  * - POST /api/telemetry/comparison/summary  → per-meter statistics
  */
 
+import { getCustomerNameFromSession } from '@/utils/customerName'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
@@ -130,7 +132,9 @@ async function fetchWithTimeout<T>(
   const startTime = performance.now()
 
   try {
-    const response = await fetch(url, {
+    const customerName = getCustomerNameFromSession()
+    const requestUrl = customerName ? `${url}?customerName=${encodeURIComponent(customerName)}` : url
+    const response = await fetch(requestUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

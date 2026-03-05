@@ -67,12 +67,12 @@ export function useTelemetry() {
       const firstKey = keys[0]
       const dataPoints = response.data[firstKey] || []
 
-      const maxValue = Math.max(...dataPoints.map((dp) => parseFloat(String(dp.value))))
+      const maxValue = Math.max(...dataPoints.map((dp) => Math.max(0, parseFloat(String(dp.value)))))
 
       return dataPoints.map((dp) => ({
         timestamp: dp.ts,
-        value: parseFloat(String(dp.value)),
-        height: maxValue > 0 ? (parseFloat(String(dp.value)) / maxValue) * 100 : 0,
+        value: Math.max(0, parseFloat(String(dp.value))),
+        height: maxValue > 0 ? (Math.max(0, parseFloat(String(dp.value))) / maxValue) * 100 : 0,
       }))
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch instantaneous data'
@@ -133,7 +133,7 @@ export function useTelemetry() {
       const boundaryValues = responses.map((response) => {
         const dataPoints = response.data[key] || []
         if (dataPoints.length === 0) return null
-        return parseFloat(String(dataPoints[0].value))
+        return Math.max(0, parseFloat(String(dataPoints[0].value)))
       })
 
       // Compute consumption for each hour using differential method
@@ -215,12 +215,12 @@ console.log('[useTelemetry] Today hourly data:', {
       const firstKey = keys[0]
       const dataPoints = response.data[firstKey] || []
 
-      const maxValue = Math.max(...dataPoints.map((dp) => parseFloat(String(dp.value))))
+      const maxValue = Math.max(...dataPoints.map((dp) => Math.max(0, parseFloat(String(dp.value)))))
 
       return dataPoints.map((dp) => ({
         timestamp: dp.ts,
-        value: parseFloat(String(dp.value)),
-        height: maxValue > 0 ? (parseFloat(String(dp.value)) / maxValue) * 100 : 0,
+        value: Math.max(0, parseFloat(String(dp.value))),
+        height: maxValue > 0 ? (Math.max(0, parseFloat(String(dp.value))) / maxValue) * 100 : 0,
       }))
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch yesterday hourly data'
@@ -325,7 +325,7 @@ console.log('[useTelemetry] Today hourly data:', {
 
       const dataPoints = response.data[key] || []
       if (dataPoints.length > 0) {
-        return parseFloat(String(dataPoints[0].value))
+        return Math.max(0, parseFloat(String(dataPoints[0].value)))
       }
 
       return 0

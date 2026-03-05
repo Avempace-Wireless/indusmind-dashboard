@@ -3,6 +3,8 @@
  * Fetches timeseries data from ThingsBoard via backend
  */
 
+import { getCustomerNameFromSession } from '@/utils/customerName'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 console.log('telemetryAPI.ts - Using API_BASE_URL:', API_BASE_URL)
 export interface TelemetryDataPoint {
@@ -71,7 +73,9 @@ export async function fetchDeviceTelemetry(
       }]
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/telemetry/batch`, {
+    const customerName = getCustomerNameFromSession()
+    const query = customerName ? `?customerName=${encodeURIComponent(customerName)}` : ''
+    const response = await fetch(`${API_BASE_URL}/api/telemetry/batch${query}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -837,8 +837,7 @@ function getMeterName(meterId: string): string {
  */
 watch(selectedCategory, (newCategory) => {
   if (!newCategory) {
-    // If no category selected, clear meter selection
-    metersStore.clearSelection()
+    // If no category selected, keep current meter selection
     selectedElement.value = null
     return
   }
@@ -1518,12 +1517,7 @@ onMounted(async () => {
   }
   metersStore.restoreSelection()
 
-  // Auto-select first 8 meters if none are selected after restoration
-  if (selectedMeterIds.value.length === 0 && dashboardStore.compteurs.length > 0) {
-    const defaultSelection = dashboardStore.compteurs.slice(0, 8).map(c => c.id)
-    metersStore.setSelectedMeters(defaultSelection)
-    console.log('Auto-selected 8 meters for Energy Historical view:', defaultSelection)
-  } else if (selectedMeterIds.value.length > 0) {
+  if (selectedMeterIds.value.length > 0) {
     console.log('Restored selected meters for Energy Historical view:', selectedMeterIds.value)
   }
 

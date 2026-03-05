@@ -24,6 +24,7 @@
  */
 
 import { ref, computed } from 'vue'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 
 export interface GlobalMeterData {
   deviceUUID: string
@@ -63,7 +64,11 @@ export function useGlobalMeters() {
 
     try {
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-      const response = await fetch(`${apiBaseUrl}/api/telemetry/global-meters`, {
+      const customerName = getCustomerNameFromSession()
+      const url = customerName
+        ? `${apiBaseUrl}/api/telemetry/global-meters?customerName=${encodeURIComponent(customerName)}`
+        : `${apiBaseUrl}/api/telemetry/global-meters`
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +107,10 @@ export function useGlobalMeters() {
 
     try {
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-      const response = await fetch(`${apiBaseUrl}/api/telemetry/global-meters/${deviceUUID}?debug=${debug}`, {
+      const customerName = getCustomerNameFromSession()
+      const params = new URLSearchParams({ debug: String(debug) })
+      if (customerName) params.set('customerName', customerName)
+      const response = await fetch(`${apiBaseUrl}/api/telemetry/global-meters/${deviceUUID}?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +162,11 @@ export function useGlobalMeters() {
 
     try {
       const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-      const response = await fetch(`${apiBaseUrl}/api/telemetry/global-meters/temperature-chart`, {
+      const customerName = getCustomerNameFromSession()
+      const url = customerName
+        ? `${apiBaseUrl}/api/telemetry/global-meters/temperature-chart?customerName=${encodeURIComponent(customerName)}`
+        : `${apiBaseUrl}/api/telemetry/global-meters/temperature-chart`
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

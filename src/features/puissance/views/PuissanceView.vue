@@ -69,7 +69,7 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else class="text-center py-6 text-gray-500 dark:text-gray-400">
+        <div v-else class="flex flex-col items-center justify-center text-center py-6 text-gray-500 dark:text-gray-400 w-full min-h-[200px]">
           <span class="material-symbols-outlined text-3xl mb-2 block opacity-50">inbox</span>
           <p class="text-sm">{{ $t('dashboard.noMetersSelected.description') }}</p>
         </div>

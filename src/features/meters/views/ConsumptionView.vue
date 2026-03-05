@@ -151,7 +151,7 @@
 import { ref, onMounted, computed } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { useTelemetryDynamic } from '@/composables/useTelemetryDynamic'
-import { useMetersStore } from '@/stores/useDeviceMetersStore'
+import { useMetersStore } from '@/stores/useMetersStore'
 import { TIME_INTERVALS } from '@/config/telemetryConfig'
 
 const metersStore = useMetersStore()
@@ -372,10 +372,7 @@ const fetchConsumptionData = async () => {
 }
 
 onMounted(async () => {
-  // Ensure meters are loaded
-  if (metersStore.allMeters.length === 0) {
-    await metersStore.fetchMeters()
-  }
+  // Fetch consumption data for selected meters
   await fetchConsumptionData()
 })
 </script>

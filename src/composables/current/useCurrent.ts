@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { useApiData } from '@/config/dataMode'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 
 export interface CurrentData {
   meterId: string
@@ -92,6 +93,37 @@ export function useCurrent() {
     }
   }
 
+  function getCustomerNameForRequest(): string {
+    // Match Puissance view behavior: read customerName from sessionStorage user
+    let customerName = ''
+    const storedUser = sessionStorage.getItem('user')
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser)
+        customerName = user.customerName || ''
+      } catch (error) {
+        console.warn('[useCurrent] Failed to parse stored user for customerName', error)
+      }
+    }
+
+    // Fallback to token-based customerName if available
+    if (!customerName) {
+      customerName = getCustomerNameFromSession()
+    }
+
+    return customerName
+  }
+
+  function withCustomerName(url: string): string | null {
+    const customerName = getCustomerNameForRequest()
+    if (!customerName) {
+      console.warn('[useCurrent] Skipping request: missing customerName')
+      return null
+    }
+    const separator = url.includes('?') ? '&' : '?'
+    return `${url}${separator}customerName=${encodeURIComponent(customerName)}`
+  }
+
   /**
    * Fetch current overview data from optimized API endpoint
    * Use this for initial dashboard load - much faster than full /current endpoint
@@ -108,7 +140,8 @@ export function useCurrent() {
       }
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-      const url = `${baseUrl}/api/telemetry/${deviceUUID}/current/overview`
+      const url = withCustomerName(`${baseUrl}/api/telemetry/${deviceUUID}/current/overview`)
+      if (!url) return null
 
       console.log('[useCurrent] Fetching current overview from:', url)
 
@@ -149,7 +182,8 @@ export function useCurrent() {
       }
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-      const url = `${baseUrl}/api/telemetry/${deviceUUID}/current/chart`
+      const url = withCustomerName(`${baseUrl}/api/telemetry/${deviceUUID}/current/chart`)
+      if (!url) return null
 
       console.log('[useCurrent] Fetching current chart data from:', url)
 
@@ -227,7 +261,8 @@ export function useCurrent() {
       error.value = null
 
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-      const url = `${baseUrl}/api/telemetry/${deviceUUID}/current`
+      const url = withCustomerName(`${baseUrl}/api/telemetry/${deviceUUID}/current`)
+      if (!url) return null
 
       console.log('[useCurrent] Fetching current data from:', url)
 

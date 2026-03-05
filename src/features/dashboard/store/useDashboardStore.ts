@@ -190,6 +190,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     stopRealtimeUpdates()
     metrics.value = null
     readings.value = []
+    compteurs.value = []
     isConnected.value = false
     lastUpdate.value = null
     loading.value = false

@@ -14,7 +14,6 @@ import VueApexCharts from 'vue3-apexcharts'
 import { Chart as ChartJS } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
 import i18n from '@/i18n'
-import { useMetersStore } from '@/stores/useMetersStore'
 import { setupDebugTools } from '@/services/WidgetDataValidator'
 
 const app = createApp(App)
@@ -40,10 +39,6 @@ if (typeof window !== 'undefined') {
     },
   }
 }
-
-// Initialize centralized meter selection from localStorage
-const metersStore = useMetersStore()
-metersStore.restoreSelection()
 
 // Initialize widget debug tools in development
 if (import.meta.env.DEV) {

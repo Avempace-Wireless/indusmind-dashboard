@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 
@@ -50,6 +51,11 @@ export async function fetchThermalChartData(sensorIds?: string[], startTimestamp
       params.push(`startTimestamp=${startTimestamp}`)
     }
 
+    const customerName = getCustomerNameFromSession()
+    if (customerName) {
+      params.push(`customerName=${encodeURIComponent(customerName)}`)
+    }
+
     if (params.length > 0) {
       url += `?${params.join('&')}`
     }
@@ -73,8 +79,12 @@ export async function controlThermalRelay(
   action: 'start' | 'stop'
 ): Promise<RelayControlResponse> {
   try {
+    const customerName = getCustomerNameFromSession()
+    const url = customerName
+      ? `${API_BASE_URL}/api/telemetry/thermal/relay-control?customerName=${encodeURIComponent(customerName)}`
+      : `${API_BASE_URL}/api/telemetry/thermal/relay-control`
     const response = await axios.post<RelayControlResponse>(
-      `${API_BASE_URL}/api/telemetry/thermal/relay-control`,
+      url,
       {
         deviceUUID,
         action

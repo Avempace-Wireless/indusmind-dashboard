@@ -6,6 +6,7 @@
  */
 
 import { ref, computed } from 'vue'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 
 export interface EnergyHistoryQuery {
   deviceUUIDs: string[]
@@ -59,7 +60,9 @@ export function useEnergyHistory() {
    * Generate cache key from query parameters
    */
   function getCacheKey(query: EnergyHistoryQuery): string {
+    const customerName = getCustomerNameForRequest()
     return [
+      customerName || 'default',
       query.deviceUUIDs.join(','),
       query.startDate,
       query.endDate,
@@ -68,6 +71,27 @@ export function useEnergyHistory() {
       query.hourFrom ?? 'none',
       query.hourTo ?? 'none'
     ].join('|')
+  }
+
+  function getCustomerNameForRequest(): string {
+    // Match Puissance behavior: read customerName from sessionStorage user
+    let customerName = ''
+    const storedUser = sessionStorage.getItem('user')
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser)
+        customerName = user.customerName || ''
+      } catch (error) {
+        console.warn('[useEnergyHistory] Failed to parse stored user for customerName', error)
+      }
+    }
+
+    // Fallback to token-based customerName if available
+    if (!customerName) {
+      customerName = getCustomerNameFromSession()
+    }
+
+    return customerName
   }
 
   /**
@@ -118,6 +142,11 @@ export function useEnergyHistory() {
       // Always send timezone offset for proper interval alignment
       const tzOffset = query.timezoneOffset ?? new Date().getTimezoneOffset()
       params.append('timezoneOffset', tzOffset.toString())
+
+      const customerName = getCustomerNameForRequest()
+      if (customerName) {
+        params.append('customerName', customerName)
+      }
 
       const endpoint = `${apiBaseUrl}/telemetry/energy-history?${params.toString()}`
       console.log(`[useEnergyHistory] Fetching from: ${endpoint}`)

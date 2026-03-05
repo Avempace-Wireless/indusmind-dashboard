@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { TimeUtils } from '@/utils/TimeUtils'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 import i18n from '@/i18n'
 import type { MetricType } from '@/types/metrics'
 import {
@@ -667,6 +668,11 @@ export const useComparisonStore = defineStore('comparison', () => {
         hourTo: '23',
       })
 
+      const customerName = getCustomerNameFromSession()
+      if (customerName) {
+        params.append('customerName', customerName)
+      }
+
       console.log('[ComparisonStore] 🚀 Fetching via Energy History API:', {
         meters: deviceUUIDs.length,
         dates: dates.length,
@@ -779,11 +785,6 @@ export const useComparisonStore = defineStore('comparison', () => {
 
   function setComparisonMode(mode: ComparisonMode) {
     comparisonMode.value = mode
-
-    // Initialize data for the new mode if needed
-    if (centralizedSelectedMeterIds.value.length === 0) {
-      selectAllMeters()
-    }
 
     // For matrix mode, ensure we have periods selected
     if (mode === 'matrix' && selectedDates.value.length === 0 && selectedPeriods.value.length === 0) {

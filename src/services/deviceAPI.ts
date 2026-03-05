@@ -507,7 +507,27 @@ export async function getAllCompteursFromCustomerDevices(): Promise<Compteur[]> 
  */
 export async function getAllIndusmindCustomerDevices(): Promise<Device[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/customer/devices`, {
+    let customerName = ''
+    const storedUser = sessionStorage.getItem('user')
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser)
+        customerName = user.customerName || ''
+        console.log('[deviceAPI] Extracted customerName from sessionStorage:', customerName)
+      } catch (error) {
+        console.warn('[deviceAPI] Failed to parse stored user for customerName', error)
+      }
+    } else {
+      console.warn('[deviceAPI] No user found in sessionStorage')
+    }
+
+    const url = customerName
+      ? `${API_BASE_URL}/customer/devices?customerName=${encodeURIComponent(customerName)}`
+      : `${API_BASE_URL}/customer/devices`
+
+    console.log('[deviceAPI] Built URL:', url)
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

@@ -5,6 +5,7 @@
  */
 
 import axios from 'axios'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 
@@ -103,7 +104,11 @@ export async function fetchThermalDashboardData(
   debug: boolean = false
 ): Promise<ThermalDashboardData> {
   try {
-    const url = `${API_BASE_URL}/api/telemetry/thermal${debug ? '?debug=true' : ''}`
+    const params = new URLSearchParams()
+    if (debug) params.set('debug', 'true')
+    const customerName = getCustomerNameFromSession()
+    if (customerName) params.set('customerName', customerName)
+    const url = `${API_BASE_URL}/api/telemetry/thermal${params.toString() ? `?${params.toString()}` : ''}`
 
     console.log('[ThermalAPI] Fetching thermal sensor data from:', url)
 
@@ -165,7 +170,10 @@ export async function updateSensorMode(
       throw new Error(`Invalid mode: ${mode}. Must be 'manuel' or 'auto'`)
     }
 
-    const url = `${API_BASE_URL}/api/telemetry/thermal/mode`
+    const customerName = getCustomerNameFromSession()
+    const url = customerName
+      ? `${API_BASE_URL}/api/telemetry/thermal/mode?customerName=${encodeURIComponent(customerName)}`
+      : `${API_BASE_URL}/api/telemetry/thermal/mode`
     const response = await axios.post(url, {
       deviceUUID,
       mode,
@@ -228,6 +236,10 @@ export async function fetchTemperatureChart24h(
     if (sensorIds && sensorIds.length > 0) {
       params.set('sensorIds', sensorIds.join(','))
     }
+    const customerName = getCustomerNameFromSession()
+    if (customerName) {
+      params.set('customerName', customerName)
+    }
     const qs = params.toString()
     const url = `${API_BASE_URL}/api/telemetry/thermal/chart-data${qs ? '?' + qs : ''}`
 
@@ -261,6 +273,11 @@ async function fetchOneWeek(
     console.log(`[ThermalAPI] Filtering to ${sensorIds.length} sensor(s):`, sensorIds)
   } else {
     console.warn('[ThermalAPI] WARNING: No sensorIds filter - fetching ALL sensors!')
+  }
+
+  const customerName = getCustomerNameFromSession()
+  if (customerName) {
+    params.set('customerName', customerName)
   }
 
   const url = `${API_BASE_URL}/api/telemetry/thermal/chart-weekly?${params.toString()}`

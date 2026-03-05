@@ -13,6 +13,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as deviceAPI from '../services/deviceAPI'
 import type { Meter } from '../services/deviceAPI'
+import { getCustomerNameFromSession } from '@/utils/customerName'
 
 /**
  * Maximum number of meters that can be selected for visualization
@@ -35,6 +36,13 @@ export const useMetersStore = defineStore('meters', () => {
   // ===========================
   // STATE
   // ===========================
+
+  const getStorageKey = () => 'dashboard:meters:selected'
+
+  const getLegacyStorageKey = () => {
+    const customerName = getCustomerNameFromSession() || 'default'
+    return `dashboard:meters:selected:${customerName}`
+  }
 
   const allMeters = ref<Meter[]>([])
   const selectedMeterIds = ref<string[]>([])
@@ -73,9 +81,7 @@ export const useMetersStore = defineStore('meters', () => {
 
       allMeters.value = customerMeters
 
-      if (customerMeters.length > 0) {
-        console.log(`Loaded ${customerMeters.length} meters from customer devices API`)
-      } else {
+      if (customerMeters.length === 0) {
         console.warn('Customer API returned no devices')
       }
 
@@ -140,6 +146,14 @@ export const useMetersStore = defineStore('meters', () => {
   }
 
   /**
+   * Clear selection in memory without overwriting localStorage
+   */
+  function clearSelectionInMemory() {
+    selectedMeterIds.value = []
+    lastModified.value = new Date()
+  }
+
+  /**
    * Select all available meters (up to max 8)
    */
   function selectAllMeters() {
@@ -155,22 +169,31 @@ export const useMetersStore = defineStore('meters', () => {
    */
   function restoreSelection() {
     try {
-      const saved = localStorage.getItem('dashboard:meters:selected')
-      if (saved) {
-        const ids = JSON.parse(saved)
+      if (allMeters.value.length === 0) {
+        return
+      }
+      const saved = localStorage.getItem(getStorageKey())
+      const legacySaved = saved ? null : localStorage.getItem(getLegacyStorageKey())
+      const restoredRaw = saved || legacySaved
+      if (restoredRaw) {
+        const ids = JSON.parse(restoredRaw)
         // Validate that saved IDs still exist
         const validIds = ids.filter((id: string) =>
           allMeters.value.some(m => m.id === id)
         )
         if (validIds.length > 0) {
           selectedMeterIds.value = validIds
+          if (legacySaved) {
+            persistSelection()
+          }
           return
         }
       }
     } catch (e) {
       console.warn('Failed to restore meter selection:', e)
     }
-    // No valid saved selection, start empty
+    // No valid saved selection, start empty without persisting
+    // This preserves any existing localStorage for next login attempt
     selectedMeterIds.value = []
   }
 
@@ -180,7 +203,7 @@ export const useMetersStore = defineStore('meters', () => {
   function persistSelection() {
     try {
       localStorage.setItem(
-        'dashboard:meters:selected',
+        getStorageKey(),
         JSON.stringify(selectedMeterIds.value)
       )
     } catch (e) {
@@ -193,7 +216,7 @@ export const useMetersStore = defineStore('meters', () => {
    */
   function clearPersisted() {
     try {
-      localStorage.removeItem('dashboard:meters:selected')
+      localStorage.removeItem(getStorageKey())
     } catch (e) {
       console.warn('Failed to clear persisted meter selection:', e)
     }
@@ -319,6 +342,7 @@ export const useMetersStore = defineStore('meters', () => {
     setSelectedMeters,
     toggleMeter,
     clearSelection,
+    clearSelectionInMemory,
     selectAllMeters,
     restoreSelection,
     persistSelection,
