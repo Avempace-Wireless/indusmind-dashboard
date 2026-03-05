@@ -2,6 +2,10 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, AuthState } from '@/types'
 import * as authAPI from '@/services/authAPI'
+import { useMetersStore } from '@/stores/useMetersStore'
+import { useMetersStore as useDeviceMetersStore } from '@/stores/useDeviceMetersStore'
+import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
+import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -45,6 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
         name: nameFromEmail,
         email: username,
         role: 'Manager',
+        customerName: response.user?.customerName,
         createdAt: new Date(),
       }
 
@@ -80,6 +85,39 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('auth_token')
 
     console.log('[useAuthStore] Auth tokens cleared from storage')
+
+    // Clear all cached view data from stores
+    const metersStore = useMetersStore()
+    const deviceMetersStore = useDeviceMetersStore()
+    const sensorsStore = useSensorsStore()
+    const dashboardStore = useDashboardStore()
+
+    // Clear selections in memory without overwriting localStorage
+    metersStore.clearSelectionInMemory()
+    deviceMetersStore.clearSelectionInMemory()
+    sensorsStore.clearSelectionInMemory()
+
+    // Reset dashboard state
+    dashboardStore.reset()
+
+    // Clear localStorage keys related to view settings and caches
+    const keysToRemove = [
+      // View mode settings
+      'dashboard:viewMode',
+
+      // Cache keys (temperature, energy data)
+      'temperature:chart:24h',
+      'temperature:chart:monthly',
+      'energy:chart:24h',
+    ]
+
+    // Remove specific keys
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key)
+      console.log('[useAuthStore] Removed localStorage key:', key)
+    })
+
+    console.log('[useAuthStore] View cache keys cleared from storage')
   }
 
   const setUser = (newUser: User) => {
