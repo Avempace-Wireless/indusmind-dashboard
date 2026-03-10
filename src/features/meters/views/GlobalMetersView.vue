@@ -150,7 +150,9 @@
                       <span class="kpi-shimmer rounded-lg" style="height: clamp(20px, 5vmin, 45px); width: 80px; animation-delay: 0.1s;"></span>
                     </template>
                     <template v-else-if="compteur.instantaneous === undefined">
-                      <!-- No value -->
+                      <span class="font-medium leading-none text-slate-400 dark:text-slate-500" :style="{ fontSize: 'clamp(14px, 3vmin, 28px)', letterSpacing: '0.05em' }">
+                        N/A
+                      </span>
                     </template>
                     <template v-else>
                       <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getChartColor(index, compteur.name) }">
@@ -169,7 +171,7 @@
                       <span class="kpi-shimmer rounded-lg" style="height: clamp(14px, 2.3vmin, 24px); width: 50px; animation-delay: 0.2s;"></span>
                     </template>
                     <template v-else-if="compteur.today === undefined">
-                      <!-- No value -->
+                      <p class="text-slate-400 dark:text-slate-500 font-medium leading-tight" style="font-size: clamp(12px, 1.8vmin, 18px); line-height: 1.1; letter-spacing: 0.05em;">N/A</p>
                     </template>
                     <p v-else class="text-green-900 dark:text-green-200 font-bold leading-tight" style="font-size: clamp(14px, 2.3vmin, 24px); line-height: 1.1;">{{ formatValue(compteur.today) }}</p>
                     <p class="text-green-800 dark:text-green-300 font-bold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">kWh</p>
@@ -180,7 +182,7 @@
                       <span class="kpi-shimmer rounded-lg" style="height: clamp(14px, 2.3vmin, 24px); width: 50px; animation-delay: 0.3s;"></span>
                     </template>
                     <template v-else-if="compteur.yesterday === undefined">
-                      <!-- No value -->
+                      <p class="text-slate-400 dark:text-slate-500 font-medium leading-tight" style="font-size: clamp(12px, 1.8vmin, 18px); line-height: 1.1; letter-spacing: 0.05em;">N/A</p>
                     </template>
                     <p v-else class="text-slate-800 dark:text-slate-200 font-bold leading-tight" style="font-size: clamp(14px, 2.3vmin, 24px); line-height: 1.1;">{{ formatValue(compteur.yesterday) }}</p>
                     <p class="text-slate-700 dark:text-slate-300 font-bold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">kWh</p>
@@ -368,7 +370,9 @@
                       <span class="kpi-shimmer kpi-shimmer--purple rounded-lg" style="height: clamp(20px, 5vmin, 45px); width: 80px; animation-delay: 0.1s;"></span>
                     </template>
                     <template v-else-if="sensor.temperature === null">
-                      <!-- No value -->
+                      <span class="font-medium leading-none text-slate-400 dark:text-slate-500" :style="{ fontSize: 'clamp(14px, 3vmin, 28px)', letterSpacing: '0.05em' }">
+                        N/A
+                      </span>
                     </template>
                     <template v-else>
                       <span class="font-extrabold leading-none" :style="{ fontSize: 'clamp(20px, 5vmin, 45px)', color: getSensorColor(index) }">
@@ -385,7 +389,7 @@
                         <span class="kpi-shimmer kpi-shimmer--purple rounded-full" style="height: clamp(9px, 1.3vmin, 12px); width: 32px; animation-delay: 0.2s;"></span>
                       </template>
                       <template v-else-if="getDailyMinMax(sensor.deviceUUID).max === null">
-                        <!-- No value -->
+                        <span class="font-medium text-slate-400 dark:text-slate-500 w-auto text-right ml-1" style="font-size: clamp(8px, 1.2vmin, 11px); letter-spacing: 0.05em;">N/A</span>
                       </template>
                       <span v-else class="font-bold text-slate-700 dark:text-slate-300 w-10 text-right -ml-4" style="font-size: clamp(9px, 1.3vmin, 12px);">{{ formatTemp(getDailyMinMax(sensor.deviceUUID).max) }}°</span>
                     </div>
@@ -395,7 +399,7 @@
                         <span class="kpi-shimmer kpi-shimmer--purple rounded-full" style="height: clamp(9px, 1.3vmin, 12px); width: 32px; animation-delay: 0.3s;"></span>
                       </template>
                       <template v-else-if="getDailyMinMax(sensor.deviceUUID).min === null">
-                        <!-- No value -->
+                        <span class="font-medium text-slate-400 dark:text-slate-500 w-auto text-right ml-1" style="font-size: clamp(8px, 1.2vmin, 11px); letter-spacing: 0.05em;">N/A</span>
                       </template>
                       <span v-else class="font-bold text-slate-700 dark:text-slate-300 w-10 text-right -ml-4" style="font-size: clamp(9px, 1.3vmin, 12px);">{{ formatTemp(getDailyMinMax(sensor.deviceUUID).min) }}°</span>
                     </div>
@@ -410,7 +414,7 @@
                     <span class="kpi-shimmer kpi-shimmer--purple rounded-lg" style="height: clamp(16px, 3vmin, 28px); width: 40px; animation-delay: 0.35s;"></span>
                   </template>
                   <template v-else-if="sensor.humidity === null">
-                    <!-- No value -->
+                    <p class="text-slate-400 dark:text-slate-500 font-medium leading-tight" style="font-size: clamp(12px, 1.8vmin, 16px); line-height: 1; letter-spacing: 0.05em;">N/A</p>
                   </template>
                   <p v-else class="text-purple-900 dark:text-purple-200 font-bold leading-tight" style="font-size: clamp(16px, 3vmin, 28px); line-height: 1;">{{ formatTemp(sensor.humidity) }}</p>
                   <p class="text-purple-800 dark:text-purple-300 font-bold" style="font-size: clamp(10px, 1.5vmin, 14px); line-height: 1;">%</p>

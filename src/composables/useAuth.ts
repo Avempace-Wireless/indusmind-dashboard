@@ -25,8 +25,12 @@ export function useAuth() {
       loading.value = true
       error.value = null
 
+      console.log('[useAuth] Starting login for:', username)
+
       // Call backend login API
       const response = await authAPI.login({ username, password })
+
+      console.log('[useAuth] Login API response:', response)
 
       // Store token
       authAPI.setToken(response.token)
@@ -43,12 +47,15 @@ export function useAuth() {
 
       return response
     } catch (err: any) {
+      console.error('[useAuth] Login error caught:', err)
+      console.error('[useAuth] Error message:', err.message)
       const message = err.message || 'Login failed'
       error.value = message
-      console.error('[useAuth] Login error:', message)
+      console.error('[useAuth] Error value set to:', error.value)
       throw err
     } finally {
       loading.value = false
+      console.log('[useAuth] Loading set to false')
     }
   }
 
