@@ -14,6 +14,7 @@ export interface LoginResponse {
     email: string
     firstName: string
     lastName: string
+    role?: string
     customerName: string
   }
 }

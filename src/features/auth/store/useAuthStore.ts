@@ -1,11 +1,32 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { User, AuthState } from '@/types'
+import type { User, AuthState, Role } from '@/types'
 import * as authAPI from '@/services/authAPI'
 import { useMetersStore } from '@/stores/useMetersStore'
 import { useMetersStore as useDeviceMetersStore } from '@/stores/useDeviceMetersStore'
 import { useSensorsStore } from '@/features/thermal-management/store/useSensorsStore'
 import { useDashboardStore } from '@/features/dashboard/store/useDashboardStore'
+
+/**
+ * Normalize backend role names to frontend Role type
+ * Backend uses lowercase: 'admin', 'manager'
+ * Frontend expects capitalized: 'Admin', 'Manager'
+ */
+function normalizeRole(backendRole: string | undefined): Role {
+  console.log('[useAuthStore] Normalizing role from backend:', backendRole)
+  if (!backendRole) return 'Manager'
+
+  const normalized = backendRole.toLowerCase()
+  switch (normalized) {
+    case 'admin':
+      return 'Admin'
+    case 'manager':
+      return 'Manager'
+    default:
+      console.warn('[useAuthStore] Unknown role from backend:', backendRole)
+      return 'Manager'
+  }
+}
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -36,28 +57,28 @@ export const useAuthStore = defineStore('auth', () => {
       authAPI.setToken(response.token)
       token.value = response.token
 
-      // Create user object from username/email
-      // Extract name from email: john.doe@example.com -> John Doe
-      const emailPart = username.split('@')[0] // john.doe
-      const nameFromEmail = emailPart
-        .split('.')
-        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ')
+      const firstName = response.user?.firstName || ''
+      const lastName = response.user?.lastName || ''
+      const fullName = [firstName, lastName].filter(Boolean).join(' ')
 
-      const mockUser: User = {
-        id: username,
-        name: nameFromEmail,
-        email: username,
-        role: 'Manager',
+      const loginUser: User = {
+        id: String(response.user?.id ?? username),
+        name: fullName || username,
+        firstName,
+        lastName,
+        firstname: firstName,
+        lastname: lastName,
+        email: response.user?.email || username,
+        role: normalizeRole(response.user?.role),
         customerName: response.user?.customerName,
         createdAt: new Date(),
       }
 
-      user.value = mockUser
+      user.value = loginUser
 
       // Store user in sessionStorage
       sessionStorage.setItem('auth_token', response.token)
-      sessionStorage.setItem('user', JSON.stringify(mockUser))
+      sessionStorage.setItem('user', JSON.stringify(loginUser))
 
       loading.value = false
 

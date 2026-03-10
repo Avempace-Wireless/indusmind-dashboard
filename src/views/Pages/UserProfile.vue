@@ -2,12 +2,6 @@
   <admin-layout>
     <PageBreadcrumb :pageTitle="t('profile.title')" />
 
-    <!-- Page Header -->
-    <div class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ t('profile.title') }}</h1>
-      <p class="mt-1 text-gray-600 dark:text-gray-400">{{ t('profile.subtitle') }}</p>
-    </div>
-
     <!-- Profile Section -->
     <div class="mb-6">
       <profile-card />

@@ -4,18 +4,19 @@
       <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex flex-col items-center w-full gap-6 xl:flex-row">
           <div class="flex items-center justify-center h-20 w-20 rounded-full border-2 border-gray-200 dark:border-gray-700 bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-2xl">
-            IM
+            {{ initials }}
           </div>
           <div class="order-3 xl:order-2">
             <h4
               class="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left"
             >
-              {{ authStore.user?.name || t('user.manager') }}
+              {{ displayName }}
             </h4>
           </div>
           <div class="flex items-center order-2 gap-3 grow xl:order-3 xl:justify-end">
             <div class="text-sm text-gray-600 dark:text-gray-400">
-              <p class="font-medium">{{ authStore.user?.email || 'manager@indusmind.com' }}</p>
+              <p class="font-medium">{{ displayEmail }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ displayRole }}</p>
             </div>
           </div>
         </div>
@@ -213,14 +214,42 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/features/auth/store/useAuthStore'
+import { getUserFromSession } from '@/utils/customerName'
+import { translateRole } from '@/utils/roleLabel'
 import Modal from './Modal.vue'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
 const isProfileInfoModal = ref(false)
+
+const normalizedUser = computed(() => {
+  const stored = getUserFromSession()
+  const auth = authStore.user || {}
+  const firstName = auth.firstName || auth.firstname || stored.firstName || stored.firstname || ''
+  const lastName = auth.lastName || auth.lastname || stored.lastName || stored.lastname || ''
+  const name = auth.name || stored.name || [firstName, lastName].filter(Boolean).join(' ')
+  const email = auth.email || stored.email || ''
+  const role = auth.role || stored.role || ''
+  return { firstName, lastName, name, email, role }
+})
+
+const displayName = computed(() => normalizedUser.value.name || t('user.manager'))
+const displayEmail = computed(() => normalizedUser.value.email || '—')
+const displayRole = computed(() => translateRole(normalizedUser.value.role, t))
+const initials = computed(() => {
+  const base = normalizedUser.value.name || ''
+  if (!base) return 'IM'
+  return base
+    .split(' ')
+    .filter(Boolean)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+})
 
 const saveProfile = () => {
   // Implement save profile logic here

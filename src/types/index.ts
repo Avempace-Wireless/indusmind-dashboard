@@ -2,6 +2,10 @@
 export interface User {
   id: string
   email: string
+  firstName?: string
+  lastName?: string
+  firstname?: string
+  lastname?: string
   name: string
   role: Role
   customerName?: string
@@ -84,6 +88,10 @@ export interface Alert {
   id: string
   equipmentId: string
   level: AlertLevel
+  firstName?: string
+  lastName?: string
+  firstname?: string
+  lastname?: string
   message: string
   description?: string
   detectedAt: Date
