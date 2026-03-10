@@ -201,6 +201,47 @@ const showCurrentPassword = ref(false)
 const showNewPassword = ref(false)
 const showConfirmPassword = ref(false)
 
+function normalizeMessage(message) {
+  return (message || '').toLowerCase()
+}
+
+function getPasswordErrorKey(status, message) {
+  const msg = normalizeMessage(message)
+
+  if (msg.includes('current') && (msg.includes('incorrect') || msg.includes('invalid'))) {
+    return 'profile.currentPasswordInvalid'
+  }
+  if ((msg.includes('same') || msg.includes('different')) && msg.includes('current')) {
+    return 'profile.newPasswordSameAsCurrent'
+  }
+  if (msg.includes('weak') || msg.includes('strength')) {
+    return 'profile.passwordWeak'
+  }
+  if (msg.includes('min') || msg.includes('length')) {
+    return 'profile.passwordMinLength'
+  }
+
+  if (status === 401 || status === 403) return 'profile.passwordChangeUnauthorized'
+  if (status === 404) return 'profile.passwordChangeNotAvailable'
+  if (status === 429) return 'profile.passwordChangeTooManyRequests'
+  if (status >= 500) return 'profile.passwordChangeServerError'
+
+  if (status === 400 || status === 422) return 'profile.passwordChangeInvalidRequest'
+  return 'profile.passwordChangeFailed'
+}
+
+function applyFieldError(errorKey) {
+  if (errorKey === 'profile.currentPasswordInvalid') {
+    errors.value.currentPassword = t(errorKey)
+  } else if (errorKey === 'profile.newPasswordSameAsCurrent') {
+    errors.value.newPassword = t(errorKey)
+  } else if (errorKey === 'profile.passwordWeak') {
+    errors.value.newPassword = t(errorKey)
+  } else if (errorKey === 'profile.passwordMinLength') {
+    errors.value.newPassword = t(errorKey)
+  }
+}
+
 function validateForm() {
   errors.value = {
     currentPassword: '',
@@ -251,8 +292,15 @@ async function handlePasswordChange() {
     })
 
     if (!response.ok) {
-      const data = await response.json()
-      throw new Error(data.message || t('profile.passwordChangeFailed'))
+      let data = null
+      try {
+        data = await response.json()
+      } catch (parseError) {
+        data = null
+      }
+      const errorKey = getPasswordErrorKey(response.status, data?.message)
+      applyFieldError(errorKey)
+      throw new Error(errorKey)
     }
 
     successMessage.value = t('profile.passwordChangeSuccess')
@@ -262,7 +310,14 @@ async function handlePasswordChange() {
       resetForm()
     }, 2000)
   } catch (error) {
-    errorMessage.value = error.message || t('profile.passwordChangeError')
+    if (error instanceof TypeError) {
+      errorMessage.value = t('profile.passwordChangeNetworkError')
+    } else {
+      const errorKey = error instanceof Error && error.message.startsWith('profile.')
+        ? error.message
+        : 'profile.passwordChangeError'
+      errorMessage.value = t(errorKey)
+    }
     console.error('Password change error:', error)
   } finally {
     isLoading.value = false

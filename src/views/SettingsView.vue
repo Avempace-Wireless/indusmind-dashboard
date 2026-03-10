@@ -66,23 +66,55 @@
 
       <!-- User Profile (FR65) -->
       <div class="bg-white dark:bg-[#1c2534] rounded-lg p-6 shadow border border-gray-200 dark:border-[#2a3649]">
-        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Profile</h2>
+        <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Mon Profil</h2>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Name</label>
-            <input v-model="profile.name" type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-[#2a3649] bg-white dark:bg-[#0d0f14] text-gray-900 dark:text-white" />
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Client</label>
+            <input
+              :value="profile.customerName"
+              type="text"
+              disabled
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-[#2a3649] bg-gray-50 dark:bg-[#0d0f14] text-gray-500 dark:text-gray-400 cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Prénom</label>
+            <input
+              v-model="profile.firstName"
+              type="text"
+              disabled
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-[#2a3649] bg-gray-50 dark:bg-[#0d0f14] text-gray-500 dark:text-gray-400 cursor-not-allowed"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Nom</label>
+            <input
+              v-model="profile.lastName"
+              type="text"
+              disabled
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-[#2a3649] bg-gray-50 dark:bg-[#0d0f14] text-gray-500 dark:text-gray-400 cursor-not-allowed"
+            />
           </div>
           <div>
             <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
             <input
               v-model="profile.email"
               type="email"
-              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-[#2a3649] bg-white dark:bg-[#0d0f14] text-gray-900 dark:text-white"
+              disabled
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-[#2a3649] bg-gray-50 dark:bg-[#0d0f14] text-gray-500 dark:text-gray-400 cursor-not-allowed"
             />
           </div>
-          <button class="bg-[#135bec] hover:bg-[#0f4bcf] text-white px-6 py-2 rounded-lg font-medium transition-colors">
-            Save Changes
-          </button>
+          <div>
+            <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+              {{ t('profile.role') }}
+            </label>
+            <input
+              :value="roleLabel"
+              type="text"
+              disabled
+              class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-[#2a3649] bg-gray-50 dark:bg-[#0d0f14] text-gray-500 dark:text-gray-400 cursor-not-allowed"
+            />
+          </div>
         </div>
       </div>
 
@@ -120,18 +152,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { useSettingsStore } from '@/stores/useSettingsStore'
+import { getUserFromSession } from '@/utils/customerName'
+import { translateRole } from '@/utils/roleLabel'
 
 const settingsStore = useSettingsStore()
+const { t } = useI18n()
 
 const theme = ref(settingsStore.settings.theme)
 const notifications = ref({ ...settingsStore.settings.notificationPreferences })
-const profile = ref({ name: '', email: '' })
+const profile = ref({
+  firstName: '',
+  lastName: '',
+  email: '',
+  customerName: '',
+  role: ''
+})
 const tariff = ref({ ...settingsStore.settings.tariffInfo })
+const roleLabel = computed(() => translateRole(profile.value.role, t))
 
 const setTheme = () => {
   settingsStore.setTheme(theme.value)
 }
+
+// Load user data from sessionStorage on mount
+onMounted(() => {
+  const user = getUserFromSession()
+  profile.value = {
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    email: user.email || '',
+    customerName: user.customerName || '',
+    role: user.role || ''
+  }
+})
 </script>

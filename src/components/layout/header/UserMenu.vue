@@ -9,7 +9,7 @@
       </div>
 
       <div class="hidden sm:flex flex-col items-start">
-        <span class="block font-semibold text-sm text-gray-900 dark:text-white leading-none">{{ authStore.user?.name || t('user.manager') }}</span>
+        <span class="block font-semibold text-sm text-gray-900 dark:text-white leading-none">{{ displayName }}</span>
         <span class="text-xs text-gray-500 dark:text-gray-400">{{ authStore.user?.email || t('user.profile') }}</span>
       </div>
 
@@ -36,7 +36,7 @@
               {{ getUserInitials() }}
             </div>
             <div class="min-w-0">
-              <p class="font-semibold text-gray-900 dark:text-white break-words">{{ authStore.user?.name || t('user.managerAccount') }}</p>
+              <p class="font-semibold text-gray-900 dark:text-white break-words">{{ displayName }}</p>
               <p class="text-sm text-gray-500 dark:text-gray-400 break-words">{{ authStore.user?.email || t('user.managerEmail') }}</p>
             </div>
           </div>
@@ -73,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/features/auth/store/useAuthStore'
@@ -127,10 +127,28 @@ const handleLogout = async () => {
   }
 }
 
+const displayName = computed(() => {
+  const user = authStore.user
+  const firstName = user?.firstName || user?.firstname || ''
+  const lastName = user?.lastName || user?.lastname || ''
+  const fullName = [firstName, lastName].filter(Boolean).join(' ')
+  return fullName || user?.name || t('user.manager')
+})
+
 const getUserInitials = (): string => {
-  if (!authStore.user?.name) return 'IM'
-  const parts = authStore.user.name.split(' ')
-  return parts.map(part => part[0]).join('').toUpperCase().slice(0, 2)
+  const user = authStore.user
+  const firstName = user?.firstName || user?.firstname || ''
+  const lastName = user?.lastName || user?.lastname || ''
+  const fullName = [firstName, lastName].filter(Boolean).join(' ')
+  const base = fullName || user?.name || ''
+  if (!base) return 'IM'
+  return base
+    .split(' ')
+    .filter(Boolean)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 }
 
 const restoreUserData = () => {

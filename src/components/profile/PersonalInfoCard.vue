@@ -10,12 +10,16 @@
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
               <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.firstName') }}</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">Manager</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">
+                {{ userProfile.firstName || '—' }}
+              </p>
             </div>
 
             <div>
               <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">{{ t('profile.lastName') }}</p>
-              <p class="text-sm font-medium text-gray-800 dark:text-white/90">IndusMind</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">
+                {{ userProfile.lastName || '—' }}
+              </p>
             </div>
 
             <div>
@@ -23,7 +27,16 @@
                 {{ t('profile.email') }}
               </p>
               <p class="text-sm font-medium text-gray-800 dark:text-white/90">
-                {{ authStore.user?.email || 'manager@indusmind.com' }}
+                {{ userProfile.email || '—' }}
+              </p>
+            </div>
+
+            <div>
+              <p class="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                {{ t('profile.role') }}
+              </p>
+              <p class="text-sm font-medium text-gray-800 dark:text-white/90">
+                {{ roleLabel }}
               </p>
             </div>
           </div>
@@ -242,14 +255,29 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/features/auth/store/useAuthStore'
+import { getUserFromSession } from '@/utils/customerName'
+import { translateRole } from '@/utils/roleLabel'
 import Modal from './Modal.vue'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
 const isProfileInfoModal = ref(false)
+
+const userProfile = computed(() => {
+  const stored = getUserFromSession()
+  const auth = authStore.user || {}
+  return {
+    firstName: auth.firstName || auth.firstname || stored.firstName || stored.firstname || '',
+    lastName: auth.lastName || auth.lastname || stored.lastName || stored.lastname || '',
+    email: auth.email || stored.email || '',
+    role: auth.role || stored.role || '',
+  }
+})
+
+const roleLabel = computed(() => translateRole(userProfile.value.role, t))
 
 const saveProfile = () => {
   // Implement save profile logic here
