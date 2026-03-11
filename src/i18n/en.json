@@ -68,7 +68,13 @@
       "signUp": "Sign up",
       "orContinueWith": "Or continue with",
       "error": "Invalid email or password",
-      "invalidCredentials": "Invalid email or password"
+      "invalidCredentials": "Invalid email or password. Please check your credentials and try again.",
+      "accountInactive": "Your account has been deactivated. Please contact support to reactivate your account.",
+      "accountSuspended": "Your account has been suspended. Please contact support for assistance.",
+      "accountPending": "Your account is pending activation. Please contact support for more information.",
+      "clientInactive": "Your organization account has been deactivated. Please contact your administrator or support.",
+      "clientSuspended": "Your organization account has been suspended. Please contact your administrator or support for assistance.",
+      "serviceUnavailable": "Service temporarily unavailable. Please try again in a few moments."
     }
   },
   "user": {

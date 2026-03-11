@@ -66,7 +66,13 @@
       "signUp": "S'inscrire",
       "orContinueWith": "Ou continuer avec",
       "error": "Email ou mot de passe invalide",
-      "invalidCredentials": "Email ou mot de passe invalide"
+      "invalidCredentials": "Email ou mot de passe invalide. Veuillez vérifier vos identifiants et réessayer.",
+      "accountInactive": "Votre compte a été désactivé. Veuillez contacter votre administrateur pour réactiver votre compte.",
+      "accountSuspended": "Votre compte a été suspendu. Veuillez contacter votre administrateur pour obtenir de l'aide.",
+      "accountPending": "Votre compte est en attente d'activation. Veuillez contacter votre administrateur pour plus d'informations.",
+      "clientInactive": "Le compte de votre organisation a été désactivé. Veuillez contacter votre administrateur.",
+      "clientSuspended": "Le compte de votre organisation a été suspendu. Veuillez contacter votre administrateur pour obtenir de l'aide.",
+      "serviceUnavailable": "Service temporairement indisponible. Veuillez réessayer dans quelques instants."
     }
   },
   "user": {

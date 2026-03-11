@@ -43,10 +43,10 @@
               </div>
               <!-- Error Alert -->
               <div
-                v-if="error"
+                v-if="displayError"
                 class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/20 dark:border-red-900/30"
               >
-                <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+                <p class="text-sm text-red-600 dark:text-red-400">{{ displayError }}</p>
               </div>
               <div>
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
@@ -287,11 +287,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
+import { useI18n } from 'vue-i18n'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
 
+const { t } = useI18n()
 const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
@@ -303,19 +305,85 @@ const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
 }
 
+function mapErrorToKey(errorMessage: string | null): string {
+  console.log('[Signin mapErrorToKey] Input:', errorMessage)
+  if (!errorMessage) return 'auth.login.invalidCredentials'
+
+  const msg = errorMessage.toLowerCase()
+  console.log('[Signin mapErrorToKey] Lowercased:', msg)
+
+  // Account status errors
+  if (msg.includes('account is inactive')) {
+    console.log('[Signin mapErrorToKey] Matched: accountInactive')
+    return 'auth.login.accountInactive'
+  }
+  if (msg.includes('account is suspended')) {
+    console.log('[Signin mapErrorToKey] Matched: accountSuspended')
+    return 'auth.login.accountSuspended'
+  }
+  if (msg.includes('account is pending')) {
+    console.log('[Signin mapErrorToKey] Matched: accountPending')
+    return 'auth.login.accountPending'
+  }
+
+  // Client status errors
+  if (msg.includes('client is inactive')) {
+    console.log('[Signin mapErrorToKey] Matched: clientInactive')
+    return 'auth.login.clientInactive'
+  }
+  if (msg.includes('client is suspended')) {
+    console.log('[Signin mapErrorToKey] Matched: clientSuspended')
+    return 'auth.login.clientSuspended'
+  }
+
+  // Generic errors
+  if (msg.includes('invalid') || msg.includes('incorrect')) {
+    console.log('[Signin mapErrorToKey] Matched: invalidCredentials')
+    return 'auth.login.invalidCredentials'
+  }
+  if (msg.includes('unavailable')) {
+    console.log('[Signin mapErrorToKey] Matched: serviceUnavailable')
+    return 'auth.login.serviceUnavailable'
+  }
+
+  console.log('[Signin mapErrorToKey] No match, default: invalidCredentials')
+  return 'auth.login.invalidCredentials'
+}
+
+const displayError = computed(() => {
+  console.log('[Signin displayError] Computing, error.value:', error.value)
+  if (!error.value) return ''
+  const errorKey = mapErrorToKey(error.value)
+  console.log('[Signin displayError] Error key:', errorKey)
+  const translated = t(errorKey)
+  console.log('[Signin displayError] Translated:', translated)
+  return translated
+})
+
+// Clear error when user modifies form
+watch([username, password], () => {
+  clearError()
+})
+
 const handleSubmit = async () => {
   try {
+    console.log('[Signin handleSubmit] Starting login')
     clearError()
 
     // Validate inputs
     if (!username.value || !password.value) {
+      console.log('[Signin handleSubmit] Missing username or password')
       return
     }
 
+    console.log('[Signin handleSubmit] Calling login composable')
     // Call login from composable
     await login(username.value, password.value)
+    console.log('[Signin handleSubmit] Login successful')
   } catch (err: any) {
-    console.error('Sign in failed:', err)
+    console.error('[Signin handleSubmit] Sign in failed:', err)
+    console.log('[Signin handleSubmit] Error.value after catch:', error.value)
+    console.log('[Signin handleSubmit] displayError.value:', displayError.value)
     // Error is already set in composable
   }
 }

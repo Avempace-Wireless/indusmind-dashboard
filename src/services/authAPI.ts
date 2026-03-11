@@ -43,18 +43,23 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
     })
 
     console.log('[authAPI] Response status:', response.status)
+    console.log('[authAPI] Response ok:', response.ok)
 
     const data = await response.json()
 
-    console.log('[authAPI] Response data:', { success: data.success, message: data.message })
+    console.log('[authAPI] Response data full:', data)
+    console.log('[authAPI] Response data.message:', data.message)
+    console.log('[authAPI] Response data.success:', data.success)
 
     if (!response.ok) {
+      console.log('[authAPI] Response not ok, throwing error with message:', data.message)
       throw new Error(data.message || 'Login failed')
     }
 
     return data
   } catch (error: any) {
-    console.error('[authAPI] Login error:', error.message)
+    console.error('[authAPI] Login error caught:', error)
+    console.error('[authAPI] Login error.message:', error.message)
     throw error
   }
 }

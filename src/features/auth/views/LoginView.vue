@@ -66,7 +66,7 @@
           <svg class="w-4 h-4 text-red-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
           </svg>
-          <p class="text-xs font-medium text-red-200">{{ t('auth.login.invalidCredentials') }}</p>
+          <p class="text-xs font-medium text-red-200">{{ displayError }}</p>
         </div>
 
         <form @submit.prevent="handleLogin" class="space-y-3">
@@ -185,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/features/auth/store/useAuthStore'
@@ -202,6 +202,66 @@ const authStore = useAuthStore()
 // Set default language to French on mount
 onMounted(() => {
   locale.value = 'fr'
+})
+
+function mapErrorToKey(errorMessage: string | null): string {
+  console.log('[LoginView mapErrorToKey] Input:', errorMessage)
+  if (!errorMessage) return 'auth.login.invalidCredentials'
+
+  const msg = errorMessage.toLowerCase()
+  console.log('[LoginView mapErrorToKey] Lowercased:', msg)
+
+  // Account status errors
+  if (msg.includes('account is inactive')) {
+    console.log('[LoginView mapErrorToKey] Matched: accountInactive')
+    return 'auth.login.accountInactive'
+  }
+  if (msg.includes('account is suspended')) {
+    console.log('[LoginView mapErrorToKey] Matched: accountSuspended')
+    return 'auth.login.accountSuspended'
+  }
+  if (msg.includes('account is pending')) {
+    console.log('[LoginView mapErrorToKey] Matched: accountPending')
+    return 'auth.login.accountPending'
+  }
+
+  // Client status errors
+  if (msg.includes('client is inactive')) {
+    console.log('[LoginView mapErrorToKey] Matched: clientInactive')
+    return 'auth.login.clientInactive'
+  }
+  if (msg.includes('client is suspended')) {
+    console.log('[LoginView mapErrorToKey] Matched: clientSuspended')
+    return 'auth.login.clientSuspended'
+  }
+
+  // Generic errors
+  if (msg.includes('invalid') || msg.includes('incorrect')) {
+    console.log('[LoginView mapErrorToKey] Matched: invalidCredentials')
+    return 'auth.login.invalidCredentials'
+  }
+  if (msg.includes('unavailable')) {
+    console.log('[LoginView mapErrorToKey] Matched: serviceUnavailable')
+    return 'auth.login.serviceUnavailable'
+  }
+
+  console.log('[LoginView mapErrorToKey] No match, default: invalidCredentials')
+  return 'auth.login.invalidCredentials'
+}
+
+const displayError = computed(() => {
+  console.log('[LoginView displayError] Computing, authStore.error:', authStore.error)
+  if (!authStore.error) return ''
+  const errorKey = mapErrorToKey(authStore.error)
+  console.log('[LoginView displayError] Error key:', errorKey)
+  const translated = t(errorKey)
+  console.log('[LoginView displayError] Translated:', translated)
+  return translated
+})
+
+// Clear error when user modifies form
+watch([username, password], () => {
+  authStore.error = null
 })
 
 const handleLogin = async () => {
